@@ -55,18 +55,21 @@
 }
 
 .topbar {
-  height: var(--titlebar-h);
+  height: 36px;
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 0 var(--space-2);
-  margin-right: var(--titlebar-overlay-w);
+  margin: var(--space-2) var(--titlebar-overlay-w) var(--space-2) 0;
+  padding: 0 var(--space-3) 0 var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
 /* Clear the macOS traffic lights when the sidebar is hidden. */
 :root[data-platform='mac'] .shell[data-autohide='true'] .topbar {
-  padding-left: 76px;
+  margin-left: 72px;
 }
 
 .topbarTitle {

@@ -40,24 +40,22 @@ export function Shell() {
       <div className={styles.column}>
         <TopBar />
         <main className={styles.card}>
-          {view === 'settings' ? (
-            <SettingsView />
-          ) : (
-            <section className={styles.empty} data-testid="empty-state">
-              {found ? (
-                <p className={styles.emptyHint}>The session view is not wired yet.</p>
-              ) : (
-                <>
-                  <p className={styles.emptyTitle}>No session open</p>
-                  <p className={styles.emptyHint}>
-                    Press <kbd>⌘T</kbd> to start a session.
-                  </p>
-                </>
-              )}
-            </section>
-          )}
+          <section className={styles.empty} data-testid="empty-state">
+            {found ? (
+              <p className={styles.emptyHint}>The session view is not wired yet.</p>
+            ) : (
+              <>
+                <p className={styles.emptyTitle}>No session open</p>
+                <p className={styles.emptyHint}>
+                  Press <kbd>⌘T</kbd> to start a session.
+                </p>
+              </>
+            )}
+          </section>
         </main>
       </div>
+
+      {view === 'settings' && <SettingsView />}
     </div>
   )
 }

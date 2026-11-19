@@ -64,6 +64,10 @@
   --ok: #1f9d5c;
   --warn: #c77a12;
   --danger: #d33a3a;
+  --control-active: #ffffff;
+  --status-running: #9a9aa6;
+  --status-waiting: #f08c1a;
+  --status-done: #2f7cf6;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.12);
 }
 
@@ -81,6 +85,10 @@
   --ok: #3ccf86;
   --warn: #f0a63a;
   --danger: #ff6b6b;
+  --control-active: #3a3a43;
+  --status-running: #8b8b96;
+  --status-waiting: #ff9f2e;
+  --status-done: #4b93ff;
   --shadow-raised: 0 10px 32px rgb(0 0 0 / 0.45);
 }
 

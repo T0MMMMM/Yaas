@@ -10,7 +10,13 @@ import {
 import { ContextMeter, UsageMeter } from '../meters/Meters'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
-import { DEMO_SPACES, findSession, type DemoEnvironment, type DemoSession } from './demoData'
+import {
+  DEMO_SPACES,
+  findSession,
+  usageView,
+  type DemoEnvironment,
+  type DemoSession,
+} from './demoData'
 import { SessionStatusIcon } from './SessionStatusIcon'
 import styles from './Sidebar.module.css'
 
@@ -107,7 +113,7 @@ export function Sidebar() {
       {metersInSidebar && (
         <div className={styles.meters}>
           {found && <ContextMeter tokens={found.session.contextTokens} />}
-          <UsageMeter layout="stacked" {...space.usage} />
+          <UsageMeter layout="stacked" {...usageView(space)} />
         </div>
       )}
 

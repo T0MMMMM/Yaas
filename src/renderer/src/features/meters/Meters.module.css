@@ -1,14 +1,15 @@
-.context {
+.meter {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: 6px;
   color: var(--text-muted);
   font-size: var(--text-sm);
+  white-space: nowrap;
   animation: fade-in var(--dur-base) var(--ease);
 }
 
-.value {
-  font-variant-numeric: tabular-nums;
+.ring {
+  flex: none;
 }
 
 .ringTrack,
@@ -28,62 +29,34 @@
   transform-origin: center;
 }
 
-.context[data-warn='true'] .ringFill,
-.bar[data-warn='true'] .fill {
+.ring[data-warn='true'] .ringFill {
   stroke: var(--warn);
-  background: var(--warn);
 }
 
-.context[data-warn='true'] .value {
-  color: var(--warn);
+.label {
+  color: var(--text-muted);
+}
+
+.value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.reset {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
 }
 
 .usage {
   display: flex;
-  gap: var(--space-3);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .usage[data-layout='stacked'] {
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-1);
-}
-
-.bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.usage[data-layout='inline'] .track {
-  width: 44px;
-}
-
-.usage[data-layout='stacked'] .track {
-  flex: 1;
-}
-
-.label {
-  width: 16px;
-}
-
-.track {
-  height: 4px;
-  border-radius: var(--radius-pill);
-  background: var(--border-strong);
-  overflow: hidden;
-}
-
-.fill {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-}
-
-.usage[data-layout='stacked'] .value {
-  width: 30px;
-  text-align: right;
 }
 
 @keyframes fade-in {

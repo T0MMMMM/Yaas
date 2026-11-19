@@ -23,7 +23,12 @@ export interface DemoSpace {
   label: string
   emoji: string
   environments: DemoEnvironment[]
-  usage: { fiveHour: number; sevenDay: number }
+  usage: { session: DemoUsage; week: DemoUsage }
+}
+
+export interface DemoUsage {
+  utilization: number
+  minutesLeft: number
 }
 
 export const CONTEXT_LIMIT = 200_000
@@ -33,7 +38,10 @@ export const DEMO_SPACES: DemoSpace[] = [
     id: 'work',
     label: 'Work',
     emoji: '💼',
-    usage: { fiveHour: 0.57, sevenDay: 0.53 },
+    usage: {
+      session: { utilization: 0.45, minutesLeft: 3 * 60 + 11 },
+      week: { utilization: 0.61, minutesLeft: 23 * 60 + 41 },
+    },
     environments: [
       {
         id: 'app',
@@ -80,7 +88,10 @@ export const DEMO_SPACES: DemoSpace[] = [
     id: 'personal',
     label: 'Personal',
     emoji: '🏠',
-    usage: { fiveHour: 0.12, sevenDay: 0.31 },
+    usage: {
+      session: { utilization: 0.12, minutesLeft: 4 * 60 + 2 },
+      week: { utilization: 0.88, minutesLeft: 3 * 24 * 60 + 5 * 60 },
+    },
     environments: [
       {
         id: 'blog',
@@ -101,4 +112,15 @@ export function findSession(sessionId: string | null) {
     }
   }
   return null
+}
+
+const appStart = Date.now()
+
+/** Demo usage as absolute reset dates (computed once per app start). */
+export function usageView(space: DemoSpace) {
+  const at = (u: DemoUsage) => ({
+    utilization: u.utilization,
+    resetsAt: new Date(appStart + u.minutesLeft * 60_000),
+  })
+  return { session: at(space.usage.session), week: at(space.usage.week) }
 }
