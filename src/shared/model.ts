@@ -22,6 +22,21 @@ export interface Account {
   archivedAt: string | null
 }
 
+/** A project folder sessions run in. Global; pin/order/collapse are per space. */
+export interface Environment {
+  id: string
+  path: string
+  name: string
+}
+
+export interface SpaceEnvironment {
+  accountId: string
+  environmentId: string
+  pinned: boolean
+  position: number
+  collapsed: boolean
+}
+
 export type SessionStatus = 'idle' | 'running' | 'needs-approval' | 'done' | 'error' | 'limited'
 export type SessionOrigin = 'created' | 'imported' | 'handoff' | 'crew'
 
@@ -33,6 +48,7 @@ export interface Session {
   providerSessionId: string | null
   title: string
   cwd: string
+  environmentId: string
   profileId: string | null
   model: string | null
   status: SessionStatus

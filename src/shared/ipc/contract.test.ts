@@ -13,6 +13,8 @@ describe('IPC contract', () => {
     expect(input.safeParse({ glass: true }).success).toBe(true)
     expect(input.safeParse({ accent: 'violet' }).success).toBe(false)
     expect(input.safeParse({ grainOpacity: 0.9 }).success).toBe(false)
+    expect(input.safeParse({ spaceSwitcherStyle: 'dots' }).success).toBe(true)
+    expect(input.safeParse({ spaceSwitcherStyle: 'bars' }).success).toBe(false)
     expect(input.safeParse({ nodeIntegration: true }).success).toBe(false)
   })
 })

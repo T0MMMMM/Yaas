@@ -12,24 +12,26 @@ test('first launch shows onboarding, then the sidebar', async () => {
 
   try {
     const page = await app.firstWindow()
-    const onboarding = page.getByTestId('onboarding')
-    await expect(onboarding).toBeVisible()
+    await expect(page.getByTestId('onboarding')).toHaveAttribute('data-stage', 'intro')
 
-    // Pick an accent on the color step and check it is applied as a token.
-    await page.getByRole('button', { name: 'Get started' }).click()
+    // The logo intro leads to the visual setup by itself.
+    await expect(page.getByTestId('visual-setup')).toBeVisible()
     await page.getByRole('button', { name: '#2BB673' }).click()
     await expect
       .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')))
       .toBe('#2BB673')
+    await page.getByRole('button', { name: 'Continue' }).click()
 
-    // Walk to the end.
-    while ((await onboarding.getAttribute('data-step')) !== 'done') {
-      await page.getByRole('button', { name: 'Continue' }).click()
-    }
+    await expect(page.getByTestId('technical-setup')).toBeVisible()
     await page.getByRole('button', { name: 'Open YAAS' }).click()
 
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await expect(page.getByTestId('empty-state')).toBeVisible()
+
+    // Context indicator only while a session is open.
+    await expect(page.getByTestId('context-indicator')).toHaveCount(0)
+    await page.getByRole('button', { name: 'Fix login redirect' }).click()
+    await expect(page.getByTestId('context-indicator')).toBeVisible()
 
     // The renderer is isolated: no Node, only the bridge.
     const globals = await page.evaluate(() => ({

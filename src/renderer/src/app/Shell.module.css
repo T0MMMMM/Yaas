@@ -20,7 +20,21 @@
 .header {
   height: var(--titlebar-h);
   flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
   margin-right: var(--titlebar-overlay-w);
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-weight: 600;
+}
+
+.meta {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
 }
 
 .empty {
@@ -41,10 +55,6 @@
 .emptyHint {
   margin: 0;
   color: var(--text-muted);
-}
-
-.emptyHint span {
-  color: var(--text-faint);
 }
 
 .emptyHint kbd {

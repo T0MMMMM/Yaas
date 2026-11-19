@@ -6,6 +6,7 @@ export const DEFAULT_SETTINGS: Settings = {
   glass: true,
   grain: true,
   grainOpacity: 0.08,
+  spaceSwitcherStyle: 'icons',
   onboardingDone: false,
 }
 

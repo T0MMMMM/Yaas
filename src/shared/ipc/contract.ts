@@ -12,6 +12,8 @@ export const settingsSchema = z.object({
   grain: z.boolean(),
   /** 0..0.2 — see docs/DESIGN.md §3.2 */
   grainOpacity: z.number().min(0).max(0.2),
+  /** Sidebar space switcher: account icons or plain dots (DESIGN.md §2). */
+  spaceSwitcherStyle: z.enum(['icons', 'dots']),
   onboardingDone: z.boolean(),
 })
 export type Settings = z.infer<typeof settingsSchema>
