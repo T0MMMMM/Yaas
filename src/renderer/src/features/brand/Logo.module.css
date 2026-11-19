@@ -1,29 +1,39 @@
+/* Placeholder logo — two-ink print: an ink outline and an accent block printed off-register. */
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.28em;
+  gap: 0.22em;
   font-size: inherit;
 }
 
 .mark {
-  width: 1.15em;
-  height: 1.15em;
+  width: 1em;
+  height: 1em;
   flex: none;
+  overflow: visible;
 }
 
 .back {
-  fill: var(--accent-soft);
-  stroke: var(--accent);
-  stroke-width: 2.5;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 3;
 }
 
 .front {
   fill: var(--accent);
-  opacity: 0.92;
+  mix-blend-mode: multiply;
+}
+
+:root[data-scheme='dark'] .front {
+  mix-blend-mode: screen;
 }
 
 .wordmark {
-  font-weight: 750;
-  letter-spacing: -0.04em;
+  font-family: var(--font-display);
+  font-stretch: 75%;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
   color: var(--text);
+  text-shadow: 0.04em 0.03em 0 var(--misprint);
 }

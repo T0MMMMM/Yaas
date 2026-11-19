@@ -1,32 +1,41 @@
+/* Segmented control — ink outline; the chosen option is printed solid ink. */
 .segmented {
   align-self: flex-start;
   display: inline-flex;
-  padding: 3px;
+  padding: 2px;
   gap: 2px;
+  border: var(--line);
   border-radius: var(--radius-md);
-  background: var(--border);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-hard-sm);
 }
 
 .segmented button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px var(--space-3);
+  padding: 5px var(--space-3);
   border: none;
-  border-radius: 7px;
+  border-radius: 5px;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.segmented button:hover {
+  color: var(--text);
 }
 
 .segmented button[aria-checked='true'] {
   background: var(--control-active);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.12);
+  color: var(--on-control-active);
+  font-weight: 600;
 }
 
 .segmented button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }

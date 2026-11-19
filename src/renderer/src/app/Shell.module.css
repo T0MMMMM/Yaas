@@ -40,7 +40,7 @@
 
 .resizer:hover::after,
 .shell[data-resizing='true'] .resizer::after {
-  background: var(--accent-soft);
+  background: var(--accent);
 }
 
 .shell[data-resizing='true'] {
@@ -53,7 +53,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  padding: var(--space-2) 11px 11px 0; /* room for the hard shadows */
 }
 
 .contextbar {
@@ -62,11 +62,12 @@
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin: 0 var(--titlebar-overlay-w) var(--space-1) 0;
-  padding: 0 var(--space-4) 0 var(--space-4);
+  margin: 0 var(--titlebar-overlay-w) 7px 0;
+  padding: 0 var(--space-4);
   background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border: var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hard);
 }
 
 .contextbarTitle {
@@ -86,15 +87,19 @@
 }
 
 .title {
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-stretch: 80%;
+  font-weight: 750;
+  text-shadow: 1.5px 1px 0 var(--misprint);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .meta {
   color: var(--text-faint);
-  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .card {
@@ -103,8 +108,9 @@
   display: flex;
   flex-direction: column;
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: var(--line);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
   overflow: hidden;
 }
 
@@ -118,19 +124,29 @@
 
 .emptyTitle {
   margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 56px;
+  font-stretch: 75%;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--ink);
+  text-shadow: 4px 3px 0 var(--accent-soft);
 }
 
 .emptyHint {
   margin: 0;
   color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
 }
 
 .emptyHint kbd {
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
   padding: 1px var(--space-1);
-  border: 1px solid var(--border-strong);
+  border: var(--line);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-hard-sm);
 }

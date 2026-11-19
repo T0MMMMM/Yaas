@@ -115,12 +115,26 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 
 Default accent presets: `#7C5CFF` (violet, default), `#FF5C8A`, `#FF8A3D`, `#2BB673`, `#2D9CDB`, `#111111`, plus a free picker.
 
-### 3.0 Art direction — to do
+### 3.0 Art direction — "Riso print" (exploratory)
 
-The skeleton uses system fonts and plain controls. A dedicated design pass (before the MVP UI work)
-will define: typeface pairing, button/input/segmented styles, icon set usage and sizes, elevation,
-and the logo. Icons: **Lucide** (`lucide-react`), 16 px, 1.75 stroke, `currentColor` — never emoji
-or text glyphs for UI icons.
+A two-ink risograph print rather than another glassy SaaS UI. Exploratory: it can be replaced, but
+every new component follows it until then.
+
+- **Paper and ink**: warm paper surfaces (`--neutral-*`), one dark ink (`--ink`) for text, frames
+  and rules; the user's color is the **second ink** (`--accent`). Dark mode = dark paper, light
+  ink, and hard shadows printed in the accent.
+- **Hard offset shadows**, never blurred: `--shadow-hard-sm/-/-lg` (2 / 3 / 6 px). Framed elements
+  (context bar, content card, search, dialogs, buttons, selects) use `--line` (1.5 px ink).
+- **Misregistration**: display titles carry a slightly offset accent copy (`--misprint`).
+- **Halftone**: `--halftone` dot screen in the accent for the active session, the settings
+  backdrop and the onboarding motif.
+- **Type**: Bricolage Grotesque (variable: width 75–100, weight 200–800) for UI and display —
+  display = 75 % width, weight 800, tight leading; huge outlined titles for page headers.
+  Geist Mono for numbers, paths, shortcuts and small labels. Both are bundled (OFL), no network.
+- **Playful motion**: bouncy easing (`--ease-bounce`) on hover lifts, tilts of a few degrees on the
+  active item / selected account, press-down on buttons.
+- **Icons**: Lucide (`lucide-react`), 15–16 px, `currentColor`. No emoji for UI icons (account
+  emoji are user content).
 
 ### 3.2 Material
 
