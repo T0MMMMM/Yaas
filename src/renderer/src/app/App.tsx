@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useAccounts } from '../stores/accounts'
 import { useSettings } from '../stores/settings'
 import { applyTheme, onSystemSchemeChange } from '../theme/applyTheme'
 import { Onboarding } from '../features/onboarding/Onboarding'
@@ -7,7 +8,10 @@ import { Shell } from './Shell'
 export function App() {
   const { info, settings, init } = useSettings()
 
+  const initAccounts = useAccounts((s) => s.init)
+
   useEffect(() => init(), [init])
+  useEffect(() => initAccounts(), [initAccounts])
 
   useEffect(() => {
     if (!settings) return

@@ -22,9 +22,9 @@
   --space-8: 32px;
 
   /* shape */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 9px;
   --radius-pill: 999px;
 
   /* type */
@@ -78,19 +78,19 @@
 
 :root[data-scheme='dark'] {
   color-scheme: dark;
-  --neutral-window: #16161a;
-  --neutral-sidebar: #1d1d22;
-  --neutral-surface: #121215;
-  --bg-raised: #222228;
+  --neutral-window: #0f0f11;
+  --neutral-sidebar: #141416;
+  --neutral-surface: #18181b;
+  --bg-raised: #1f1f23;
   --border: rgb(255 255 255 / 0.07);
-  --border-strong: rgb(255 255 255 / 0.14);
-  --text: #ececf1;
-  --text-muted: #a3a3ae;
-  --text-faint: #6c6c78;
+  --border-strong: rgb(255 255 255 / 0.13);
+  --text: #e6e6ea;
+  --text-muted: #9d9da8;
+  --text-faint: #65656f;
   --ok: #3ccf86;
   --warn: #f0a63a;
   --danger: #ff6b6b;
-  --control-active: #3a3a43;
+  --control-active: #2c2c32;
   --status-running: #8b8b96;
   --status-waiting: #ff9f2e;
   --status-done: #4b93ff;
@@ -100,7 +100,7 @@
 /* ---------- derived surfaces ---------- */
 
 :root {
-  --sidebar-tint: color-mix(in oklch, var(--accent) 12%, var(--neutral-sidebar));
+  --sidebar-tint: color-mix(in oklch, var(--accent) 5%, var(--neutral-sidebar));
   --bg-window: var(--neutral-window);
   --bg-sidebar: color-mix(
     in srgb,

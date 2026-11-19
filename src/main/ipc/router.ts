@@ -39,7 +39,12 @@ export function registerCommands(
         return { ok: true, data }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        return { ok: false, error: { code: 'internal', message } }
+        // Domain errors carry a stable `code` the renderer can switch on.
+        const code =
+          error instanceof Error && 'code' in error && typeof error.code === 'string'
+            ? error.code
+            : 'internal'
+        return { ok: false, error: { code, message } }
       }
     })
   }

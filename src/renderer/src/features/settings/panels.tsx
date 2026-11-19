@@ -106,7 +106,7 @@ export function Appearance() {
 }
 
 export function Accounts() {
-  const { spaces } = useWorkspace()
+  const { spaces, demo } = useWorkspace()
   return (
     <>
       <SettingGroup>
@@ -114,7 +114,7 @@ export function Accounts() {
           <SettingRow
             key={space.id}
             label={`${space.emoji}  ${space.label}`}
-            description="Demo account"
+            description={demo ? 'Demo account' : undefined}
           >
             <button className={styles.button} disabled>
               Edit

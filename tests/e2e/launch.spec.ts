@@ -64,3 +64,36 @@ test('first launch shows onboarding, then the sidebar', async () => {
     rmSync(userData, { recursive: true, force: true })
   }
 })
+
+test('settings survive a relaunch; dark is the default', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'yaas-e2e-'))
+  const launch = () =>
+    electron.launch({
+      args: [join(__dirname, '../../out/main/index.js')],
+      env: { ...process.env, YAAS_USER_DATA: userData, YAAS_PROVIDER: 'fake' },
+    })
+
+  try {
+    const first = await launch()
+    const page = await first.firstWindow()
+    await expect(page.locator('html')).toHaveAttribute('data-scheme', 'dark')
+    await expect(page.getByTestId('visual-setup')).toBeVisible()
+    await page.getByRole('button', { name: '#2BB673' }).click()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await expect(page.getByTestId('cli-status')).not.toHaveText(/Looking for/)
+    await page.getByRole('button', { name: 'Open YAAS' }).click()
+    await expect(page.getByTestId('sidebar')).toBeVisible()
+    await first.close()
+
+    const second = await launch()
+    const again = await second.firstWindow()
+    await expect(again.getByTestId('sidebar')).toBeVisible()
+    await expect(again.getByTestId('onboarding')).toHaveCount(0)
+    await expect
+      .poll(() => again.evaluate(() => document.documentElement.style.getPropertyValue('--accent')))
+      .toBe('#2BB673')
+    await second.close()
+  } finally {
+    rmSync(userData, { recursive: true, force: true })
+  }
+})

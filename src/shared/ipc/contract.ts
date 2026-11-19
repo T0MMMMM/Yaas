@@ -1,6 +1,7 @@
 // THE IPC contract. Every command and event crossing the preload bridge is declared here.
 // Main validates every input with these schemas; the renderer gets the types for free.
 import { z } from 'zod'
+import type { Account } from '../model'
 import type { CommandChannel, EventChannel } from './channels'
 
 export const SIDEBAR_MIN = 200
@@ -39,14 +40,42 @@ export const appInfoSchema = z.object({
 })
 export type AppInfo = z.infer<typeof appInfoSchema>
 
+export const accountSchema = z.object({
+  id: z.string(),
+  provider: z.literal('claude-code'),
+  label: z.string(),
+  emoji: z.string(),
+  color: hexColor,
+  configDir: z.string().nullable(),
+  authMethod: z.enum(['claude.ai', 'console', 'oauth-token', 'none']),
+  email: z.string().nullable(),
+  orgName: z.string().nullable(),
+  plan: z.string().nullable(),
+  defaultProfileId: z.string().nullable(),
+  position: z.number().int(),
+  archivedAt: z.string().nullable(),
+}) satisfies z.ZodType<Account>
+
+export const cliInfoSchema = z.object({
+  /** Absolute path of the Claude Code CLI, or null when it can't be found. */
+  path: z.string().nullable(),
+  version: z.string().nullable(),
+})
+export type CliInfo = z.infer<typeof cliInfoSchema>
+
 export const commands = {
   'app.info': { input: z.void(), output: appInfoSchema },
   'settings.get': { input: z.void(), output: settingsSchema },
   'settings.update': { input: settingsSchema.partial().strict(), output: settingsSchema },
+  'claude.detect': { input: z.void(), output: cliInfoSchema },
+  'accounts.list': { input: z.void(), output: z.array(accountSchema) },
+  /** Imports the account already signed in to ~/.claude (ADR-0002). Idempotent. */
+  'accounts.importDefault': { input: z.void(), output: accountSchema },
 } as const satisfies Record<CommandChannel, { input: z.ZodType; output: z.ZodType }>
 
 export const events = {
   'settings.changed': settingsSchema,
+  'accounts.changed': z.array(accountSchema),
 } as const satisfies Record<EventChannel, z.ZodType>
 
 export type Commands = typeof commands

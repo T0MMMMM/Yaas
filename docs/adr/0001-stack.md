@@ -1,6 +1,6 @@
 # ADR-0001 — Stack: Electron + electron-vite + React + SQLite
 
-- **Status:** Accepted (2026-11-19)
+- **Status:** Accepted (2026-11-19) — storage engine superseded by [ADR-0005](0005-sqlite-builtin.md)
 
 ## Context
 

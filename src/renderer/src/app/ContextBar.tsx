@@ -4,8 +4,8 @@ import { useSettings } from '../stores/settings'
 import styles from './Shell.module.css'
 
 /**
- * Context bar: its own card above the content card, only while a session is open
- * (DESIGN.md §2). Also the window drag region.
+ * Context bar: header of the session card, only while a session is open (DESIGN.md §2).
+ * Also a window drag region.
  */
 export function ContextBar() {
   const { open, usage } = useWorkspace()

@@ -35,8 +35,8 @@ export function Shell() {
       </div>
 
       <div className={styles.column} data-has-contextbar={open !== null}>
-        <ContextBar />
         <main className={styles.card}>
+          <ContextBar />
           <section className={styles.empty} data-testid="empty-state">
             {open ? (
               <p className={styles.emptyHint}>The session view is not wired yet.</p>

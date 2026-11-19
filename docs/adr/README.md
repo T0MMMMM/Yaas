@@ -12,7 +12,8 @@ anything they cover.
 
 | # | Title | Status |
 |---|---|---|
-| [0001](0001-stack.md) | Stack: Electron + electron-vite + React + SQLite | Accepted |
+| [0001](0001-stack.md) | Stack: Electron + electron-vite + React + SQLite | Accepted (storage → 0005) |
 | [0002](0002-account-isolation.md) | Account isolation with one `CLAUDE_CONFIG_DIR` per account | Accepted |
 | [0003](0003-handoff.md) | Handoff: full transcript first, hybrid later | Accepted (cross-account validation pending) |
 | [0004](0004-crew-mode.md) | Crew mode: in-process MCP tool + manual runs | Accepted |
+| [0005](0005-sqlite-builtin.md) | SQLite through Node's built-in `node:sqlite` | Accepted (supersedes part of 0001) |

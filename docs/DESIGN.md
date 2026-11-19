@@ -36,8 +36,8 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
   accounts (left)  settings      session content card
 ```
 
-**Context bar** — its **own card** above the content card (same surface, radius and border), shown
-**only while a session is open**, 34 px high (title at body size); 4 px gap to the content card. It is also the window drag region.
+**Context bar** — the **header of the session card** (38 px, separated from the transcript by a
+hairline), shown **only while a session is open**. It is also the window drag region.
 Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
 - **Context** of the open session: `◔ Context 21% 42k / 200k` (`--warn` above 80 %; click → what the
   session loads).

@@ -14,7 +14,7 @@
 | UI | React 19 + **Zustand** (state) + CSS Modules + CSS variables (design tokens) | Small, fast; tokens map 1:1 to the theme settings. No Tailwind: the look relies on tokens, glass and grain, not utility classes |
 | Lists | `@tanstack/react-virtual` | Long transcripts and session lists |
 | Claude | `@anthropic-ai/claude-agent-sdk` (spawns the Claude Code CLI) | Streaming, `canUseTool`, `resume`/`forkSession`, in-process MCP (S#7) |
-| Storage | **SQLite** via `better-sqlite3` + FTS5, hand-written migrations | Synchronous, fast, battle-tested in Electron; full-text search for free |
+| Storage | **SQLite** via built-in `node:sqlite` + FTS5, migrations on `user_version` *(ADR-0005)* | No native module; same engine in Electron and in tests |
 | Validation | `zod` on every IPC payload entering main | The renderer is untrusted |
 | Terminal (v1) | `node-pty` + `xterm.js` | Escape hatch only |
 | Packaging | electron-builder → `dmg` (mac), `nsis` (win) | As required; SDK native binary `asarUnpack`ed (S#7) |
@@ -81,7 +81,7 @@ src/
       provider.ts          # Provider interface + normalized events
       claude-code/         # Agent SDK adapter, transcript reader, path encoding
       fake/                # deterministic provider for tests & e2e (0 tokens)
-    store/                 # SQLite, migrations, repositories, FTS index
+    store/                 # SQLite (node:sqlite), migrations, FTS index
     events.ts              # typed in-process event bus (core → ipc)
   preload/
     index.ts               # exposes window.yaas (invoke/on), nothing else

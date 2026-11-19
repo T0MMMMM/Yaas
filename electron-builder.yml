@@ -12,7 +12,7 @@ files:
   - package.json
   - '!**/*.map'
 
-# Native modules (better-sqlite3, node-pty, the Agent SDK's CLI binary) must live outside the asar.
+# Native modules (node-pty, the Agent SDK's CLI binary) must live outside the asar.
 asarUnpack:
   - '**/*.node'
   - 'node_modules/@anthropic-ai/claude-agent-sdk-*/**'
