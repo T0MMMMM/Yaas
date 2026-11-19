@@ -26,7 +26,7 @@ export function Sidebar() {
   const pinnedEnvs = space.environments.filter((e) => e.pinned)
   const otherEnvs = space.environments.filter((e) => !e.pinned)
   const pinnedSessions = otherEnvs.flatMap((e) => e.sessions.filter((s) => s.pinned))
-  const found = ui.view === 'session' ? findSession(ui.activeSessionId) : null
+  const found = findSession(ui.activeSessionId)
 
   const renderSession = (session: DemoSession, nested: boolean) => (
     <li key={session.id}>
@@ -92,9 +92,9 @@ export function Sidebar() {
         </button>
       </div>
 
-      {metersInSidebar && (
+      {metersInSidebar && found && (
         <div className={styles.meters}>
-          {found && <ContextMeter tokens={found.session.contextTokens} />}
+          <ContextMeter tokens={found.session.contextTokens} />
           <UsageMeter layout="stacked" {...usageView(space)} />
         </div>
       )}

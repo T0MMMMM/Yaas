@@ -37,7 +37,7 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 ```
 
 **Context bar** — its **own card** above the content card (same surface, radius and border), shown
-**only while a session is open**; 4 px gap to the content card. It is also the window drag region.
+**only while a session is open**, 44 px high; 4 px gap to the content card. It is also the window drag region.
 Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
 - **Context** of the open session: `◔ 42k / 200k Context` (`--warn` above 80 %; click → what the
   session loads).
@@ -45,8 +45,9 @@ Left: session title (editable inline) and environment path. Right, each stat as 
   and `◔ Week 61% Fri. 14:00 (23h41)` (7-day window). Same day → time only; otherwise short
   weekday + time. Time left as `3h11`, or `2d 4h` beyond 48 h.
 
-Both meters can move to the bottom of the sidebar instead (Settings → Appearance → Meters); then
-the usage stays visible even with no session open. Without a session and with meters in the
+Both meters can move to the bottom of the sidebar instead (Settings → Appearance → Meters).
+Wherever they are, the meters follow the same rule as the session title: **shown only while a
+session is open**. Without a session and with meters in the
 context bar, the content card takes the full height. On Windows the right edge leaves room for the
 caption buttons.
 
@@ -57,7 +58,10 @@ caption buttons.
 - **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
   order. No pin icon — being above the separator *is* the pinned state.
 - Separator.
-- Rows (environments and sessions) are 34 px high.
+- Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
+  rows and folders use almost its full width.
+- **Resizable**: drag its right edge (200–440 px, default 248, saved in settings); double-click the
+  edge to reset.
 - **Environments** (= project folders) as **folders** that open and close (folder / open-folder
   icon; a closed folder shows its session count), sorted by last activity, each listing its
   sessions. Pins are per space; pin/unpin from the context menu or `Mod+D`.

@@ -76,9 +76,7 @@ export function Appearance() {
               ]}
               onChange={(metersPlacement) => void update({ metersPlacement })}
             />
-            <p className={fields.hint}>
-              In the sidebar, account usage stays visible even when no session is open.
-            </p>
+            <p className={fields.hint}>Shown only while a session is open.</p>
           </div>
         </div>
       </SettingGroup>

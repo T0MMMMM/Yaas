@@ -1,18 +1,38 @@
+import type { CSSProperties } from 'react'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { findSession } from '../features/sidebar/demoData'
 import { useUi } from '../stores/ui'
 import { ContextBar } from './ContextBar'
+import { useSidebarResize } from './useSidebarResize'
 import styles from './Shell.module.css'
 
 /** Main layout: sidebar + context bar (in a session) + content card (DESIGN.md §2). */
 export function Shell() {
   const { activeSessionId, view } = useUi()
   const found = findSession(activeSessionId)
+  const resize = useSidebarResize()
 
   return (
-    <div className={styles.shell}>
-      <Sidebar />
+    <div
+      className={styles.shell}
+      data-resizing={resize.resizing}
+      style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
+    >
+      <div className={styles.sidebarSlot}>
+        <Sidebar />
+        <div
+          className={styles.resizer}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize sidebar"
+          aria-valuenow={resize.width}
+          title="Drag to resize · double-click to reset"
+          onPointerDown={resize.onPointerDown}
+          onDoubleClick={resize.reset}
+          data-testid="sidebar-resizer"
+        />
+      </div>
 
       <div className={styles.column} data-has-contextbar={found !== null}>
         <ContextBar />

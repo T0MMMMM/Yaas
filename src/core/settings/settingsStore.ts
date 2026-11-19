@@ -8,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   grainOpacity: 0.08,
   spaceSwitcherStyle: 'emoji',
   metersPlacement: 'contextbar',
+  sidebarWidth: 248,
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
 }

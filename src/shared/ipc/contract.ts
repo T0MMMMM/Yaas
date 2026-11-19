@@ -3,6 +3,10 @@
 import { z } from 'zod'
 import type { CommandChannel, EventChannel } from './channels'
 
+export const SIDEBAR_MIN = 200
+export const SIDEBAR_MAX = 440
+export const SIDEBAR_DEFAULT = 248
+
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #RRGGBB')
 
 export const settingsSchema = z.object({
@@ -16,6 +20,8 @@ export const settingsSchema = z.object({
   spaceSwitcherStyle: z.enum(['emoji', 'letter', 'dots']),
   /** Where the context indicator and account usage live. */
   metersPlacement: z.enum(['contextbar', 'sidebar']),
+  /** Sidebar width in px, resizable by drag (DESIGN.md §2). */
+  sidebarWidth: z.number().int().min(SIDEBAR_MIN).max(SIDEBAR_MAX),
   /** Archive sessions inactive for N days (never deletes; pinned sessions excluded). */
   autoArchive: z.object({
     enabled: z.boolean(),
