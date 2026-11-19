@@ -16,7 +16,7 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────┐
-│ ● ● ●               [◧] │ ╭ Write tests · ~/scripts  ◔ 42k/200k  ◔ Session 45% 17:30 (3h11)  ◔ Week 61% Fri. 14:00 (23h41) ╮ │ ← top bar card
+│ ● ● ●                   │ ╭ Write tests · ~/scripts  ◔ 42k/200k Context  ◔ Session 45% 17:30 (3h11)  ◔ Week 61% Fri. 14:00 (23h41) ╮ │ ← context bar (only in a session)
 │ ┌─────────────────────┐ │ ┌──────────────────────────────────────────────┐ │
 │ │ ⌕ Search…        ⌘K │ │ │                                              │ │
 │ └─────────────────────┘ │ │  you  The login page loops after OAuth…      │ │
@@ -36,25 +36,28 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
   accounts (left)  settings      session content card
 ```
 
-**Top bar** — its **own card** above the content card (same surface, radius and border), and the
-window drag region. Left: session title (editable inline) and environment path. Right:
-- **Context** of the open session: ring + "42k / 200k" (`--warn` above 80 %; click → what the
+**Context bar** — its **own card** above the content card (same surface, radius and border), shown
+**only while a session is open**; 4 px gap to the content card. It is also the window drag region.
+Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
+- **Context** of the open session: `◔ 42k / 200k Context` (`--warn` above 80 %; click → what the
   session loads).
-- **Account usage** as two rings, each with its reset time and the time left:
-  `◔ Session 45% 17:30 (3h11)` (5-hour window) and `◔ Week 61% Fri. 14:00 (23h41)` (7-day window).
-  Same day → time only; otherwise short weekday + time. Time left as `3h11`, or `2d 4h` beyond 48 h.
+- **Account usage**, with reset time and time left: `◔ Session 45% 17:30 (3h11)` (5-hour window)
+  and `◔ Week 61% Fri. 14:00 (23h41)` (7-day window). Same day → time only; otherwise short
+  weekday + time. Time left as `3h11`, or `2d 4h` beyond 48 h.
 
-Both meters can move to the bottom of the sidebar (Settings → Layout → Meters). On Windows the
-right edge leaves room for the caption buttons.
+Both meters can move to the bottom of the sidebar instead (Settings → Appearance → Meters); then
+the usage stays visible even with no session open. Without a session and with meters in the
+context bar, the content card takes the full height. On Windows the right edge leaves room for the
+caption buttons.
 
 **Sidebar (top → bottom)**
-- Title row: traffic lights on the left (macOS, `titleBarStyle: 'hiddenInset'`), **auto-hide
-  toggle** on the right. In auto-hide mode the sidebar slides away and reappears as an overlay
-  when the pointer touches the left edge of the window; it hides again when the pointer leaves it.
+- Title row: traffic lights (macOS, `titleBarStyle: 'hiddenInset'`); drag region. The sidebar is
+  always visible (no auto-hide mode).
 - Search / palette trigger.
 - **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
   order. No pin icon — being above the separator *is* the pinned state.
 - Separator.
+- Rows (environments and sessions) are 34 px high.
 - **Environments** (= project folders) as **folders** that open and close (folder / open-folder
   icon; a closed folder shows its session count), sorted by last activity, each listing its
   sessions. Pins are per space; pin/unpin from the context menu or `Mod+D`.
@@ -65,7 +68,7 @@ right edge leaves room for the caption buttons.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
 
-**Session status dots** (like the Claude apps): **gray, blinking** = running · **orange** = waiting
+**Session status dots** (5 px, like the Claude apps): **gray, blinking** = running · **orange** = waiting
 for your action (approval, question) · **blue** = finished, not yet seen · **red** = error ·
 **orange ring** = account limited · nothing = idle / seen. Always with a tooltip + `aria-label`.
 
@@ -169,21 +172,55 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 
 ## 7. Settings
 
-A **modal dialog** of its own (centered panel over a dimmed backdrop), opened from the gear at the
-bottom right of the sidebar or `Mod+,`; `Esc` or a click on the backdrop closes it. Not part of
-onboarding unless stated.
+A **modal dialog** (centered panel, 880 × up to 640 px, over a dimmed backdrop), opened from the
+gear at the bottom right of the sidebar or `Mod+,`; `Esc`, the close button or a click on the
+backdrop closes it. **Left navigation** lists the sections; the right pane shows one section.
+Each option is a row: label + one-line description on the left, control on the right. Options not
+built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 
-| Section | Option | Values (default) |
-|---|---|---|
-| Appearance | Color, scheme, glass, grain + intensity | as in onboarding |
-| Layout | Account switcher | Emoji (default) · First letter · Dots |
-| Layout | Meters (context + usage) | Top bar (default) · Sidebar |
-| Layout | Auto-hide sidebar | Off (default) · On — same as the sidebar toggle |
-| Sessions | Auto-archive inactive sessions | Off (default) · after 1 / 3 / 7 / 14 / 30 days without activity |
-| Accounts | Add, rename, emoji, color, default context profile | — (later) |
-| Accounts | Custom usage reset schedule, per account and per day of the week | — (later) |
+| Section | Option | Values (default) | Stage |
+|---|---|---|---|
+| **General** | Open at login | Off | v1 |
+| | Restore open sessions on launch | On | MVP |
+| | Default folder for new sessions | Last used · Ask every time · Fixed folder | MVP |
+| | Confirm before closing a running session | On | MVP |
+| | Language | English (more later) | later |
+| | Check for updates | Automatically · Manually | later |
+| **Appearance** | Color, scheme, glass, grain + intensity | as in onboarding | MVP ✅ |
+| | Account switcher | Emoji · First letter · Dots | MVP ✅ |
+| | Meters (context + usage) | Context bar · Sidebar | MVP ✅ |
+| | Interface density | Comfortable · Compact | v1 |
+| | Transcript font size | 12 · 13 · 14 · 15 | v1 |
+| **Accounts** | List: emoji, name, color, plan, sign-in status; add / sign out / remove | — | MVP |
+| | Per account: default model, default context profile | — | MVP |
+| | Custom usage reset schedule, per account and per weekday | — | later |
+| **Sessions** | Default model for new sessions | Account default · Opus · Sonnet · Haiku | MVP |
+| | Default permission mode | Ask · Accept edits · Plan | MVP |
+| | Close idle Claude processes after | 5 · 10 · 30 min · Never (10 min) | MVP |
+| | Auto-archive inactive sessions | Off · after 1 / 3 / 7 / 14 / 30 days | v1 (UI ✅) |
+| **Context profiles** | Profiles list (Clean, Inherit `~/.claude`, custom): skills, MCP servers, plugins, CLAUDE.md | — | MVP |
+| | Default profile for new sessions | Clean | MVP |
+| **Permissions** | Saved rules (tool pattern · project/account · allow/deny), revoke | — | MVP |
+| | Require a second confirmation for account-wide rules | On | MVP |
+| **Handoff** | Suggest a handoff when usage reaches | 80 % · 90 % · Only when limited (90 %) | MVP |
+| | Fallback account order | drag to reorder | MVP |
+| | Default handoff mode | Full transcript · Hybrid | v1 |
+| **Crew** | Allow Claude to propose delegation | Off | v1 |
+| | Max parallel delegates | 1–5 (2) | v1 |
+| | Run delegates in git worktrees | On | v1 |
+| **Notifications** | Session waiting for your action | On | MVP |
+| | Session finished (window not focused) | On | MVP |
+| | Account limited / usage reset | On | v1 |
+| | Sound | Off | v1 |
+| **Shortcuts** | List of all shortcuts (read-only); remapping | — | MVP / later |
+| **Privacy & data** | Data folder (reveal), export settings, rebuild search index | — | v1 |
+| | Statement: no telemetry, no hidden model calls | — | MVP |
+| **Advanced** | Claude Code CLI: bundled · system (path + version) | Bundled | MVP |
+| | Open logs folder, developer tools | — | MVP |
+| **About** | Version, docs, license, acknowledgements | — | MVP |
 
 Auto-archive only archives (never deletes); pinned sessions are never auto-archived.
+Every option that spends tokens is absent by design (FEATURES.md principle 1).
 
 ## 8. Keyboard shortcuts
 
@@ -197,7 +234,6 @@ Auto-archive only archives (never deletes); pinned sessions are never auto-archi
 | Reopen last closed | `Mod+Shift+T` |
 | Switch to space 1…9 | `Mod+1…9` |
 | Next / previous session | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Toggle sidebar auto-hide | `Mod+S` |
 | Search in session / all sessions | `Mod+F` / `Mod+Shift+F` |
 | Interrupt Claude | `Esc` (in composer) or `Mod+.` |
 | Approval: allow once / always for project / deny | `⏎` / `Mod+⏎` / `Esc` |

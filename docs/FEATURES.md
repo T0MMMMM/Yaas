@@ -47,8 +47,8 @@ renderer or the data model beyond a `provider` field.
 |---|---|
 | **MVP** | Account = space (accent color + icon), session = tab in its space; each session bound to a project folder (its **environment**) |
 | **MVP** | Sidebar grouped by environment folders (open/close); pin environments and/or individual sessions above the separator (per space) |
-| **MVP** | Top bar above the content card: session title + context indicator and account usage (or in the sidebar — setting) |
-| **MVP** | Auto-hide sidebar (shows when the pointer reaches the left edge) |
+| **MVP** | Context bar above the content card, only in a session: title, context and account usage (or in the sidebar — setting) |
+| **MVP** | Settings dialog with left navigation (General, Appearance, Accounts, Sessions, Context profiles, Permissions, Handoff, Crew, Notifications, Shortcuts, Privacy, Advanced, About) — catalog in DESIGN.md §7 |
 | **MVP** | Account switcher at the bottom left: emoji, first letter or dots (setting); Settings button at the bottom right |
 | v1 | Custom icon/emoji on an environment or a session |
 | **MVP** | Chat view: streamed messages, collapsible tool calls, per-session model picker, Stop |
