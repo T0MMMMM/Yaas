@@ -16,7 +16,7 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────┐
-│ ● ● ●               [◧] │ Write tests · ~/work/scripts    ◔ 42k/200k · 5h 57% 7d 53% │ ← top bar (drag region)
+│ ● ● ●               [◧] │ ╭ Write tests · ~/scripts  ◔ 42k/200k  ◔ Session 45% 17:30 (3h11)  ◔ Week 61% Fri. 14:00 (23h41) ╮ │ ← top bar card
 │ ┌─────────────────────┐ │ ┌──────────────────────────────────────────────┐ │
 │ │ ⌕ Search…        ⌘K │ │ │                                              │ │
 │ └─────────────────────┘ │ │  you  The login page loops after OAuth…      │ │
@@ -36,12 +36,16 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
   accounts (left)  settings      session content card
 ```
 
-**Top bar** — sits on the window frame, *above and separate from* the content card; it is the
-window drag region. Left: session title (editable inline) and environment path. Right: the
-**context indicator** (ring + "42k / 200k", `--warn` above 80 %, click → what the session loads)
-and the **account usage** (5 h session / 7 d week, reset time on hover). Both meters can be moved
-to the bottom of the sidebar instead (Settings → Layout → Meters). On Windows the right edge leaves
-room for the caption buttons.
+**Top bar** — its **own card** above the content card (same surface, radius and border), and the
+window drag region. Left: session title (editable inline) and environment path. Right:
+- **Context** of the open session: ring + "42k / 200k" (`--warn` above 80 %; click → what the
+  session loads).
+- **Account usage** as two rings, each with its reset time and the time left:
+  `◔ Session 45% 17:30 (3h11)` (5-hour window) and `◔ Week 61% Fri. 14:00 (23h41)` (7-day window).
+  Same day → time only; otherwise short weekday + time. Time left as `3h11`, or `2d 4h` beyond 48 h.
+
+Both meters can move to the bottom of the sidebar (Settings → Layout → Meters). On Windows the
+right edge leaves room for the caption buttons.
 
 **Sidebar (top → bottom)**
 - Title row: traffic lights on the left (macOS, `titleBarStyle: 'hiddenInset'`), **auto-hide
@@ -61,8 +65,9 @@ room for the caption buttons.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
 
-**Tab status glyphs**: `◐` running · `!` needs approval (accent, pulses once) · `✓` done (unread) ·
-`×` error · `⏸` account limited · none = idle/read.
+**Session status dots** (like the Claude apps): **gray, blinking** = running · **orange** = waiting
+for your action (approval, question) · **blue** = finished, not yet seen · **red** = error ·
+**orange ring** = account limited · nothing = idle / seen. Always with a tooltip + `aria-label`.
 
 **Main pane**
 - Header (also the window drag region): title (editable inline), account, model, cwd.
@@ -97,7 +102,9 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-raised` | Cards, approval sheet, palette, menus |
 | `--border` / `--border-strong` | Hairlines |
 | `--text` / `--text-muted` / `--text-faint` | Text hierarchy |
-| `--ok` / `--warn` / `--danger` | Status (done / approval-limited / error) |
+| `--ok` / `--warn` / `--danger` | Generic success / warning / error |
+| `--status-running` / `--status-waiting` / `--status-done` | Session dots: gray / orange / blue |
+| `--control-active` | Selected segment / active control fill |
 
 Default accent presets: `#7C5CFF` (violet, default), `#FF5C8A`, `#FF8A3D`, `#2BB673`, `#2D9CDB`, `#111111`, plus a free picker.
 
@@ -162,8 +169,9 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 
 ## 7. Settings
 
-Opened from the gear at the bottom right of the sidebar or `Mod+,`; shown in the content card.
-Not part of onboarding unless stated.
+A **modal dialog** of its own (centered panel over a dimmed backdrop), opened from the gear at the
+bottom right of the sidebar or `Mod+,`; `Esc` or a click on the backdrop closes it. Not part of
+onboarding unless stated.
 
 | Section | Option | Values (default) |
 |---|---|---|
@@ -173,6 +181,7 @@ Not part of onboarding unless stated.
 | Layout | Auto-hide sidebar | Off (default) · On — same as the sidebar toggle |
 | Sessions | Auto-archive inactive sessions | Off (default) · after 1 / 3 / 7 / 14 / 30 days without activity |
 | Accounts | Add, rename, emoji, color, default context profile | — (later) |
+| Accounts | Custom usage reset schedule, per account and per day of the week | — (later) |
 
 Auto-archive only archives (never deletes); pinned sessions are never auto-archived.
 

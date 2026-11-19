@@ -72,12 +72,13 @@ renderer or the data model beyond a `provider` field.
 |---|---|
 | **MVP** | Create, rename, archive, delete, pin (sessions and environments); search by title/folder |
 | **MVP** | Command palette (Cmd/Ctrl+K), Cmd/Ctrl+T, Cmd/Ctrl+1..9 |
-| **MVP** | Account gauges (5 h / 7 d utilization + reset time) from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
+| **MVP** | Account usage rings — Session (5 h) and Week (7 d): %, reset time and time left, from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
 | v1 | Full-text search across transcripts (SQLite FTS5) |
 | v1 | Auto-archive sessions after X days without activity (setting; pinned sessions excluded, never deletes) |
 | v1 | Token/cost per session and per account (`result.usage`, `total_cost_usd`) |
 | v1 | Active quota polling for idle accounts (internal endpoint, feature-flagged) (S#2) |
 | v1 | Shared vs isolated settings per account (skills, MCP, global CLAUDE.md); export transcript to Markdown |
+| later | Custom usage reset schedule per account and per weekday (overrides the reset times shown) |
 | later | Menu-bar/tray quota widget, tags, stats |
 
 ## Pillar 3 — Handoff (proposed)
