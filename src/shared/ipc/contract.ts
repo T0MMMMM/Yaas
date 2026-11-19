@@ -15,9 +15,7 @@ export const settingsSchema = z.object({
   /** Account switcher at the bottom of the sidebar (DESIGN.md §2, §7). */
   spaceSwitcherStyle: z.enum(['emoji', 'letter', 'dots']),
   /** Where the context indicator and account usage live. */
-  metersPlacement: z.enum(['topbar', 'sidebar']),
-  /** Sidebar slides away and shows when the pointer touches the left edge. */
-  sidebarAutoHide: z.boolean(),
+  metersPlacement: z.enum(['contextbar', 'sidebar']),
   /** Archive sessions inactive for N days (never deletes; pinned sessions excluded). */
   autoArchive: z.object({
     enabled: z.boolean(),

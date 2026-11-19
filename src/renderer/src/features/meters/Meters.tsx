@@ -42,6 +42,7 @@ export function ContextMeter({ tokens }: { tokens: number }) {
       <span className={styles.value}>
         {k(tokens)} / {k(CONTEXT_LIMIT)}
       </span>
+      <span className={styles.label}>Context</span>
     </div>
   )
 }

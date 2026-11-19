@@ -7,8 +7,7 @@ export const DEFAULT_SETTINGS: Settings = {
   grain: true,
   grainOpacity: 0.08,
   spaceSwitcherStyle: 'emoji',
-  metersPlacement: 'topbar',
-  sidebarAutoHide: false,
+  metersPlacement: 'contextbar',
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
 }

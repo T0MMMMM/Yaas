@@ -30,7 +30,7 @@ export function MiniPreview({ switcher }: { switcher: Settings['spaceSwitcherSty
         </div>
       </div>
       <div className={styles.column}>
-        <div className={styles.topbar} />
+        <div className={styles.contextbar} />
         <div className={styles.main}>
           <div className={styles.line} style={{ width: '70%' }} />
           <div className={styles.line} style={{ width: '45%' }} />

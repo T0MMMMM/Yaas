@@ -6,7 +6,7 @@ const sameDay = (a: Date, b: Date) =>
   a.getDate() === b.getDate()
 
 /**
- * Reset time of a usage window, as shown in the top bar (DESIGN.md §2):
+ * Reset time of a usage window, as shown in the context bar (DESIGN.md §2):
  * `{ clock: '17:30', left: '3h11' }` today, `{ clock: 'Fri. 14:00', left: '23h41' }` otherwise.
  */
 export function formatReset(resetsAt: Date, now: Date): { clock: string; left: string } {

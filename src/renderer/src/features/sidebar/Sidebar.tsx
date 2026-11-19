@@ -1,12 +1,4 @@
-import {
-  Folder,
-  FolderOpen,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plus,
-  Search,
-  Settings,
-} from 'lucide-react'
+import { Folder, FolderOpen, Plus, Search, Settings } from 'lucide-react'
 import { ContextMeter, UsageMeter } from '../meters/Meters'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
@@ -23,9 +15,8 @@ import styles from './Sidebar.module.css'
 /** Arc-style vertical sidebar (DESIGN.md §2). Static demo data, nothing is wired yet. */
 export function Sidebar() {
   const ui = useUi()
-  const { settings, update } = useSettings()
+  const settings = useSettings((s) => s.settings)
   const switcher = settings?.spaceSwitcherStyle ?? 'emoji'
-  const autoHide = settings?.sidebarAutoHide ?? false
   const metersInSidebar = settings?.metersPlacement === 'sidebar'
 
   const space = DEMO_SPACES.find((s) => s.id === ui.activeSpaceId) ?? DEMO_SPACES[0]
@@ -74,16 +65,7 @@ export function Sidebar() {
 
   return (
     <nav className={styles.sidebar} aria-label="Spaces and sessions" data-testid="sidebar">
-      <div className={`${styles.titlebar} drag`}>
-        <button
-          className={`${styles.iconButton} no-drag`}
-          onClick={() => void update({ sidebarAutoHide: !autoHide })}
-          title={autoHide ? 'Keep sidebar open (⌘S)' : 'Auto-hide sidebar (⌘S)'}
-          aria-label={autoHide ? 'Keep sidebar open' : 'Auto-hide sidebar'}
-        >
-          {autoHide ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-        </button>
-      </div>
+      <div className={`${styles.titlebar} drag`} />
 
       <button className={`${styles.search} no-drag`}>
         <Search size={14} />

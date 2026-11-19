@@ -6,40 +6,6 @@
   background: var(--bg-sidebar);
 }
 
-/* ---------- sidebar slot: fixed or auto-hide overlay ---------- */
-
-.sidebarSlot {
-  display: flex;
-  flex: none;
-}
-
-.shell[data-autohide='true'] .sidebarSlot {
-  position: absolute;
-  z-index: 10;
-  top: var(--space-2);
-  bottom: var(--space-2);
-  left: var(--space-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--sidebar-tint);
-  box-shadow: var(--shadow-raised);
-  transform: translateX(calc(-100% - var(--space-4)));
-  transition: transform var(--dur-base) var(--ease);
-}
-
-.shell[data-peek='true'] .sidebarSlot {
-  transform: none;
-}
-
-.hotzone {
-  position: absolute;
-  z-index: 9;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 8px;
-}
-
 /* ---------- right column: top bar + card ---------- */
 
 .column {
@@ -47,32 +13,23 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 var(--space-2) var(--space-2) 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
 }
 
-.shell[data-autohide='true'] .column {
-  padding-left: var(--space-2);
-}
-
-.topbar {
+.contextbar {
   height: 36px;
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin: var(--space-2) var(--titlebar-overlay-w) var(--space-2) 0;
+  margin: 0 var(--titlebar-overlay-w) var(--space-1) 0;
   padding: 0 var(--space-3) 0 var(--space-4);
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
 }
 
-/* Clear the macOS traffic lights when the sidebar is hidden. */
-:root[data-platform='mac'] .shell[data-autohide='true'] .topbar {
-  margin-left: 72px;
-}
-
-.topbarTitle {
+.contextbarTitle {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -82,7 +39,7 @@
   white-space: nowrap;
 }
 
-.topbarMeters {
+.contextbarMeters {
   display: flex;
   align-items: center;
   gap: var(--space-4);
