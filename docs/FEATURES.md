@@ -20,6 +20,26 @@ Technical feasibility of the risky items is tracked in
 | Data | Local only |
 | UI language | English only for now (i18n later) |
 | Distribution | Not now (no signing / auto-update in MVP) |
+| Scope | **Full interface**: everything is managed inside YAAS. The "companion to Claude Desktop" approach was considered and set aside for now (may be revisited) |
+| Providers | Claude Code only for now; the core is provider-agnostic so Codex & co. can be added later |
+| Token overhead | YAAS must cost (almost) no extra tokens compared to using Claude Code directly — see principles below |
+
+## Guiding principles
+
+**1. Near-zero token overhead.** If YAAS makes Claude more expensive to use, it has no reason to exist.
+- No hidden model calls: no background summaries, auto-titles, classification or "smart" features
+  that spend tokens without an explicit user action. Titles come from the first prompt (local).
+- No system prompt injected by YAAS by default. When YAAS must add something (e.g. the
+  `delegate_to_account` tool in Crew mode), it is short and only present when that feature is on.
+- Every token-spending action that YAAS initiates (handoff summary, Crew split, retries) is shown
+  with an estimate *before* it runs and requires a click.
+- Context profiles (below) should make sessions **cheaper** than a default Claude Code launch.
+- Measured, not assumed: a dev/CI check compares the token count of a YAAS session vs a plain
+  `claude -p` run on the same prompt; any regression is a bug.
+
+**2. Provider-agnostic core.** Accounts, sessions, handoff and Crew talk to a `Provider` interface;
+`ClaudeCodeProvider` is the only implementation for now. Nothing Claude-specific leaks into the
+renderer or the data model beyond a `provider` field.
 
 ## Pillar 1 — Sessions per account
 
@@ -30,11 +50,16 @@ Technical feasibility of the risky items is tracked in
 | **MVP** | Permission approval sheet (allow once / always for this project / deny) |
 | **MVP** | Tab status badge: running · needs approval · done · error · account limited |
 | **MVP** | Import existing sessions from the default `~/.claude` (S#4) |
-| **MVP** | Per-account context control: "clean" vs "inherit `~/.claude`" settings/MCP/skills (S#6) |
+| **MVP** | **Context profiles**: choose which skills, MCP servers, plugins and CLAUDE.md sources each session loads — a default per account, overridable per session (S#6) |
+| **MVP** | Estimated context size of the chosen profile shown before launching a session |
+| v1 | Saved, reusable profiles ("Web dev", "Writing", "Minimal") and quick toggles mid-session (applied on next turn/restart) |
 | v1 | Rich tool rendering: diffs, command output, images/attachments, slash commands |
 | v1 | Folder routing rules (`~/work/*` → Work, `~/perso/*` → Personal) |
 | v1 | Approvals inbox across all accounts + OS notifications |
+| v1 | Embedded terminal per session (node-pty) as an escape hatch for anything the chat view doesn't cover yet |
+| later | Desktop-parity panes: built-in browser, diff/review pane, dev-server preview, PR/CI status |
 | later | Split view, multiple windows |
+| later | Other providers (Codex CLI, …) via the `Provider` interface, with their own setup/onboarding |
 
 ## Pillar 2 — Session administration
 
