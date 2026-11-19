@@ -1,6 +1,7 @@
 # YAAS — architecture
 
-> Status: **draft for review** (step 3). Decisions marked *(ADR)* get their own record in `docs/adr/`.
+> Status: **accepted** (2026-11-19). Decisions marked *(ADR)* have their own record in [`adr/`](adr/).
+> UI details: [`DESIGN.md`](DESIGN.md).
 > Feature scope: [`FEATURES.md`](FEATURES.md). Spike evidence: [`spikes/2026-11-19-risk-validation.md`](spikes/2026-11-19-risk-validation.md) (S#n).
 
 ## 1. Stack *(ADR-0001)*
