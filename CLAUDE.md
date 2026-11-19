@@ -70,12 +70,14 @@ npm run dist:mac    # package (dist:win on Windows)
 
 ## Git workflow
 
-- `main` must always build and launch. Never push broken code to `main`.
+- `main` must always build and launch.
 - Small, self-contained changes (docs, config tweak, one-file fix) may go straight to `main`.
 - Anything bigger goes on a short-lived branch named `<type>/<short-kebab-desc>`
   (e.g. `feat/onboarding-screen`, `fix/ipc-timeout`), then merged into `main`.
 - Commit after each step the user has validated — don't pile unrelated work into one commit.
-- Never commit, push, force-push or rewrite history unless the user asked for it in this session.
+- **Claude never pushes** — not `git push`, not `gh` (PRs, releases), not even when asked to
+  "publish" or "sync". The user always pushes. Finish with the commits ready and say so.
+- Never commit, force-push or rewrite history unless the user asked for it in this session.
 - Never commit secrets, tokens, `.env` files, or any Claude config dir (`.claude*/`, account dirs).
 
 ## Commit messages — Conventional Commits
