@@ -180,6 +180,7 @@ erDiagram
     uuid id PK
     string path "project folder, unique"
     string name "defaults to folder name"
+    string icon "optional emoji / icon name"
   }
   SpaceEnvironment {
     uuid accountId FK
@@ -205,6 +206,7 @@ erDiagram
     uuid accountId FK
     string providerSessionId "changes on fork/handoff"
     string title
+    string icon "optional"
     string cwd
     uuid environmentId FK
     uuid profileId FK
@@ -284,7 +286,7 @@ An **environment** is a project folder. It is global (the same folder can host s
 several accounts, e.g. after a handoff); pinning, order and collapsed state are per space
 (`SpaceEnvironment`).
 
-App settings (theme tokens, switcher style, onboarding done, shortcuts) live in a small
+App settings (theme tokens, layout options, auto-archive, onboarding done, shortcuts) live in a small
 `settings` key/value table.
 
 **On disk**

@@ -16,44 +16,50 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────┐
-│ ● ● ●                   │  Fix login redirect        Work · Sonnet · ~/app │  ← drag region
-│ ┌─────────────────────┐ │ ─────────────────────────────────────────────────│
-│ │ ⌕ Search…        ⌘K │ │                                                  │
-│ └─────────────────────┘ │   you  The login page loops after OAuth…         │
-│ ┌──────────┐┌─────────┐ │                                                  │
-│ │ ✦ Release││ ✦ Infra │ │   claude  Looking at src/auth/callback.ts …      │  ← pinned sessions
-│ └──────────┘└─────────┘ │     ▸ Read src/auth/callback.ts                  │
-│ 📌 app             ▾    │     ▸ Edit  +12 −3                               │  ← pinned environment
-│    Fix login redirect ! │                                                  │
-│    Refactor billing   × │   ┌───────────────────────────────────────────┐  │
-│ ▸ website          2    │   │ Allow Bash: npm test ?                    │  │  ← collapsed environment
-│ ▾ infra-scripts         │   │ [Allow once ⏎] [Always for project ⌘⏎] [Deny]│ │
-│    Write tests        ✓ │   └───────────────────────────────────────────┘  │
-│ + New session      ⌘T   │                                                  │
-│                         │                                                  │
-│ ◔ Context 42k / 200k    │  ┌────────────────────────────────────────────┐  │  ← only in a session
-│ 5h ▬▬▬▬▬▭▭ 57%  7d 53%  │  │ Message Claude…                             │  │
-│        ●  ○  ○          │  │ ⚙ Minimal profile · Sonnet · ~/app      ⏎   │  │  ← space switcher
-└─────────────────────────┴──┴────────────────────────────────────────────┴──┘
-   sidebar 200–360 px (default 248), resizable, collapsible (⌘S)
+│ ● ● ●               [◧] │ Write tests · ~/work/scripts    ◔ 42k/200k · 5h 57% 7d 53% │ ← top bar (drag region)
+│ ┌─────────────────────┐ │ ┌──────────────────────────────────────────────┐ │
+│ │ ⌕ Search…        ⌘K │ │ │                                              │ │
+│ └─────────────────────┘ │ │  you  The login page loops after OAuth…      │ │
+│ 📂 app                  │ │                                              │ │ ← pinned environment
+│    Fix login redirect ! │ │  claude  Looking at src/auth/callback.ts …   │ │
+│    Refactor billing   × │ │    ▸ Read src/auth/callback.ts               │ │
+│ Release notes         ◐ │ │    ▸ Edit  +12 −3                            │ │ ← pinned session
+│ ─────────────────────── │ │                                              │ │ ← separator
+│ 📁 website          2   │ │  ┌────────────────────────────────────────┐  │ │ ← closed folder
+│ 📂 infra-scripts        │ │  │ Allow Bash: npm test ?                 │  │ │ ← open folder
+│    Write tests        ✓ │ │  │ [Allow once ⏎] [Always ⌘⏎] [Deny Esc]  │  │ │
+│ + New session      ⌘T   │ │  └────────────────────────────────────────┘  │ │
+│                         │ │  ┌────────────────────────────────────────┐  │ │
+│                         │ │  │ Message Claude…                     ⏎  │  │ │
+│ 💼 🏠              [⚙]  │ │  └────────────────────────────────────────┘  │ │
+└─────────────────────────┴─┴──────────────────────────────────────────────┴─┘
+  accounts (left)  settings      session content card
 ```
 
+**Top bar** — sits on the window frame, *above and separate from* the content card; it is the
+window drag region. Left: session title (editable inline) and environment path. Right: the
+**context indicator** (ring + "42k / 200k", `--warn` above 80 %, click → what the session loads)
+and the **account usage** (5 h session / 7 d week, reset time on hover). Both meters can be moved
+to the bottom of the sidebar instead (Settings → Layout → Meters). On Windows the right edge leaves
+room for the caption buttons.
+
 **Sidebar (top → bottom)**
-- Traffic lights (macOS, `titleBarStyle: 'hiddenInset'`, positioned inside the sidebar) / custom
-  window controls on the right edge of the main pane (Windows, `titleBarOverlay`).
+- Title row: traffic lights on the left (macOS, `titleBarStyle: 'hiddenInset'`), **auto-hide
+  toggle** on the right. In auto-hide mode the sidebar slides away and reappears as an overlay
+  when the pointer touches the left edge of the window; it hides again when the pointer leaves it.
 - Search / palette trigger.
-- **Pinned sessions** of the active space: compact tiles (Arc "favorites"), always on top.
-- **Environments**: sessions are grouped by environment (= the project folder a session runs in).
-  Pinned environments come first, then the others by last activity. Each group is collapsible and
-  shows its session count when collapsed. Pin/unpin an environment or a session from its context
-  menu or with `Mod+D`. Pins are per space.
+- **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
+  order. No pin icon — being above the separator *is* the pinned state.
+- Separator.
+- **Environments** (= project folders) as **folders** that open and close (folder / open-folder
+  icon; a closed folder shows its session count), sorted by last activity, each listing its
+  sessions. Pins are per space; pin/unpin from the context menu or `Mod+D`.
 - `+ New session` (in the active environment, or asks for a folder).
-- **Context indicator** — only while a session is open: ring + "42k / 200k" for the session's
-  context window; turns `--warn` above 80 %. Click → context details (profile, what is loaded).
-- Usage of the active account (5 h / 7 d, reset time on hover).
-- **Space switcher**, centered: one item per account, either **icons** (the account's emoji/icon)
-  or **dots** — a setting (Settings → Appearance → Space switcher). No `+` here: accounts are added
-  from Settings, the command palette or `Mod+Shift+N`. Two-finger swipe also switches spaces.
+- Bottom row: **accounts on the left** (switch spaces) and **Settings** on the right. Accounts are
+  shown as their **emoji**, their **first letter**, or **dots** (setting). No `+`: accounts are
+  added from Settings, the palette or `Mod+Shift+N`.
+- Optional (v1): a custom icon or emoji on an environment or a session replaces the default
+  folder / no icon.
 
 **Tab status glyphs**: `◐` running · `!` needs approval (accent, pulses once) · `✓` done (unread) ·
 `×` error · `⏸` account limited · none = idle/read.
@@ -148,13 +154,29 @@ included) until it's done. Three moments:
 | # | Screen | Content |
 |---|---|---|
 | 1 | **Intro** | The YAAS logo alone, centered. After ~1.2 s (or a click / `⏎`) the logo shrinks and glides to the top-left, and the visual setup fades in — the animation *leads* into screen 2 |
-| 2 | **Visual setup** | One page, live preview on the right (a mini sidebar that reflects every choice): accent color (presets + custom), appearance (light / dark / system), glass on/off, grain on/off + intensity, space switcher style (icons / dots) |
+| 2 | **Visual setup** | One page, live preview on the right (a mini sidebar that reflects every choice): accent color (presets + custom), appearance (light / dark / system), glass on/off, grain on/off + intensity, account switcher style (emoji / letter / dots) |
 | 3 | **Technical setup** | First account: **Import existing Claude Code** (`~/.claude`, shows plan/email from `auth status`) and/or **Sign in a new account** (browser); default context for new sessions (**Clean** / **Inherit `~/.claude`**); Claude Code CLI detection (path + version). `Open YAAS` finishes |
 
 `←` / `→` move between screens 2 and 3. `prefers-reduced-motion` replaces the intro animation by a
 short fade. All choices are editable later in Settings. Onboarding state is stored in `settings`.
 
-## 7. Keyboard shortcuts
+## 7. Settings
+
+Opened from the gear at the bottom right of the sidebar or `Mod+,`; shown in the content card.
+Not part of onboarding unless stated.
+
+| Section | Option | Values (default) |
+|---|---|---|
+| Appearance | Color, scheme, glass, grain + intensity | as in onboarding |
+| Layout | Account switcher | Emoji (default) · First letter · Dots |
+| Layout | Meters (context + usage) | Top bar (default) · Sidebar |
+| Layout | Auto-hide sidebar | Off (default) · On — same as the sidebar toggle |
+| Sessions | Auto-archive inactive sessions | Off (default) · after 1 / 3 / 7 / 14 / 30 days without activity |
+| Accounts | Add, rename, emoji, color, default context profile | — (later) |
+
+Auto-archive only archives (never deletes); pinned sessions are never auto-archived.
+
+## 8. Keyboard shortcuts
 
 `Mod` = ⌘ on macOS, Ctrl on Windows.
 
@@ -166,7 +188,7 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 | Reopen last closed | `Mod+Shift+T` |
 | Switch to space 1…9 | `Mod+1…9` |
 | Next / previous session | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Toggle sidebar | `Mod+S` |
+| Toggle sidebar auto-hide | `Mod+S` |
 | Search in session / all sessions | `Mod+F` / `Mod+Shift+F` |
 | Interrupt Claude | `Esc` (in composer) or `Mod+.` |
 | Approval: allow once / always for project / deny | `⏎` / `Mod+⏎` / `Esc` |
@@ -177,7 +199,7 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.
 
-## 8. Accessibility
+## 9. Accessibility
 
 - Body text contrast ≥ 4.5:1 in both schemes. Body text never sits on the accent; labels on the
   accent (buttons, badges — short and bold) use `--on-accent`: white when it reaches 3:1, else black.

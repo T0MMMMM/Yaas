@@ -46,9 +46,11 @@ renderer or the data model beyond a `provider` field.
 | Stage | Feature |
 |---|---|
 | **MVP** | Account = space (accent color + icon), session = tab in its space; each session bound to a project folder (its **environment**) |
-| **MVP** | Sidebar grouped by environment; pin environments and/or individual sessions (per space) |
-| **MVP** | Context indicator for the open session (context window used / limit) |
-| **MVP** | Space switcher style: icons or dots (setting) |
+| **MVP** | Sidebar grouped by environment folders (open/close); pin environments and/or individual sessions above the separator (per space) |
+| **MVP** | Top bar above the content card: session title + context indicator and account usage (or in the sidebar — setting) |
+| **MVP** | Auto-hide sidebar (shows when the pointer reaches the left edge) |
+| **MVP** | Account switcher at the bottom left: emoji, first letter or dots (setting); Settings button at the bottom right |
+| v1 | Custom icon/emoji on an environment or a session |
 | **MVP** | Chat view: streamed messages, collapsible tool calls, per-session model picker, Stop |
 | **MVP** | Permission approval sheet (allow once / always for this project / deny) |
 | **MVP** | Tab status badge: running · needs approval · done · error · account limited |
@@ -72,6 +74,7 @@ renderer or the data model beyond a `provider` field.
 | **MVP** | Command palette (Cmd/Ctrl+K), Cmd/Ctrl+T, Cmd/Ctrl+1..9 |
 | **MVP** | Account gauges (5 h / 7 d utilization + reset time) from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
 | v1 | Full-text search across transcripts (SQLite FTS5) |
+| v1 | Auto-archive sessions after X days without activity (setting; pinned sessions excluded, never deletes) |
 | v1 | Token/cost per session and per account (`result.usage`, `total_cost_usd`) |
 | v1 | Active quota polling for idle accounts (internal endpoint, feature-flagged) (S#2) |
 | v1 | Shared vs isolated settings per account (skills, MCP, global CLAUDE.md); export transcript to Markdown |
