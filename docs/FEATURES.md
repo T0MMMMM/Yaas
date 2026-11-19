@@ -45,7 +45,12 @@ renderer or the data model beyond a `provider` field.
 
 | Stage | Feature |
 |---|---|
-| **MVP** | Account = space (accent color + emoji), session = tab in its space; each session bound to a project folder |
+| **MVP** | Account = space (accent color + icon), session = tab in its space; each session bound to a project folder (its **environment**) |
+| **MVP** | Sidebar grouped by environment folders (open/close); pin environments and/or individual sessions above the separator (per space) |
+| **MVP** | Context bar above the content card, only in a session: title, context and account usage (or in the sidebar — setting) |
+| **MVP** | Settings dialog with left navigation (General, Appearance, Accounts, Sessions, Context profiles, Permissions, Handoff, Crew, Notifications, Shortcuts, Privacy, Advanced, About) — catalog in DESIGN.md §7 |
+| **MVP** | Account switcher at the bottom left: emoji, first letter or dots (setting); Settings button at the bottom right |
+| v1 | Custom icon/emoji on an environment or a session |
 | **MVP** | Chat view: streamed messages, collapsible tool calls, per-session model picker, Stop |
 | **MVP** | Permission approval sheet (allow once / always for this project / deny) |
 | **MVP** | Tab status badge: running · needs approval · done · error · account limited |
@@ -65,13 +70,15 @@ renderer or the data model beyond a `provider` field.
 
 | Stage | Feature |
 |---|---|
-| **MVP** | Create, rename, archive, delete, pin; search by title/folder |
+| **MVP** | Create, rename, archive, delete, pin (sessions and environments); search by title/folder |
 | **MVP** | Command palette (Cmd/Ctrl+K), Cmd/Ctrl+T, Cmd/Ctrl+1..9 |
-| **MVP** | Account gauges (5 h / 7 d utilization + reset time) from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
+| **MVP** | Account usage rings — Session (5 h) and Week (7 d): %, reset time and time left, from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
 | v1 | Full-text search across transcripts (SQLite FTS5) |
+| v1 | Auto-archive sessions after X days without activity (setting; pinned sessions excluded, never deletes) |
 | v1 | Token/cost per session and per account (`result.usage`, `total_cost_usd`) |
 | v1 | Active quota polling for idle accounts (internal endpoint, feature-flagged) (S#2) |
 | v1 | Shared vs isolated settings per account (skills, MCP, global CLAUDE.md); export transcript to Markdown |
+| later | Custom usage reset schedule per account and per weekday (overrides the reset times shown) |
 | later | Menu-bar/tray quota widget, tags, stats |
 
 ## Pillar 3 — Handoff (proposed)

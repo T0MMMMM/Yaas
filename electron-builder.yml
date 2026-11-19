@@ -1,0 +1,42 @@
+# Packaging — see docs/ARCHITECTURE.md §1. Unsigned for now (personal project).
+appId: dev.yaas.app
+productName: YAAS
+copyright: Copyright © 2026 YAAS contributors
+
+directories:
+  output: release/${version}
+  buildResources: build
+
+files:
+  - out/**
+  - package.json
+  - '!**/*.map'
+
+# Native modules (better-sqlite3, node-pty, the Agent SDK's CLI binary) must live outside the asar.
+asarUnpack:
+  - '**/*.node'
+  - 'node_modules/@anthropic-ai/claude-agent-sdk-*/**'
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.developer-tools
+  identity: null # no signing / notarization yet
+  darkModeSupport: true
+
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${productName}-Setup-${version}-${arch}.${ext}
+
+npmRebuild: true

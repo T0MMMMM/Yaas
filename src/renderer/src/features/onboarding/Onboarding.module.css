@@ -1,0 +1,215 @@
+/* Full-window onboarding page (DESIGN.md §6). The logo is one element that animates from the
+   center (intro) to the top-left (setup pages); the content fades in behind it. */
+
+.page {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-sidebar);
+}
+
+.titlebar {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--titlebar-h);
+}
+
+.logo {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 56px;
+  cursor: default;
+  transform: translate(-50%, -50%);
+  transition:
+    top 700ms var(--ease),
+    left 700ms var(--ease),
+    font-size 700ms var(--ease),
+    transform 700ms var(--ease);
+  animation: logo-in 600ms var(--ease) both;
+}
+
+.page[data-stage='intro'] .logo {
+  cursor: pointer;
+}
+
+.page:not([data-stage='intro']) .logo {
+  top: 12px;
+  left: var(--space-6);
+  font-size: 20px;
+  transform: none;
+}
+
+:root[data-platform='mac'] .page:not([data-stage='intro']) .logo {
+  left: 92px; /* clear the traffic lights */
+}
+
+.tagline {
+  position: absolute;
+  top: calc(50% + 52px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+  animation: fade-in 600ms 250ms var(--ease) both;
+  transition: opacity 300ms var(--ease);
+}
+
+.page:not([data-stage='intro']) .tagline {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.content {
+  position: absolute;
+  inset: var(--titlebar-h) 0 0;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.content > * {
+  animation: content-in 500ms 350ms var(--ease) both;
+}
+
+@keyframes logo-in {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes content-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* ---------- shared bits of the two setup pages ---------- */
+
+.setup {
+  width: min(880px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-8) var(--space-6);
+}
+
+.header h1 {
+  margin: 0 0 var(--space-1);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--space-8);
+  align-items: start;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.card {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-4);
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--bg-raised) 70%, transparent);
+}
+
+.card svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.card strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.card span {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.card:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.secondary {
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+.soon {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 860px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}

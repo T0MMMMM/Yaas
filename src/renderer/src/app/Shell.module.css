@@ -1,0 +1,136 @@
+.shell {
+  position: relative;
+  display: flex;
+  height: 100%;
+  /* Arc-style: the tinted frame wraps the sidebar, the top bar and the content card. */
+  background: var(--bg-sidebar);
+}
+
+/* ---------- right column: top bar + card ---------- */
+
+.sidebarSlot {
+  position: relative;
+  flex: none;
+  display: flex;
+}
+
+/* Drag handle on the sidebar's right edge (min/max width in the IPC contract). */
+.resizer {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 8px;
+  cursor: col-resize;
+  -webkit-app-region: no-drag;
+}
+
+.resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.resizer:hover::after,
+.shell[data-resizing='true'] .resizer::after {
+  background: var(--accent-soft);
+}
+
+.shell[data-resizing='true'] {
+  cursor: col-resize;
+  user-select: none;
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+}
+
+.contextbar {
+  height: 34px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: 0 var(--titlebar-overlay-w) var(--space-1) 0;
+  padding: 0 var(--space-4) 0 var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.contextbarTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.contextbarMeters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.meta {
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.empty {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: var(--space-2);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.emptyHint {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.emptyHint kbd {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  padding: 1px var(--space-1);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}

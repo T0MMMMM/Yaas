@@ -1,0 +1,29 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  font-size: inherit;
+}
+
+.mark {
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+}
+
+.back {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.front {
+  fill: var(--accent);
+  opacity: 0.92;
+}
+
+.wordmark {
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  color: var(--text);
+}

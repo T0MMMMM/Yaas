@@ -1,0 +1,66 @@
+.meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  animation: fade-in var(--dur-base) var(--ease);
+}
+
+.ring {
+  flex: none;
+}
+
+.ringTrack,
+.ringFill {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.ringTrack {
+  stroke: var(--border-strong);
+}
+
+.ringFill {
+  stroke: var(--accent);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.ring[data-warn='true'] .ringFill {
+  stroke: var(--warn);
+}
+
+.label {
+  color: var(--text-muted);
+}
+
+.value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.reset {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.usage[data-layout='stacked'] {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

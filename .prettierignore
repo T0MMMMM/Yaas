@@ -1,0 +1,9 @@
+out
+release
+coverage
+node_modules
+test-results
+playwright-report
+package-lock.json
+# docs are hand-formatted
+*.md
