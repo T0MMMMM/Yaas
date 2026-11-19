@@ -16,7 +16,7 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────┐
-│ ● ● ●                   │ ╭ Write tests · ~/scripts  ◔ 42k/200k Context  ◔ Session 45% 17:30 (3h11)  ◔ Week 61% Fri. 14:00 (23h41) ╮ │ ← context bar (only in a session)
+│ ● ● ●                   │ ╭ Write tests · ~/scripts  ◔ Context 21% 42k/200k  ◔ Session 45% 17:30 (3h11)  ◔ Week 61% Fri. 14:00 (23h41) ╮ │ ← context bar (only in a session)
 │ ┌─────────────────────┐ │ ┌──────────────────────────────────────────────┐ │
 │ │ ⌕ Search…        ⌘K │ │ │                                              │ │
 │ └─────────────────────┘ │ │  you  The login page loops after OAuth…      │ │
@@ -39,7 +39,7 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 **Context bar** — its **own card** above the content card (same surface, radius and border), shown
 **only while a session is open**, 44 px high; 4 px gap to the content card. It is also the window drag region.
 Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
-- **Context** of the open session: `◔ 42k / 200k Context` (`--warn` above 80 %; click → what the
+- **Context** of the open session: `◔ Context 21% 42k / 200k` (`--warn` above 80 %; click → what the
   session loads).
 - **Account usage**, with reset time and time left: `◔ Session 45% 17:30 (3h11)` (5-hour window)
   and `◔ Week 61% Fri. 14:00 (23h41)` (7-day window). Same day → time only; otherwise short
@@ -58,6 +58,7 @@ caption buttons.
 - **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
   order. No pin icon — being above the separator *is* the pinned state.
 - Separator.
+- The selected session sits slightly askew (−0.8°) and settles with a small bounce.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
 - **Resizable**: drag its right edge (200–440 px, default 248, saved in settings); double-click the

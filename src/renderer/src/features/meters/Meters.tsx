@@ -39,10 +39,11 @@ export function ContextMeter({ tokens }: { tokens: number }) {
       title={`Context window: ${tokens.toLocaleString()} / ${CONTEXT_LIMIT.toLocaleString()} tokens`}
     >
       <Ring ratio={ratio} warn={ratio > 0.8} />
-      <span className={styles.value}>
+      <span className={styles.label}>Context</span>
+      <span className={styles.value}>{pct(ratio)}</span>
+      <span className={styles.reset}>
         {k(tokens)} / {k(CONTEXT_LIMIT)}
       </span>
-      <span className={styles.label}>Context</span>
     </div>
   )
 }

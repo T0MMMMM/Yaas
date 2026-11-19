@@ -111,7 +111,9 @@ kbd {
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-base) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .row[data-nested='true'] {
@@ -126,6 +128,8 @@ kbd {
 .row[data-active='true'] {
   background: var(--neutral-surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  /* The selected card sits slightly askew, with a small bounce. */
+  transform: rotate(-0.8deg);
 }
 
 .folderIcon {
