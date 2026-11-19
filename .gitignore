@@ -1,0 +1,30 @@
+# deps & builds
+node_modules/
+out/
+dist/
+release/
+*.tsbuildinfo
+
+# tests
+coverage/
+test-results/
+playwright-report/
+
+# env & secrets — never commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+
+# local Claude config dirs used during dev (accounts, credentials, transcripts)
+.claude-accounts/
+.yaas-dev/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.log
