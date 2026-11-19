@@ -1,0 +1,379 @@
+# YAAS — architecture
+
+> Status: **draft for review** (step 3). Decisions marked *(ADR)* get their own record in `docs/adr/`.
+> Feature scope: [`FEATURES.md`](FEATURES.md). Spike evidence: [`spikes/2026-11-19-risk-validation.md`](spikes/2026-11-19-risk-validation.md) (S#n).
+
+## 1. Stack *(ADR-0001)*
+
+| Concern | Choice | Why |
+|---|---|---|
+| Shell | **Electron** | The Agent SDK is Node; native vibrancy (macOS) and Mica/Acrylic (Win 11); one codebase. Tauri was rejected: Rust shell + Node sidecar for the SDK = two runtimes for no gain |
+| Build | **electron-vite** (Vite for main, preload and renderer) | One config, HMR in the renderer, fast main rebuilds |
+| Language | TypeScript `strict` everywhere | — |
+| UI | React 19 + **Zustand** (state) + CSS Modules + CSS variables (design tokens) | Small, fast; tokens map 1:1 to the theme settings. No Tailwind: the look relies on tokens, glass and grain, not utility classes |
+| Lists | `@tanstack/react-virtual` | Long transcripts and session lists |
+| Claude | `@anthropic-ai/claude-agent-sdk` (spawns the Claude Code CLI) | Streaming, `canUseTool`, `resume`/`forkSession`, in-process MCP (S#7) |
+| Storage | **SQLite** via `better-sqlite3` + FTS5, hand-written migrations | Synchronous, fast, battle-tested in Electron; full-text search for free |
+| Validation | `zod` on every IPC payload entering main | The renderer is untrusted |
+| Terminal (v1) | `node-pty` + `xterm.js` | Escape hatch only |
+| Packaging | electron-builder → `dmg` (mac), `nsis` (win) | As required; SDK native binary `asarUnpack`ed (S#7) |
+| Tests | Vitest (unit/contract), Playwright `_electron` (e2e) | — |
+
+## 2. Processes
+
+```mermaid
+flowchart LR
+  subgraph Electron
+    R["Renderer (React)<br/>sidebar · tabs · chat · onboarding<br/><i>sandboxed, no Node</i>"]
+    P["Preload<br/>contextBridge → window.yaas"]
+    M["Main process<br/>windows · IPC router · OS integration<br/>+ core (domain)"]
+  end
+  DB[("SQLite<br/>userData/yaas.db")]
+  KC[["OS keychain<br/>(managed by Claude CLI)"]]
+  subgraph Children["Claude Code child processes (1 per live session)"]
+    C1["claude · account A<br/>CLAUDE_CONFIG_DIR=…/accounts/A"]
+    C2["claude · account B<br/>CLAUDE_CONFIG_DIR=…/accounts/B"]
+    C3["claude · Crew delegate (B)<br/>cwd = git worktree"]
+  end
+  FS[("Config dirs<br/>transcripts *.jsonl")]
+  API(("Anthropic API"))
+
+  R <-- "typed IPC<br/>invoke / events" --> P <--> M
+  M --- DB
+  M -- "Agent SDK<br/>stdin/stdout stream-json" --> C1 & C2 & C3
+  C1 & C2 & C3 --- FS
+  C1 & C2 & C3 --- KC
+  C1 & C2 & C3 --> API
+```
+
+- **Renderer**: `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`. Talks only to `window.yaas`.
+- **Main**: hosts the Electron shell *and* the domain core. The core never imports `electron`
+  (rule enforced by ESLint), so it can move to a `utilityProcess` later if streaming ever makes the
+  main process janky — without touching domain code.
+- **Children**: one Claude Code process per *live* session, started by the Agent SDK in streaming-input
+  mode (the process survives across turns). Idle sessions are closed after 10 min and transparently
+  resumed (`resume`) on the next message. Credentials never pass through YAAS: each child reads its
+  own keychain entry, keyed by its config dir (S#1).
+
+## 3. Source layout
+
+Adapted from the indicative tree: the domain moves out of `main/` into `core/` so it stays
+Electron-free and testable with a fake provider.
+
+```
+src/
+  main/                    # Electron shell only
+    index.ts               # app lifecycle, single-instance lock
+    windows/               # BrowserWindow creation, vibrancy/mica, traffic lights
+    ipc/                   # handlers: zod-validate → call core → return; event fan-out
+    os/                    # notifications, dock/taskbar badge, menus, shortcuts
+    secrets.ts             # safeStorage wrapper (Windows token fallback, S#8)
+  core/                    # domain — NO electron imports
+    accounts/              # Account CRUD, config dir creation, auth login/status
+    profiles/              # Context profiles → provider launch options, context-size estimate
+    sessions/              # lifecycle, live-session registry, idle reaper, import
+    permissions/           # pending requests, rules (once / always-for-project / deny)
+    usage/                 # UsageSnapshot from rate-limit events
+    handoff/               # full + hybrid handoff, transcript sanitizer
+    crew/                  # delegate tool (in-process MCP), manual runs, worktrees
+    providers/
+      provider.ts          # Provider interface + normalized events
+      claude-code/         # Agent SDK adapter, transcript reader, path encoding
+      fake/                # deterministic provider for tests & e2e (0 tokens)
+    store/                 # SQLite, migrations, repositories, FTS index
+    events.ts              # typed in-process event bus (core → ipc)
+  preload/
+    index.ts               # exposes window.yaas (invoke/on), nothing else
+  renderer/
+    app/                   # routes: onboarding, main layout
+    features/              # sidebar, tabs, chat, approvals, palette, settings, crew
+    theme/                 # tokens.css, grain overlay, glass, ThemeProvider
+    stores/                # Zustand slices fed by IPC events
+  shared/
+    ipc.ts                 # THE contract: channels, payload & result types, zod schemas
+    model.ts               # domain types shared with the renderer
+docs/  scripts/  tests/e2e/
+```
+
+## 4. Provider abstraction
+
+Everything provider-specific sits behind one interface; only `ClaudeCodeProvider` exists for now.
+
+```ts
+interface Provider {
+  readonly id: 'claude-code' // | 'codex' later
+  auth: {
+    login(account: Account): Promise<void>          // opens the browser flow
+    status(account: Account): Promise<AuthStatus>   // email, org, plan
+  }
+  discoverSessions(account: Account): AsyncIterable<DiscoveredSession> // import
+  readTranscript(account: Account, ref: ProviderSessionRef): AsyncIterable<TranscriptEntry>
+  open(opts: OpenSessionOptions): LiveSession       // new or resume (+ fork)
+  copyTranscript(from: Account, to: Account, ref: ProviderSessionRef,
+                 opts: { sanitize: boolean }): Promise<ProviderSessionRef> // handoff
+}
+
+interface LiveSession {
+  send(input: UserInput): void
+  interrupt(): Promise<void>
+  close(): Promise<void>
+  events: AsyncIterable<ProviderEvent>
+}
+
+type ProviderEvent =
+  | { kind: 'init'; providerSessionId: string; model: string; tools: string[] }
+  | { kind: 'text-delta' | 'thinking-delta'; messageId: string; text: string }
+  | { kind: 'message'; entry: TranscriptEntry }            // complete assistant/user message
+  | { kind: 'tool-use'; id: string; name: string; input: unknown }
+  | { kind: 'tool-result'; toolUseId: string; output: unknown; isError: boolean }
+  | { kind: 'permission-request'; requestId: string; tool: string; input: unknown }
+  | { kind: 'rate-limit'; status: 'allowed' | 'warning' | 'rejected'; windows: UsageWindow[]; resetsAt?: number }
+  | { kind: 'turn-end'; usage: TokenUsage; costUsd: number; stopReason: string }
+  | { kind: 'error'; code: 'rate_limited' | 'auth' | 'prompt_too_long' | 'invalid_thinking_signature' | 'other'; message: string }
+```
+
+`ClaudeCodeProvider` maps profiles to SDK options: `env.CLAUDE_CONFIG_DIR` (omitted for the
+imported default account, so the CLI keeps using its original keychain entry), `settingSources`,
+`mcpServers` + `strictMcpConfig`, allowed skills/plugins, `model`, `canUseTool`, `resume`, `forkSession`.
+
+## 5. Data model
+
+**Source of truth for conversations = the provider's transcript files.** SQLite holds metadata,
+links between sessions, usage, permissions and a search index — never a second copy of the
+conversation. This avoids drift with the CLI and keeps imports free.
+
+```mermaid
+erDiagram
+  Account ||--o{ Session : owns
+  Account ||--o{ UsageSnapshot : reports
+  Account }o--|| ContextProfile : "default profile"
+  ContextProfile ||--o{ Session : "launched with"
+  Session ||--o{ PermissionRequest : raises
+  Session ||--o{ SearchEntry : "indexed as"
+  Session ||--o| Handoff : "from"
+  Session ||--o| Handoff : "to"
+  Session ||--o{ Delegation : "leads"
+  Delegation ||--|| Session : "child"
+  CrewRun ||--o{ Delegation : groups
+  PermissionRule }o--|| Account : "scoped to"
+
+  Account {
+    uuid id PK
+    string provider "claude-code"
+    string label
+    string emoji
+    string color
+    string configDir "null = default ~/.claude"
+    string authMethod
+    string email
+    string orgName
+    string plan
+    uuid defaultProfileId FK
+    int position
+    datetime archivedAt
+  }
+  ContextProfile {
+    uuid id PK
+    uuid accountId "null = global"
+    string name
+    json settingSources
+    json mcpServers "enabled names"
+    json skills "allow-list"
+    json plugins
+    bool loadClaudeMd
+    string model
+    string permissionMode
+  }
+  Session {
+    uuid id PK "stable YAAS id"
+    uuid accountId FK
+    string providerSessionId "changes on fork/handoff"
+    string title
+    string cwd
+    uuid profileId FK
+    string model
+    string status "idle|running|needs-approval|done|error|limited"
+    string origin "created|imported|handoff|crew"
+    uuid parentSessionId
+    string worktreePath
+    bool pinned
+    datetime archivedAt
+    datetime lastActivityAt
+  }
+  SearchEntry {
+    uuid sessionId FK
+    string entryUuid
+    string role
+    text text "FTS5"
+    datetime ts
+  }
+  PermissionRequest {
+    uuid id PK
+    uuid sessionId FK
+    string tool
+    json input
+    string decision "pending|allow|deny"
+    string scope "once|project|account"
+    datetime createdAt
+  }
+  PermissionRule {
+    uuid id PK
+    uuid accountId FK
+    string projectPath "null = whole account"
+    string toolPattern
+    string decision
+  }
+  UsageSnapshot {
+    uuid accountId FK
+    string window "five_hour|seven_day|…"
+    float utilization
+    datetime resetsAt
+    string status
+    datetime observedAt
+  }
+  Handoff {
+    uuid id PK
+    uuid fromSessionId FK
+    uuid toSessionId FK
+    string mode "full|hybrid"
+    string reason "rate_limited|manual"
+    bool sanitized
+    int estimatedTokens
+    string status
+    datetime createdAt
+  }
+  CrewRun {
+    uuid id PK
+    uuid leadSessionId FK
+    text prompt
+    string status
+  }
+  Delegation {
+    uuid id PK
+    uuid crewRunId FK "null if tool-triggered"
+    uuid leadSessionId FK
+    uuid childSessionId FK
+    uuid targetAccountId FK
+    text task
+    string trigger "tool|manual"
+    string worktreePath
+    string branch
+    text resultSummary
+    string status
+  }
+```
+
+App settings (theme tokens, onboarding done, shortcuts) live in a small `settings` key/value table.
+
+**On disk**
+
+```
+<userData>/
+  yaas.db
+  accounts/<accountId>/        # CLAUDE_CONFIG_DIR of each YAAS-created account — never moved (S#1)
+~/.claude/                     # imported "Default" account, read in place, never moved
+<repo>/.yaas-worktrees/<id>/   # Crew worktrees (git-ignored)
+```
+
+## 6. IPC contract
+
+One file, `src/shared/ipc.ts`, defines every channel. Two kinds:
+
+- **Commands** (renderer → main, request/response): `accounts.list`, `accounts.add`, `sessions.create`,
+  `sessions.send`, `sessions.interrupt`, `permissions.respond`, `handoff.propose`, `handoff.run`,
+  `crew.start`, `settings.update`, …
+- **Events** (main → renderer, push): `session.event`, `session.status`, `permission.requested`,
+  `usage.updated`, `handoff.suggested`, …
+
+```ts
+// shared/ipc.ts (shape)
+export const commands = {
+  'sessions.send': { input: z.object({ sessionId: z.string().uuid(), text: z.string().min(1) }), output: z.void() },
+  // …
+} satisfies Record<string, { input: ZodType; output: ZodType }>
+
+// renderer
+await window.yaas.invoke('sessions.send', { sessionId, text })
+const off = window.yaas.on('session.event', (e) => …)
+```
+
+The preload exposes only `invoke(channel, payload)` and `on(event, cb)`, with the channel name typed
+as `keyof typeof commands`; main rejects unknown channels and invalid payloads. Streaming deltas are
+**batched per ~16 ms** before crossing IPC to avoid flooding the renderer.
+
+## 7. Key flows
+
+### 7.1 Send a message (with a permission request)
+
+```mermaid
+sequenceDiagram
+  participant UI as Renderer
+  participant M as Main / core
+  participant C as claude (account A)
+  UI->>M: invoke sessions.send
+  M->>M: live session? else open (resume) with profile → SDK options
+  M->>C: user message (stream-json stdin)
+  C-->>M: text deltas, tool_use…
+  M-->>UI: session.event (batched)
+  C->>M: canUseTool(Bash, {cmd})
+  M->>M: matching PermissionRule? → auto answer
+  M-->>UI: permission.requested (+ OS notification if unfocused)
+  UI->>M: invoke permissions.respond(allow, scope=project)
+  M->>C: allow
+  C-->>M: tool_result, rate_limit_event, result
+  M->>M: UsageSnapshot, SearchEntry, status=done
+  M-->>UI: usage.updated, session.status
+```
+
+### 7.2 Handoff *(ADR-0003)*
+
+| Option | + | − |
+|---|---|---|
+| **Full transcript** (copy JSONL → target, `resume` + `forkSession`) | Zero context loss; no extra model call; source untouched | First turn re-reads everything without cache (cost spike); may hit `invalid_thinking_signature` |
+| **Compact summary** (new session seeded with a summary) | Cheap ongoing turns | Loses detail; the summary must be produced by the *target* (source is exhausted) |
+| **Hybrid** (summary + last N turns + todo + `git status`) | Good balance for long sessions | Most complex; one summarisation call |
+
+Decision: **full transcript in MVP**, hybrid in v1. Flow:
+`rate-limit warning|rejected` → `handoff.suggested` banner (target suggested by lowest utilization)
+→ user confirms, sees estimated tokens → `copyTranscript` (sanitize on retry) → new Session
+(`origin=handoff`, `parentSessionId`) on target → tab replaces the old one, chain visible in UI.
+
+### 7.3 Crew *(ADR-0004)*
+
+| Mechanism | + | − / limits |
+|---|---|---|
+| **A. In-process MCP tool** `delegate_to_account` (`createSdkMcpServer`) injected into the lead | Lead can propose delegation itself; approval comes for free through `canUseTool`; no port, no auth | Only for sessions launched by YAAS; a long child run blocks the lead's tool call → use `delegate` (returns a ticket) + `await_delegations` |
+| **B. Local MCP server over HTTP** (localhost + token) | Usable from any Claude Code (terminal, Desktop) | Port/auth/security handling; only useful if YAAS becomes a companion |
+| **C. Manual Crew** (YAAS spawns children directly) | Deterministic, user in control, no extra tool tokens in the lead | Lead doesn't drive; a final aggregation turn is needed |
+| **D. Native subagents (Task tool)** | Built-in | ❌ Always the parent's account — not viable |
+
+Decision: **A + C in v1**, B later if ever. The tool is registered only while Crew is enabled on the
+session (token principle). Each child runs in its own git worktree/branch, with its own profile;
+results come back to the lead as a short summary + branch name, never the full child transcript.
+
+## 8. Token overhead guardrails
+
+- The core has **no code path that calls a model** except: user messages, user-confirmed handoff
+  summary (hybrid), user-confirmed Crew split. Enforced by review + a test that runs the full app
+  flow on the fake provider and asserts zero unexpected `open/send` calls.
+- `scripts/token-overhead.ts` (opt-in, real account): same prompt via YAAS core vs plain `claude -p`,
+  compares `turn-end.usage`; must stay within a small tolerance.
+
+## 9. Security
+
+- Renderer sandboxed; strict CSP; no remote content; `will-navigate`/`window.open` blocked;
+  links open in the default browser.
+- No YAAS-held secrets on macOS (the CLI owns its keychain entries). On Windows, if S#8 confirms a
+  plaintext file, use `setup-token` and keep the token in `safeStorage`, injected as
+  `CLAUDE_CODE_OAUTH_TOKEN`.
+- Permission rules are explicit and visible; "allow for account" requires a second confirmation.
+
+## 10. Testing
+
+| Level | Tool | Notes |
+|---|---|---|
+| Core unit | Vitest | Against `FakeProvider` — 0 tokens |
+| Contract | Vitest | Real transcript fixtures (anonymised) → reader/sanitizer; CLI event fixtures → normalizer |
+| IPC | Vitest | Every command schema rejects bad payloads |
+| E2E | Playwright `_electron` | App launched with `YAAS_PROVIDER=fake`, temp userData |
+| Real-account spikes | scripts | Opt-in, never in CI |
