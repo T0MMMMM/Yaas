@@ -14,38 +14,37 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  padding: 18px 4px 4px;
+  padding: 18px 4px 2px;
 }
 
 .search,
-.tab,
-.group,
-.tiles span {
+.tab {
   height: 10px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--neutral-surface) 55%, transparent);
 }
 
-.tiles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
-.tiles span {
-  height: 18px;
-}
-
 .group {
   width: 50%;
   height: 6px;
-  margin-top: 4px;
+  margin-top: 3px;
+  border-radius: 3px;
   background: var(--text-faint);
   opacity: 0.5;
 }
 
+.tab {
+  margin-left: 8px;
+}
+
 .tab[data-active='true'] {
   background: var(--neutral-surface);
+}
+
+.rule {
+  height: 1px;
+  margin: 2px 0;
+  background: var(--border-strong);
 }
 
 .spacer {
@@ -54,25 +53,43 @@
 
 .switcher {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--text-faint);
 }
 
+.switcher span {
+  opacity: 0.55;
+}
+
 .switcher [data-active='true'] {
+  opacity: 1;
   color: var(--accent);
 }
 
 .switcher i {
+  display: block;
   width: 5px;
   height: 5px;
   border-radius: var(--radius-pill);
-  background: var(--text-faint);
+  background: currentColor;
 }
 
-.switcher i[data-active='true'] {
-  background: var(--accent);
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.topbar {
+  height: 10px;
+  width: 40%;
+  margin: 4px 0 0 2px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text-faint) 50%, transparent);
 }
 
 .main {
@@ -80,7 +97,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 18px 12px;
+  padding: 12px;
   border-radius: var(--radius-md);
   background: var(--neutral-surface);
 }

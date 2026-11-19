@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowLeft, Download, LogIn, TerminalSquare } from 'lucide-react'
 import { useSettings } from '../../stores/settings'
 import { Segmented } from '../../ui/Segmented'
+import fields from '../settings/Fields.module.css'
 import styles from './Onboarding.module.css'
 
 /**
@@ -19,9 +20,9 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
         <p>Each account becomes a space. You can add more later.</p>
       </header>
 
-      <div className={styles.fields}>
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>First account</span>
+      <div className={fields.fields}>
+        <div className={fields.field}>
+          <span className={fields.label}>First account</span>
           <div className={styles.cards}>
             <button className={styles.card} disabled>
               <Download size={20} />
@@ -41,8 +42,8 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
           <p className={styles.soon}>Not wired yet — you can continue without an account.</p>
         </div>
 
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Default context for new sessions</span>
+        <div className={fields.field}>
+          <span className={fields.label}>Default context for new sessions</span>
           <Segmented
             label="Default context"
             value={context}
@@ -52,14 +53,14 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
             ]}
             onChange={setContext}
           />
-          <p className={styles.fieldHint}>
+          <p className={fields.hint}>
             Clean loads only what you pick per session — fewer tokens. Inherit loads all your global
             skills, plugins and MCP servers.
           </p>
         </div>
 
-        <div className={styles.field}>
-          <span className={styles.fieldLabel}>Claude Code CLI</span>
+        <div className={fields.field}>
+          <span className={fields.label}>Claude Code CLI</span>
           <span className={styles.status}>
             <TerminalSquare size={16} /> Not checked yet
           </span>

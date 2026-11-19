@@ -15,6 +15,8 @@ describe('IPC contract', () => {
     expect(input.safeParse({ grainOpacity: 0.9 }).success).toBe(false)
     expect(input.safeParse({ spaceSwitcherStyle: 'dots' }).success).toBe(true)
     expect(input.safeParse({ spaceSwitcherStyle: 'bars' }).success).toBe(false)
+    expect(input.safeParse({ autoArchive: { enabled: true, afterDays: 7 } }).success).toBe(true)
+    expect(input.safeParse({ autoArchive: { enabled: true, afterDays: 0 } }).success).toBe(false)
     expect(input.safeParse({ nodeIntegration: true }).success).toBe(false)
   })
 })

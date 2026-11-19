@@ -1,41 +1,63 @@
+import { useEffect, useState } from 'react'
+import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
-import { DEMO_SPACES } from '../features/sidebar/demoData'
+import { findSession } from '../features/sidebar/demoData'
+import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
+import { TopBar } from './TopBar'
 import styles from './Shell.module.css'
 
-/** Main layout: sidebar + session pane (DESIGN.md §2). No session logic yet. */
+/** Main layout: sidebar (fixed or auto-hide) + top bar + content card (DESIGN.md §2). */
 export function Shell() {
-  const activeSessionId = useUi((s) => s.activeSessionId)
-  const environment = DEMO_SPACES.flatMap((s) => s.environments).find((e) =>
-    e.sessions.some((s) => s.id === activeSessionId),
-  )
-  const session = environment?.sessions.find((s) => s.id === activeSessionId)
+  const { activeSessionId, view } = useUi()
+  const { settings, update } = useSettings()
+  const autoHide = settings?.sidebarAutoHide ?? false
+  const [peek, setPeek] = useState(false)
+  const found = findSession(activeSessionId)
+
+  // Mod+S toggles auto-hide.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault()
+        setPeek(false)
+        void update({ sidebarAutoHide: !autoHide })
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [autoHide, update])
 
   return (
-    <div className={styles.shell}>
-      <Sidebar />
-      <main className={styles.main}>
-        <header className={`${styles.header} drag`}>
-          {session && environment && (
-            <>
-              <span className={styles.title}>{session.title}</span>
-              <span className={styles.meta}>{environment.path}</span>
-            </>
-          )}
-        </header>
-        <section className={styles.empty} data-testid="empty-state">
-          {session ? (
-            <p className={styles.emptyHint}>The session view is not wired yet.</p>
+    <div className={styles.shell} data-autohide={autoHide} data-peek={autoHide && peek}>
+      {autoHide && (
+        <div className={styles.hotzone} onMouseEnter={() => setPeek(true)} aria-hidden />
+      )}
+      <div className={styles.sidebarSlot} onMouseLeave={() => setPeek(false)}>
+        <Sidebar />
+      </div>
+
+      <div className={styles.column}>
+        <TopBar />
+        <main className={styles.card}>
+          {view === 'settings' ? (
+            <SettingsView />
           ) : (
-            <>
-              <p className={styles.emptyTitle}>No session open</p>
-              <p className={styles.emptyHint}>
-                Press <kbd>⌘T</kbd> to start a session.
-              </p>
-            </>
+            <section className={styles.empty} data-testid="empty-state">
+              {found ? (
+                <p className={styles.emptyHint}>The session view is not wired yet.</p>
+              ) : (
+                <>
+                  <p className={styles.emptyTitle}>No session open</p>
+                  <p className={styles.emptyHint}>
+                    Press <kbd>⌘T</kbd> to start a session.
+                  </p>
+                </>
+              )}
+            </section>
           )}
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
   )
 }

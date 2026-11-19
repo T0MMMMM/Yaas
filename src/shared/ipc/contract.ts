@@ -12,8 +12,17 @@ export const settingsSchema = z.object({
   grain: z.boolean(),
   /** 0..0.2 — see docs/DESIGN.md §3.2 */
   grainOpacity: z.number().min(0).max(0.2),
-  /** Sidebar space switcher: account icons or plain dots (DESIGN.md §2). */
-  spaceSwitcherStyle: z.enum(['icons', 'dots']),
+  /** Account switcher at the bottom of the sidebar (DESIGN.md §2, §7). */
+  spaceSwitcherStyle: z.enum(['emoji', 'letter', 'dots']),
+  /** Where the context indicator and account usage live. */
+  metersPlacement: z.enum(['topbar', 'sidebar']),
+  /** Sidebar slides away and shows when the pointer touches the left edge. */
+  sidebarAutoHide: z.boolean(),
+  /** Archive sessions inactive for N days (never deletes; pinned sessions excluded). */
+  autoArchive: z.object({
+    enabled: z.boolean(),
+    afterDays: z.number().int().min(1).max(365),
+  }),
   onboardingDone: z.boolean(),
 })
 export type Settings = z.infer<typeof settingsSchema>

@@ -6,7 +6,10 @@ export const DEFAULT_SETTINGS: Settings = {
   glass: true,
   grain: true,
   grainOpacity: 0.08,
-  spaceSwitcherStyle: 'icons',
+  spaceSwitcherStyle: 'emoji',
+  metersPlacement: 'topbar',
+  sidebarAutoHide: false,
+  autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
 }
 

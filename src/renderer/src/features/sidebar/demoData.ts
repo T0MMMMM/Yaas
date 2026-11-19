@@ -1,5 +1,4 @@
 // Placeholder content so the skeleton shows the layout. Replaced by real accounts/sessions later.
-import { Briefcase, House, type LucideIcon } from 'lucide-react'
 import type { SessionStatus } from '@shared/model'
 
 export interface DemoSession {
@@ -22,7 +21,7 @@ export interface DemoEnvironment {
 export interface DemoSpace {
   id: string
   label: string
-  icon: LucideIcon
+  emoji: string
   environments: DemoEnvironment[]
   usage: { fiveHour: number; sevenDay: number }
 }
@@ -33,7 +32,7 @@ export const DEMO_SPACES: DemoSpace[] = [
   {
     id: 'work',
     label: 'Work',
-    icon: Briefcase,
+    emoji: '💼',
     usage: { fiveHour: 0.57, sevenDay: 0.53 },
     environments: [
       {
@@ -42,13 +41,6 @@ export const DEMO_SPACES: DemoSpace[] = [
         path: '~/work/app',
         pinned: true,
         sessions: [
-          {
-            id: 'w1',
-            title: 'Release notes',
-            status: 'running',
-            pinned: true,
-            contextTokens: 38_400,
-          },
           {
             id: 'w3',
             title: 'Fix login redirect',
@@ -64,7 +56,14 @@ export const DEMO_SPACES: DemoSpace[] = [
         path: '~/work/website',
         pinned: false,
         sessions: [
-          { id: 'w2', title: 'Infra', status: 'done', pinned: true, contextTokens: 12_000 },
+          {
+            id: 'w1',
+            title: 'Release notes',
+            status: 'running',
+            pinned: true,
+            contextTokens: 38_400,
+          },
+          { id: 'w2', title: 'Infra', status: 'done', contextTokens: 12_000 },
           { id: 'w6', title: 'Landing copy', status: 'idle', contextTokens: 8_300 },
         ],
       },
@@ -80,7 +79,7 @@ export const DEMO_SPACES: DemoSpace[] = [
   {
     id: 'personal',
     label: 'Personal',
-    icon: House,
+    emoji: '🏠',
     usage: { fiveHour: 0.12, sevenDay: 0.31 },
     environments: [
       {
@@ -93,3 +92,13 @@ export const DEMO_SPACES: DemoSpace[] = [
     ],
   },
 ]
+
+export function findSession(sessionId: string | null) {
+  for (const space of DEMO_SPACES) {
+    for (const environment of space.environments) {
+      const session = environment.sessions.find((s) => s.id === sessionId)
+      if (session) return { space, environment, session }
+    }
+  }
+  return null
+}

@@ -31,7 +31,21 @@ test('first launch shows onboarding, then the sidebar', async () => {
     // Context indicator only while a session is open.
     await expect(page.getByTestId('context-indicator')).toHaveCount(0)
     await page.getByRole('button', { name: 'Fix login redirect' }).click()
-    await expect(page.getByTestId('context-indicator')).toBeVisible()
+    await expect(page.getByTestId('topbar').getByTestId('context-indicator')).toBeVisible()
+
+    // Settings: move the meters to the sidebar.
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(page.getByTestId('settings')).toBeVisible()
+    await page.getByRole('radio', { name: 'Sidebar' }).click()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('sidebar').getByTestId('context-indicator')).toBeVisible()
+    await expect(page.getByTestId('topbar').getByTestId('context-indicator')).toHaveCount(0)
+
+    // Auto-hide: the sidebar slides away, then comes back when the pointer hits the left edge.
+    await page.getByRole('button', { name: 'Auto-hide sidebar' }).click()
+    await expect(page.getByTestId('sidebar')).not.toBeInViewport()
+    await page.mouse.move(2, 400)
+    await expect(page.getByTestId('sidebar')).toBeInViewport()
 
     // The renderer is isolated: no Node, only the bridge.
     const globals = await page.evaluate(() => ({

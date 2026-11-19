@@ -1,26 +1,32 @@
 import { create } from 'zustand'
 
-/** Purely visual state of the window (active space / session, collapsed groups). */
+/** Purely visual state of the window (active space / session, view, open folders). */
 interface UiState {
   activeSpaceId: string
   activeSessionId: string | null
-  collapsedEnvironments: ReadonlySet<string>
+  view: 'session' | 'settings'
+  closedEnvironments: ReadonlySet<string>
   setSpace: (id: string) => void
   openSession: (id: string) => void
+  openSettings: () => void
+  closeSettings: () => void
   toggleEnvironment: (id: string) => void
 }
 
 export const useUi = create<UiState>((set) => ({
   activeSpaceId: 'work',
   activeSessionId: null,
-  collapsedEnvironments: new Set(),
-  setSpace: (activeSpaceId) => set({ activeSpaceId, activeSessionId: null }),
-  openSession: (activeSessionId) => set({ activeSessionId }),
+  view: 'session',
+  closedEnvironments: new Set(['website']),
+  setSpace: (activeSpaceId) => set({ activeSpaceId, activeSessionId: null, view: 'session' }),
+  openSession: (activeSessionId) => set({ activeSessionId, view: 'session' }),
+  openSettings: () => set({ view: 'settings' }),
+  closeSettings: () => set({ view: 'session' }),
   toggleEnvironment: (id) =>
-    set(({ collapsedEnvironments }) => {
-      const next = new Set(collapsedEnvironments)
+    set(({ closedEnvironments }) => {
+      const next = new Set(closedEnvironments)
       if (next.has(id)) next.delete(id)
       else next.add(id)
-      return { collapsedEnvironments: next }
+      return { closedEnvironments: next }
     }),
 }))

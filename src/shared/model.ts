@@ -27,6 +27,8 @@ export interface Environment {
   id: string
   path: string
   name: string
+  /** Optional custom emoji / icon name (v1). */
+  icon: string | null
 }
 
 export interface SpaceEnvironment {
@@ -47,6 +49,8 @@ export interface Session {
   /** Provider's own session id; changes on fork / handoff. */
   providerSessionId: string | null
   title: string
+  /** Optional custom emoji / icon name (v1). */
+  icon: string | null
   cwd: string
   environmentId: string
   profileId: string | null
