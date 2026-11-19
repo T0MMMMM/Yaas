@@ -146,6 +146,9 @@ conversation. This avoids drift with the CLI and keeps imports free.
 ```mermaid
 erDiagram
   Account ||--o{ Session : owns
+  Environment ||--o{ Session : "runs in"
+  Account ||--o{ SpaceEnvironment : "pins / orders"
+  Environment ||--o{ SpaceEnvironment : "shown in" 
   Account ||--o{ UsageSnapshot : reports
   Account }o--|| ContextProfile : "default profile"
   ContextProfile ||--o{ Session : "launched with"
@@ -173,6 +176,18 @@ erDiagram
     int position
     datetime archivedAt
   }
+  Environment {
+    uuid id PK
+    string path "project folder, unique"
+    string name "defaults to folder name"
+  }
+  SpaceEnvironment {
+    uuid accountId FK
+    uuid environmentId FK
+    bool pinned
+    int position
+    bool collapsed
+  }
   ContextProfile {
     uuid id PK
     uuid accountId "null = global"
@@ -191,6 +206,7 @@ erDiagram
     string providerSessionId "changes on fork/handoff"
     string title
     string cwd
+    uuid environmentId FK
     uuid profileId FK
     string model
     string status "idle|running|needs-approval|done|error|limited"
@@ -264,7 +280,12 @@ erDiagram
   }
 ```
 
-App settings (theme tokens, onboarding done, shortcuts) live in a small `settings` key/value table.
+An **environment** is a project folder. It is global (the same folder can host sessions of
+several accounts, e.g. after a handoff); pinning, order and collapsed state are per space
+(`SpaceEnvironment`).
+
+App settings (theme tokens, switcher style, onboarding done, shortcuts) live in a small
+`settings` key/value table.
 
 **On disk**
 

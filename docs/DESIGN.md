@@ -16,23 +16,24 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 
 ```
 ┌─────────────────────────┬──────────────────────────────────────────────────┐
-│ ● ● ●             ⟨ ⟩   │  Fix login redirect        Work · Sonnet · ~/app │  ← drag region
+│ ● ● ●                   │  Fix login redirect        Work · Sonnet · ~/app │  ← drag region
 │ ┌─────────────────────┐ │ ─────────────────────────────────────────────────│
-│ │ ⌘K  Search…         │ │                                                  │
+│ │ ⌕ Search…        ⌘K │ │                                                  │
 │ └─────────────────────┘ │   you  The login page loops after OAuth…         │
+│ ┌──────────┐┌─────────┐ │                                                  │
+│ │ ✦ Release││ ✦ Infra │ │   claude  Looking at src/auth/callback.ts …      │  ← pinned sessions
+│ └──────────┘└─────────┘ │     ▸ Read src/auth/callback.ts                  │
+│ 📌 app             ▾    │     ▸ Edit  +12 −3                               │  ← pinned environment
+│    Fix login redirect ! │                                                  │
+│    Refactor billing   × │   ┌───────────────────────────────────────────┐  │
+│ ▸ website          2    │   │ Allow Bash: npm test ?                    │  │  ← collapsed environment
+│ ▾ infra-scripts         │   │ [Allow once ⏎] [Always for project ⌘⏎] [Deny]│ │
+│    Write tests        ✓ │   └───────────────────────────────────────────┘  │
+│ + New session      ⌘T   │                                                  │
 │                         │                                                  │
-│ 📌 Release notes      ● │   claude  Looking at src/auth/callback.ts …      │
-│ 📌 Infra              ✓ │     ▸ Read src/auth/callback.ts                  │
-│ ─────────────────────── │     ▸ Edit  +12 −3                               │
-│   Fix login redirect  ◐ │                                                  │
-│   Refactor billing    ! │   ┌───────────────────────────────────────────┐  │
-│   Write tests         ✓ │   │ Allow Bash: npm test ?                    │  │
-│                         │   │ [Allow once ⏎] [Always for project ⌘⏎] [Deny]│ │
-│ + New session      ⌘T   │   └───────────────────────────────────────────┘  │
-│                         │                                                  │
-│ ▁▁▁▁▁▁▃▃ 5h 57% · 7d 53%│  ┌────────────────────────────────────────────┐  │
-│ (W) (P) (+)             │  │ Message Claude…                             │  │
-│  space switcher         │  │ ⚙ Minimal profile · Sonnet · ~/app      ⏎   │  │
+│ ◔ Context 42k / 200k    │  ┌────────────────────────────────────────────┐  │  ← only in a session
+│ 5h ▬▬▬▬▬▭▭ 57%  7d 53%  │  │ Message Claude…                             │  │
+│        ●  ○  ○          │  │ ⚙ Minimal profile · Sonnet · ~/app      ⏎   │  │  ← space switcher
 └─────────────────────────┴──┴────────────────────────────────────────────┴──┘
    sidebar 200–360 px (default 248), resizable, collapsible (⌘S)
 ```
@@ -41,11 +42,18 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
 - Traffic lights (macOS, `titleBarStyle: 'hiddenInset'`, positioned inside the sidebar) / custom
   window controls on the right edge of the main pane (Windows, `titleBarOverlay`).
 - Search / palette trigger.
-- Pinned sessions of the active space, then the other open sessions (drag to reorder).
-- `+ New session`.
-- Usage gauge of the active account (5 h / 7 d, reset time on hover).
-- Space switcher: one round chip per account (emoji or initials on the space color), `+` to add.
-  Two-finger swipe / `Ctrl+Tab`-style shortcuts switch spaces.
+- **Pinned sessions** of the active space: compact tiles (Arc "favorites"), always on top.
+- **Environments**: sessions are grouped by environment (= the project folder a session runs in).
+  Pinned environments come first, then the others by last activity. Each group is collapsible and
+  shows its session count when collapsed. Pin/unpin an environment or a session from its context
+  menu or with `Mod+D`. Pins are per space.
+- `+ New session` (in the active environment, or asks for a folder).
+- **Context indicator** — only while a session is open: ring + "42k / 200k" for the session's
+  context window; turns `--warn` above 80 %. Click → context details (profile, what is loaded).
+- Usage of the active account (5 h / 7 d, reset time on hover).
+- **Space switcher**, centered: one item per account, either **icons** (the account's emoji/icon)
+  or **dots** — a setting (Settings → Appearance → Space switcher). No `+` here: accounts are added
+  from Settings, the command palette or `Mod+Shift+N`. Two-finger swipe also switches spaces.
 
 **Tab status glyphs**: `◐` running · `!` needs approval (accent, pulses once) · `✓` done (unread) ·
 `×` error · `⏸` account limited · none = idle/read.
@@ -87,6 +95,13 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 
 Default accent presets: `#7C5CFF` (violet, default), `#FF5C8A`, `#FF8A3D`, `#2BB673`, `#2D9CDB`, `#111111`, plus a free picker.
 
+### 3.0 Art direction — to do
+
+The skeleton uses system fonts and plain controls. A dedicated design pass (before the MVP UI work)
+will define: typeface pairing, button/input/segmented styles, icon set usage and sizes, elevation,
+and the logo. Icons: **Lucide** (`lucide-react`), 16 px, 1.75 stroke, `currentColor` — never emoji
+or text glyphs for UI icons.
+
 ### 3.2 Material
 
 | Token | Glass on | Glass off |
@@ -127,20 +142,17 @@ SVG `feTurbulence` noise tile** (data URI, 160 px, repeated) with `mix-blend-mod
 
 ## 6. Onboarding (first launch)
 
-Full-window, centered card on the glass background; each choice previews live on a mini mock of
-the sidebar. `←`/`→` or `⏎` to navigate, every step skippable except the account.
+A **full-window page**, not a dialog: it owns the whole window (glass, grain and traffic lights
+included) until it's done. Three moments:
 
-| # | Step | Content |
+| # | Screen | Content |
 |---|---|---|
-| 1 | Welcome | "Yeah, An Account Switcher." One line on what it does. `Get started ⏎` |
-| 2 | Accent color | Preset swatches + custom picker; preview recolors immediately |
-| 3 | Appearance | Light / Dark / System |
-| 4 | Glass | On / Off (disabled with explanation where unsupported) |
-| 5 | Grain | On / Off + intensity slider |
-| 6 | First account | If `~/.claude` is detected: **Import existing Claude Code** (shows plan/email from `auth status`) — else / also: **Sign in a new account** (opens browser). Then name, emoji, space color |
-| 7 | Done | "Press ⌘T to start your first session." |
+| 1 | **Intro** | The YAAS logo alone, centered. After ~1.2 s (or a click / `⏎`) the logo shrinks and glides to the top-left, and the visual setup fades in — the animation *leads* into screen 2 |
+| 2 | **Visual setup** | One page, live preview on the right (a mini sidebar that reflects every choice): accent color (presets + custom), appearance (light / dark / system), glass on/off, grain on/off + intensity, space switcher style (icons / dots) |
+| 3 | **Technical setup** | First account: **Import existing Claude Code** (`~/.claude`, shows plan/email from `auth status`) and/or **Sign in a new account** (browser); default context for new sessions (**Clean** / **Inherit `~/.claude`**); Claude Code CLI detection (path + version). `Open YAAS` finishes |
 
-All choices are editable later in Settings → Appearance. Onboarding state is stored in `settings`.
+`←` / `→` move between screens 2 and 3. `prefers-reduced-motion` replaces the intro animation by a
+short fade. All choices are editable later in Settings. Onboarding state is stored in `settings`.
 
 ## 7. Keyboard shortcuts
 
@@ -158,7 +170,7 @@ All choices are editable later in Settings → Appearance. Onboarding state is s
 | Search in session / all sessions | `Mod+F` / `Mod+Shift+F` |
 | Interrupt Claude | `Esc` (in composer) or `Mod+.` |
 | Approval: allow once / always for project / deny | `⏎` / `Mod+⏎` / `Esc` |
-| Pin / unpin session | `Mod+D` |
+| Pin / unpin session or environment | `Mod+D` |
 | Settings | `Mod+,` |
 | New space (add account) | `Mod+Shift+N` |
 

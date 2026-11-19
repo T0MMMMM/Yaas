@@ -45,7 +45,10 @@ renderer or the data model beyond a `provider` field.
 
 | Stage | Feature |
 |---|---|
-| **MVP** | Account = space (accent color + emoji), session = tab in its space; each session bound to a project folder |
+| **MVP** | Account = space (accent color + icon), session = tab in its space; each session bound to a project folder (its **environment**) |
+| **MVP** | Sidebar grouped by environment; pin environments and/or individual sessions (per space) |
+| **MVP** | Context indicator for the open session (context window used / limit) |
+| **MVP** | Space switcher style: icons or dots (setting) |
 | **MVP** | Chat view: streamed messages, collapsible tool calls, per-session model picker, Stop |
 | **MVP** | Permission approval sheet (allow once / always for this project / deny) |
 | **MVP** | Tab status badge: running · needs approval · done · error · account limited |
@@ -65,7 +68,7 @@ renderer or the data model beyond a `provider` field.
 
 | Stage | Feature |
 |---|---|
-| **MVP** | Create, rename, archive, delete, pin; search by title/folder |
+| **MVP** | Create, rename, archive, delete, pin (sessions and environments); search by title/folder |
 | **MVP** | Command palette (Cmd/Ctrl+K), Cmd/Ctrl+T, Cmd/Ctrl+1..9 |
 | **MVP** | Account gauges (5 h / 7 d utilization + reset time) from `rate_limit_event` (S#2) — *moved up from v1 after the spike* |
 | v1 | Full-text search across transcripts (SQLite FTS5) |
