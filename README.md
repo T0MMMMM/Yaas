@@ -30,6 +30,7 @@ See [`docs/FEATURES.md`](docs/FEATURES.md) for the full roadmap (MVP / v1 / late
 
 ```bash
 npm install
+npm run setup:fonts -- ~/Downloads/Satoshi_Complete   # Satoshi from fontshare.com, not in git
 npm run dev        # launch the app with hot reload
 npm run lint
 npm run typecheck

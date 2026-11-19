@@ -1,0 +1,63 @@
+.folder {
+  flex: none;
+  width: 18px;
+  height: 15px;
+  overflow: visible;
+}
+
+.back {
+  fill: hsl(var(--hue) 70% 48%);
+}
+
+.paper {
+  fill: #fff;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.folder[data-open='true'] .paper {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.front {
+  fill: hsl(var(--hue) 85% 64%);
+  transition: d var(--dur-base) var(--ease-bounce);
+}
+
+.shine {
+  stroke: rgb(255 255 255 / 0.45);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+
+.folder[data-open='true'] .shine {
+  opacity: 0;
+}
+
+:root[data-scheme='dark'] .back {
+  fill: hsl(var(--hue) 50% 38%);
+}
+
+:root[data-scheme='dark'] .front {
+  fill: hsl(var(--hue) 60% 55%);
+}
+
+.session {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.bubble {
+  fill: color-mix(in srgb, var(--text-faint) 30%, transparent);
+  stroke: var(--text-faint);
+  stroke-width: 1;
+}
+
+.dot {
+  fill: var(--text-muted);
+}

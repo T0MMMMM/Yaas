@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Check, Download, LogIn, TerminalSquare } from 'lucide-react'
+import { ArrowLeft, Check, DownloadSimple, SignIn, TerminalWindow } from '@phosphor-icons/react'
 import type { CliInfo } from '@shared/ipc/contract'
 import type { Account } from '@shared/model'
 import { useAccounts } from '../../stores/accounts'
@@ -63,7 +63,7 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
               disabled={imported.kind === 'busy' || imported.kind === 'done' || !cli?.path}
               data-testid="import-default"
             >
-              {imported.kind === 'done' ? <Check size={20} /> : <Download size={20} />}
+              {imported.kind === 'done' ? <Check size={22} /> : <DownloadSimple size={22} />}
               <div>
                 <strong>
                   {imported.kind === 'done' ? 'Imported' : 'Import existing Claude Code'}
@@ -76,7 +76,7 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
               </div>
             </button>
             <button className={styles.card} disabled>
-              <LogIn size={20} />
+              <SignIn size={22} />
               <div>
                 <strong>Sign in a new account</strong>
                 <span>Opens your browser to sign in.</span>
@@ -107,7 +107,7 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
         <div className={fields.field}>
           <span className={fields.label}>Claude Code CLI</span>
           <span className={styles.status} data-testid="cli-status">
-            <TerminalSquare size={16} />
+            <TerminalWindow size={17} />
             {cli === null && 'Looking for Claude Code…'}
             {cli && cli.path && (
               <>

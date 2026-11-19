@@ -3,10 +3,9 @@ import type { Database } from '../store/database'
 
 export const DEFAULT_SETTINGS: Settings = {
   accent: '#7C5CFF',
-  colorScheme: 'dark',
-  glass: true,
-  grain: true,
-  grainOpacity: 0.08,
+  colorScheme: 'system',
+  transparency: 0.4,
+  grain: 0.35,
   spaceSwitcherStyle: 'emoji',
   metersPlacement: 'contextbar',
   sidebarWidth: 248,

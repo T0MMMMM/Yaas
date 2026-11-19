@@ -25,17 +25,17 @@ export function createMainWindow(options: { glass: boolean }): BrowserWindow {
     show: false,
     title: 'YAAS',
     // Transparent so native material shows through; opaque fallback is set by CSS tokens.
-    backgroundColor: glass ? '#00000000' : '#16161a',
+    backgroundColor: glass ? '#00000000' : '#f3f2f5',
     ...(isMac && {
       titleBarStyle: 'hiddenInset' as const,
       trafficLightPosition: { x: 18, y: 16 },
-      vibrancy: glass ? ('sidebar' as const) : undefined,
+      vibrancy: glass ? ('under-window' as const) : undefined,
       visualEffectState: 'followWindow' as const,
     }),
     ...(isWindows && {
       titleBarStyle: 'hidden' as const,
       titleBarOverlay: { color: '#00000000', symbolColor: '#a0a0a8', height: TITLEBAR_HEIGHT },
-      backgroundMaterial: glass ? ('mica' as const) : ('none' as const),
+      backgroundMaterial: glass ? ('acrylic' as const) : ('none' as const),
     }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -69,9 +69,9 @@ export function createMainWindow(options: { glass: boolean }): BrowserWindow {
 export function applyGlass(win: BrowserWindow, enabled: boolean): void {
   const glass = enabled && glassSupported()
   if (isMac) {
-    win.setVibrancy(glass ? 'sidebar' : null)
+    win.setVibrancy(glass ? 'under-window' : null)
   } else if (isWindows) {
-    win.setBackgroundMaterial(glass ? 'mica' : 'none')
+    win.setBackgroundMaterial(glass ? 'acrylic' : 'none')
   }
-  win.setBackgroundColor(glass ? '#00000000' : '#16161a')
+  win.setBackgroundColor(glass ? '#00000000' : '#f3f2f5')
 }

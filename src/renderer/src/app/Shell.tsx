@@ -15,7 +15,7 @@ export function Shell() {
 
   return (
     <div
-      className={styles.shell}
+      className={`${styles.shell} grainy`}
       data-resizing={resize.resizing}
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >

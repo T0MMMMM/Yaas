@@ -1,5 +1,6 @@
 /* Design tokens — docs/DESIGN.md §3. Components reference these, never raw values.
-   Toggled by <html data-scheme data-glass data-grain data-platform> and --accent (set from JS). */
+   Toggled by <html data-scheme data-glass data-platform>; --accent, --transparency and --grain
+   are set from JS. */
 
 :root {
   /* accent (overridden at runtime) */
@@ -8,10 +9,13 @@
   --accent-soft: color-mix(in oklch, var(--accent) 16%, transparent);
   --accent-strong: color-mix(in oklch, var(--accent) 85%, var(--text));
 
-  /* material */
+  /* material — driven by the transparency and grain settings (0..1) */
+  --transparency: 0;
+  --grain: 0;
   --sidebar-alpha: 1;
   --surface-alpha: 1;
-  --grain-opacity: 0;
+  --glass-blur: 0px;
+  --glass-edge: transparent;
 
   /* space (4 px scale) */
   --space-1: 4px;
@@ -28,11 +32,11 @@
   --radius-pill: 999px;
 
   /* type */
-  --font-sans: system-ui, -apple-system, 'Segoe UI Variable', 'Segoe UI', sans-serif;
+  --font-sans: 'Satoshi', system-ui, -apple-system, 'Segoe UI Variable', 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
   --text-xs: 11px;
   --text-sm: 12px;
-  --text-md: 13px;
+  --text-md: 13.5px;
   --text-lg: 15px;
   --text-xl: 20px;
 
@@ -100,7 +104,7 @@
 /* ---------- derived surfaces ---------- */
 
 :root {
-  --sidebar-tint: color-mix(in oklch, var(--accent) 5%, var(--neutral-sidebar));
+  --sidebar-tint: color-mix(in oklch, var(--accent) 8%, var(--neutral-sidebar));
   --bg-window: var(--neutral-window);
   --bg-sidebar: color-mix(
     in srgb,
@@ -114,16 +118,26 @@
   );
 }
 
-/* ---------- glass & grain ---------- */
+/* ---------- transparency → liquid glass (DESIGN.md §4) ---------- */
 
-:root[data-glass='on'] {
+/* See-through: the frame fades with the slider; the desktop shows through native vibrancy. */
+:root[data-glass='on'],
+:root[data-glass='liquid'] {
   --bg-window: transparent;
-  --sidebar-alpha: 0.55;
-  --surface-alpha: 0.85;
+  --sidebar-alpha: calc(1 - var(--transparency) * 0.88);
+  --surface-alpha: calc(1 - var(--transparency) * 0.12);
 }
 
-:root[data-grain='on'] {
-  --grain-opacity: var(--grain-level, 0.08);
+/* Liquid glass: the cards themselves turn into frosted glass with a lit edge. */
+:root[data-glass='liquid'] {
+  --surface-alpha: 0.5;
+  --glass-blur: 30px;
+  --glass-edge: rgb(255 255 255 / 0.55);
+}
+
+:root[data-glass='liquid'][data-scheme='dark'] {
+  --surface-alpha: 0.42;
+  --glass-edge: rgb(255 255 255 / 0.16);
 }
 
 :root[data-platform='windows'] {
@@ -131,10 +145,12 @@
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  :root[data-glass='on'] {
+  :root[data-glass='on'],
+  :root[data-glass='liquid'] {
     --bg-window: var(--neutral-window);
     --sidebar-alpha: 1;
     --surface-alpha: 1;
+    --glass-blur: 0px;
   }
 }
 

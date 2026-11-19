@@ -35,7 +35,7 @@ export function Onboarding() {
   }, [stage])
 
   return (
-    <div className={styles.page} data-stage={stage} data-testid="onboarding">
+    <div className={`${styles.page} grainy`} data-stage={stage} data-testid="onboarding">
       <div className={`${styles.titlebar} drag`} />
 
       <button

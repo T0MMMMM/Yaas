@@ -13,7 +13,7 @@ Technical feasibility of the risky items is tracked in
 |---|---|
 | Session | A Claude Code session (agent working in a project folder) |
 | Rendering | Custom chat UI fed by `stream-json` / Agent SDK — no embedded terminal for MVP |
-| Look | Developer-tool feel, **dark by default**; context bar is the header of the session card |
+| Look | Unique, tactile UI (DESIGN.md §3.0); **light/system by default**; context bar is the header of the session card |
 | Existing sessions | Imported: `~/.claude` becomes the "Default" account |
 | Handoff | **Proposed**, never automatic — the user confirms |
 | Combined mode | User-triggered, or proposed by Claude — never run without approval |

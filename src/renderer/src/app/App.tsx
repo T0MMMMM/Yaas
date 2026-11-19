@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { IconContext } from '@phosphor-icons/react'
 import { useAccounts } from '../stores/accounts'
 import { useSettings } from '../stores/settings'
 import { applyTheme, onSystemSchemeChange } from '../theme/applyTheme'
@@ -22,9 +23,8 @@ export function App() {
   if (!settings) return null
 
   return (
-    <>
+    <IconContext.Provider value={{ weight: 'duotone', size: 16 }}>
       {settings.onboardingDone ? <Shell /> : <Onboarding />}
-      <div className="grain" aria-hidden />
-    </>
+    </IconContext.Provider>
   )
 }

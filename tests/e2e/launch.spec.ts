@@ -16,7 +16,7 @@ test('first launch shows onboarding, then the sidebar', async () => {
 
     // The logo intro leads to the visual setup by itself.
     await expect(page.getByTestId('visual-setup')).toBeVisible()
-    await page.getByRole('button', { name: '#2BB673' }).click()
+    await page.getByRole('radio', { name: '#2BB673' }).click()
     await expect
       .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')))
       .toBe('#2BB673')
@@ -65,7 +65,7 @@ test('first launch shows onboarding, then the sidebar', async () => {
   }
 })
 
-test('settings survive a relaunch; dark is the default', async () => {
+test('settings survive a relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'yaas-e2e-'))
   const launch = () =>
     electron.launch({
@@ -76,9 +76,8 @@ test('settings survive a relaunch; dark is the default', async () => {
   try {
     const first = await launch()
     const page = await first.firstWindow()
-    await expect(page.locator('html')).toHaveAttribute('data-scheme', 'dark')
     await expect(page.getByTestId('visual-setup')).toBeVisible()
-    await page.getByRole('button', { name: '#2BB673' }).click()
+    await page.getByRole('radio', { name: '#2BB673' }).click()
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByTestId('cli-status')).not.toHaveText(/Looking for/)
     await page.getByRole('button', { name: 'Open YAAS' }).click()

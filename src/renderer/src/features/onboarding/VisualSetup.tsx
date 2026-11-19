@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from '@phosphor-icons/react'
 import { useSettings } from '../../stores/settings'
 import { AppearanceFields, SwitcherField } from '../settings/AppearanceFields'
 import fields from '../settings/Fields.module.css'

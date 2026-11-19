@@ -16,7 +16,7 @@ describe('SettingsStore', () => {
     expect(listener).toHaveBeenCalledWith(expect.objectContaining({ accent: '#2BB673' }))
 
     off()
-    store.update({ grain: false })
+    store.update({ grain: 0 })
     expect(listener).toHaveBeenCalledTimes(1)
   })
 

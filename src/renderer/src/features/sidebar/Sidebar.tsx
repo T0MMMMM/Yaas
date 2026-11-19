@@ -1,11 +1,25 @@
-import { Folder, FolderOpen, Plus, Search, Settings } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import { DotsThree, GearSix, MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { ContextMeter, UsageMeter } from '../meters/Meters'
 import { useWorkspace } from '../workspace/useWorkspace'
 import type { EnvironmentView, SessionView } from '../workspace/workspace'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
+import { FolderGlyph, SessionGlyph } from './glyphs'
+import { hashUnit } from './hash'
 import { SessionStatusIcon } from './SessionStatusIcon'
 import styles from './Sidebar.module.css'
+
+/**
+ * Each card gets its own tilt, stable per id, so a list never moves in lockstep:
+ * hover −0.3…−1.1° or +0.3…+1.1°, selected a little more.
+ */
+function tilt(id: string): CSSProperties {
+  const sign = hashUnit(id, 7) < 0.5 ? -1 : 1
+  const hover = sign * (0.3 + hashUnit(id, 1) * 0.8)
+  const selected = sign * (0.6 + hashUnit(id, 2) * 0.9)
+  return { '--tilt-hover': `${hover}deg`, '--tilt-selected': `${selected}deg` } as CSSProperties
+}
 
 /** Arc-style vertical sidebar (DESIGN.md §2). Renders the workspace views; no data logic here. */
 export function Sidebar() {
@@ -17,31 +31,34 @@ export function Sidebar() {
   if (!space || !tree) return null
 
   const renderSession = (session: SessionView, nested: boolean) => (
-    <li key={session.id}>
+    <li key={session.id} className={styles.item} style={tilt(session.id)}>
       <button
         className={styles.row}
         data-nested={nested}
         data-active={session.id === open?.session.id && ui.view === 'session'}
         onClick={() => ui.openSession(session.id)}
       >
+        <SessionGlyph />
         <span className={styles.rowTitle}>{session.title}</span>
         <SessionStatusIcon status={session.status} />
+      </button>
+      <button className={styles.more} aria-label="Session actions" title="More">
+        <DotsThree size={18} weight="bold" />
       </button>
     </li>
   )
 
   const renderFolder = (env: EnvironmentView) => {
     const isOpen = !ui.closedEnvironments.has(env.id)
-    const Icon = isOpen ? FolderOpen : Folder
     return (
-      <li key={env.id} data-testid="environment">
+      <li key={env.id} data-testid="environment" style={tilt(env.id)}>
         <button
           className={styles.folder}
           onClick={() => ui.toggleEnvironment(env.id)}
           aria-expanded={isOpen}
           title={env.path}
         >
-          <Icon size={15} className={styles.folderIcon} />
+          <FolderGlyph name={env.name} open={isOpen} />
           <span className={styles.rowTitle}>{env.name}</span>
           {!isOpen && <span className={styles.count}>{env.sessions.length}</span>}
         </button>
@@ -57,7 +74,7 @@ export function Sidebar() {
       <div className={`${styles.titlebar} drag`} />
 
       <button className={`${styles.search} no-drag`}>
-        <Search size={14} />
+        <MagnifyingGlass size={15} />
         <span>Search</span>
         <kbd>⌘K</kbd>
       </button>
@@ -78,7 +95,7 @@ export function Sidebar() {
         <ul className={styles.list}>{tree.environments.map(renderFolder)}</ul>
 
         <button className={styles.newSession}>
-          <Plus size={14} />
+          <Plus size={15} />
           <span>New session</span>
           <kbd>⌘T</kbd>
         </button>
@@ -101,6 +118,7 @@ export function Sidebar() {
               aria-label={s.label}
               title={s.label}
               className={styles.account}
+              style={tilt(s.id)}
               onClick={() => ui.setSpace(s.id)}
             >
               {switcher === 'emoji' && s.emoji}
@@ -116,7 +134,7 @@ export function Sidebar() {
           title="Settings (⌘,)"
           aria-label="Settings"
         >
-          <Settings size={16} />
+          <GearSix size={18} />
         </button>
       </div>
     </nav>

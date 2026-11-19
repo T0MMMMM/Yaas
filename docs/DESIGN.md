@@ -36,8 +36,8 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
   accounts (left)  settings      session content card
 ```
 
-**Context bar** — the **header of the session card** (38 px, separated from the transcript by a
-hairline), shown **only while a session is open**. It is also the window drag region.
+**Context bar** — the **header of the session card** (32 px, 10 px side padding, separated from the
+transcript by a gray hairline inset from the card edges), shown **only while a session is open**. It is also the window drag region.
 Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
 - **Context** of the open session: `◔ Context 21% 42k / 200k` (`--warn` above 80 %; click → what the
   session loads).
@@ -54,14 +54,15 @@ caption buttons.
 **Sidebar (top → bottom)**
 - Title row: traffic lights (macOS, `titleBarStyle: 'hiddenInset'`); drag region. The sidebar is
   always visible (no auto-hide mode).
-- Search / palette trigger.
+- Search / palette trigger: a soft borderless field.
 - **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
   order. No pin icon — being above the separator *is* the pinned state.
-- Separator.
+- Separator: a faint hairline.
 - **Askew cards**: the selected item sits slightly askew (`--tilt-selected`, −0.8°) and hovered
   items tilt a little (`--tilt-hover`, −0.4°), with a small bounce (`--ease-bounce`). Only the card layer tilts — the text never
   moves. Same motion in
   the sidebar (sessions, folders) and the Settings navigation.
+- Hovering a session shows a **⋯** button on the right (session actions) in place of its status dot.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
 - **Resizable**: drag its right edge (200–440 px, default 248, saved in settings); double-click the
@@ -71,7 +72,8 @@ caption buttons.
   sessions. Pins are per space; pin/unpin from the context menu or `Mod+D`.
 - `+ New session` (in the active environment, or asks for a folder).
 - Bottom row: **accounts on the left** (switch spaces) and **Settings** on the right. Accounts are
-  shown as their **emoji**, their **first letter**, or **dots** (setting). No `+`: accounts are
+  shown as their **emoji**, their **first letter**, or **dots** (setting) — no card: inactive ones
+  are faded, the active one is full opacity and a bit bigger; on hover they lift, tilt and grow. No `+`: accounts are
   added from Settings, the palette or `Mod+Shift+N`.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
@@ -93,7 +95,7 @@ All visual values are CSS custom properties on `:root`, toggled by `data-*` attr
 Components only ever reference tokens — never raw colors or pixel values.
 
 ```html
-<html data-scheme="dark" data-glass="on" data-grain="on" data-platform="mac">
+<html data-scheme="light" data-glass="on" data-platform="mac" style="--accent:…; --transparency:…; --grain:…">
 ```
 
 ### 3.1 Color
@@ -117,23 +119,47 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--status-running` / `--status-waiting` / `--status-done` | Session dots: gray / orange / blue |
 | `--control-active` | Selected segment / active control fill |
 
-Default accent presets: `#7C5CFF` (violet, default), `#FF5C8A`, `#FF8A3D`, `#2BB673`, `#2D9CDB`, `#111111`, plus a free picker.
+**Accent picker** (`ui/ColorPicker`): eight presets on top (`#7C5CFF` default, `#FF5C8A`, `#FF8A3D`,
+`#F2C94C`, `#2BB673`, `#14B8C4`, `#2D9CDB`, `#111111`), a **hue/saturation wheel** (drag or arrow
+keys), a brightness ramp, and a **hex field** that applies as soon as the value is valid.
 
-### 3.0 Art direction — to do
+### 3.0 Art direction
 
-The skeleton uses system fonts and plain controls. A dedicated design pass (before the MVP UI work)
-will define: typeface pairing, button/input/segmented styles, icon set usage and sizes, elevation,
-and the logo. Icons: **Lucide** (`lucide-react`), 16 px, 1.75 stroke, `currentColor` — never emoji
-or text glyphs for UI icons.
+The goal: a UI that feels unique and makes you want to touch it — not a stack of buttons seen a
+thousand times.
+
+- **Type**: **Satoshi** (variable, 300–900) for the whole UI; mono only for numbers, paths and keys.
+  The font files are not in git (ITF Free Font License forbids redistribution through a
+  repository): `npm run setup:fonts -- <path to Satoshi_Complete>` installs them locally.
+- **Icons**: **Phosphor**, **duotone** by default (`IconContext` in `App.tsx`), 15–18 px. Folders
+  are **illustrated glyphs** (two-tone folder, paper peeking out when open), colored per folder name;
+  sessions get a small chat-bubble glyph.
+- **Askew cards**: hovered and selected items tilt slightly; every item has **its own angle**
+  (stable hash of its id, ±0.3–1.1° hover, ±0.6–1.5° selected) so a list never moves in lockstep.
+  Only the card layer tilts — text never moves. Hover/selected fills are **neutral** (a light lift
+  on the frame), never the accent.
+- **Drawn controls**: sliders draw what they do (§3.4); the accent picker is a wheel (§3.1).
+- **Animations everywhere** come in a later pass; for now only hover/press motion.
 
 ### 3.2 Material
 
-| Token | Glass on | Glass off |
+Two settings drive the material, both 0–1 and set as CSS variables:
+
+| Setting | Effect |
+|---|---|
+| `transparency` → `--transparency` | `0` = opaque frame. Above 0 the native material turns on and the frame fades (`--sidebar-alpha = 1 − t × 0.88`). From **0.9** (`LIQUID_FROM`) the UI switches to **liquid glass** (`data-glass="liquid"`): cards become frosted (`--surface-alpha` 0.5, `backdrop-filter` blur 30 px + saturate), with a lit top edge (`--glass-edge`) and a soft sheen. |
+| `grain` → `--grain` | Grain intensity on the frame (opacity `grain × 0.3`), `0` = off. |
+
+### 3.4 Sliders
+
+`ui/Slider` draws its track, with a tall white pill thumb (Arc-like) and a transparent native range
+input on top for keyboard, pointer and screen readers:
+
+| Variant | Track | Used for |
 |---|---|---|
-| `--sidebar-alpha` | `0.55` | `1` |
-| `--surface-alpha` | `0.85` | `1` |
-| `--blur` | `0` (native vibrancy does the blur) | `0` |
-| `--grain-opacity` | `0`–`0.20` (slider, default `0.08`) when grain is on, else `0` | same |
+| `wave` | a ripple up to the thumb whose amplitude grows to the right; flat line after | Transparency (square → drop icons; "Liquid glass" badge at the top) |
+| `speckle` | grain dots, denser to the right; dimmed past the thumb | Grain |
+| `gradient` | a color ramp from the caller | Brightness in the color picker |
 
 ### 3.3 Shape, space, type, motion
 
@@ -146,23 +172,21 @@ or text glyphs for UI icons.
 | Layout | `--sidebar-w` 248 · `--titlebar-h` 44 |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 
-## 4. Glass, per platform
+## 4. Transparency, per platform
 
 | | macOS | Windows 11 | Windows 10 / fallback |
 |---|---|---|---|
-| Window | `vibrancy: 'sidebar'`, `visualEffectState: 'followWindow'`, `transparent` background | `backgroundMaterial: 'mica'` (default) or `'acrylic'` | No material: glass is forced off |
-| Title bar | `titleBarStyle: 'hiddenInset'`, `trafficLightPosition` aligned in the sidebar | `titleBarStyle: 'hidden'` + `titleBarOverlay` tinted with tokens | same as Win 11 |
-| Toggle at runtime | `win.setVibrancy(null \| 'sidebar')` | `win.setBackgroundMaterial('none' \| 'mica')` | — |
+| Native material (when `transparency > 0`) | `vibrancy: 'under-window'`, transparent background | `backgroundMaterial: 'acrylic'` | none: transparency forced to 0 |
+| Title bar | `titleBarStyle: 'hiddenInset'`, traffic lights in the sidebar | `titleBarStyle: 'hidden'` + `titleBarOverlay` | same as Win 11 |
+| Toggle | `win.setVibrancy()` only when crossing 0 (not on every slider tick) | `win.setBackgroundMaterial()` | — |
 
-Main sends the platform and whether material is supported; the renderer sets `data-platform` and
-greys out the glass option when unsupported.
+How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
 
 ## 5. Grain
 
-A fixed, full-window overlay (`pointer-events: none`, top z-index) whose background is a **pre-rendered
-SVG `feTurbulence` noise tile** (data URI, 160 px, repeated) with `mix-blend-mode: overlay` and
-`opacity: var(--grain-opacity)`. No live filter, so it costs nothing at runtime. Scheme-specific blend
-(`soft-light` in light mode) keeps it subtle.
+`.grainy` containers (the app shell, the onboarding page) get a pre-rendered, high-contrast SVG
+noise tile on a `::before` layer **under** their children — the grain lives on the window frame,
+never over content. Opacity follows `--grain`; no live filter, so it costs nothing at runtime.
 
 ## 6. Onboarding (first launch)
 
@@ -172,7 +196,7 @@ included) until it's done. Three moments:
 | # | Screen | Content |
 |---|---|---|
 | 1 | **Intro** | The YAAS logo alone, centered. After ~1.2 s (or a click / `⏎`) the logo shrinks and glides to the top-left, and the visual setup fades in — the animation *leads* into screen 2 |
-| 2 | **Visual setup** | One page, live preview on the right (a mini sidebar that reflects every choice): accent color (presets + custom), appearance (light / dark / system), glass on/off, grain on/off + intensity, account switcher style (emoji / letter / dots) |
+| 2 | **Visual setup** | One page, live preview on the right (a mini sidebar that reflects every choice): accent color (wheel, hex, presets), appearance (light / dark / system), transparency slider, grain slider, account switcher style (emoji / letter / dots) |
 | 3 | **Technical setup** | First account: **Import existing Claude Code** (`~/.claude`, shows plan/email from `auth status`) and/or **Sign in a new account** (browser); default context for new sessions (**Clean** / **Inherit `~/.claude`**); Claude Code CLI detection (path + version). `Open YAAS` finishes |
 
 `←` / `→` move between screens 2 and 3. `prefers-reduced-motion` replaces the intro animation by a
@@ -194,7 +218,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Confirm before closing a running session | On | MVP |
 | | Language | English (more later) | later |
 | | Check for updates | Automatically · Manually | later |
-| **Appearance** | Color, scheme, glass, grain + intensity | as in onboarding | MVP ✅ |
+| **Appearance** | Color (wheel + hex + presets), scheme, transparency (→ liquid glass), grain | as in onboarding | MVP ✅ |
 | | Account switcher | Emoji · First letter · Dots | MVP ✅ |
 | | Meters (context + usage) | Context bar · Sidebar | MVP ✅ |
 | | Interface density | Comfortable · Compact | v1 |

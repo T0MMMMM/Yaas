@@ -30,7 +30,7 @@ export default tseslint.config(
   },
   // Node side: main, preload, core, configs, tests
   {
-    files: ['src/main/**', 'src/preload/**', 'src/core/**', 'tests/**', '*.config.*'],
+    files: ['src/main/**', 'src/preload/**', 'src/core/**', 'tests/**', 'scripts/**', '*.config.*'],
     languageOptions: { globals: globals.node },
   },
   // core and shared are pure: no Electron, no React (see ADR-0001)

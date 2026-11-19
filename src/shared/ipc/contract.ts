@@ -13,10 +13,10 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #RRGGBB')
 export const settingsSchema = z.object({
   accent: hexColor,
   colorScheme: z.enum(['light', 'dark', 'system']),
-  glass: z.boolean(),
-  grain: z.boolean(),
-  /** 0..0.2 — see docs/DESIGN.md §3.2 */
-  grainOpacity: z.number().min(0).max(0.2),
+  /** 0 = opaque frame … 1 = fully see-through; at the top of the range the UI turns to liquid glass. */
+  transparency: z.number().min(0).max(1),
+  /** Grain intensity on the window frame, 0 = off. */
+  grain: z.number().min(0).max(1),
   /** Account switcher at the bottom of the sidebar (DESIGN.md §2, §7). */
   spaceSwitcherStyle: z.enum(['emoji', 'letter', 'dots']),
   /** Where the context indicator and account usage live. */
@@ -35,7 +35,7 @@ export type Settings = z.infer<typeof settingsSchema>
 export const appInfoSchema = z.object({
   version: z.string(),
   platform: z.enum(['mac', 'windows', 'linux']),
-  /** Whether native window material (vibrancy / Mica) is available. */
+  /** Whether native window material (vibrancy / Acrylic) is available. */
   glassSupported: z.boolean(),
 })
 export type AppInfo = z.infer<typeof appInfoSchema>

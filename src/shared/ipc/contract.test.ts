@@ -10,9 +10,9 @@ describe('IPC contract', () => {
 
   it('rejects unknown keys and invalid values in settings.update', () => {
     const input = commands['settings.update'].input
-    expect(input.safeParse({ glass: true }).success).toBe(true)
+    expect(input.safeParse({ transparency: 1 }).success).toBe(true)
     expect(input.safeParse({ accent: 'violet' }).success).toBe(false)
-    expect(input.safeParse({ grainOpacity: 0.9 }).success).toBe(false)
+    expect(input.safeParse({ grain: 1.5 }).success).toBe(false)
     expect(input.safeParse({ spaceSwitcherStyle: 'dots' }).success).toBe(true)
     expect(input.safeParse({ spaceSwitcherStyle: 'bars' }).success).toBe(false)
     expect(input.safeParse({ autoArchive: { enabled: true, afterDays: 7 } }).success).toBe(true)

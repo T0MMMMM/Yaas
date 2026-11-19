@@ -33,7 +33,7 @@ function isTrustedSender(sender: WebContents): boolean {
 }
 
 function openMainWindow(): void {
-  mainWindow = createMainWindow({ glass: settings.get().glass })
+  mainWindow = createMainWindow({ glass: settings.get().transparency > 0 })
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -54,14 +54,15 @@ registerCommands(
   isTrustedSender,
 )
 
-// Native material is only touched when the glass setting actually changes: re-applying vibrancy
-// on every update (e.g. each tick of the grain slider) makes the window flicker.
-let appliedGlass = settings.get().glass
+// The native material is on as soon as the frame is see-through at all; how see-through is CSS.
+// Only toggle it when that changes: re-applying vibrancy on every tick of a slider flickers.
+let appliedGlass = settings.get().transparency > 0
 settings.subscribe((next) => {
   if (!mainWindow) return
-  if (next.glass !== appliedGlass) {
-    appliedGlass = next.glass
-    applyGlass(mainWindow, next.glass)
+  const glass = next.transparency > 0
+  if (glass !== appliedGlass) {
+    appliedGlass = glass
+    applyGlass(mainWindow, glass)
   }
   emit(mainWindow.webContents, 'settings.changed', next)
 })
