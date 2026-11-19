@@ -1,5 +1,6 @@
 import { SHORTCUTS } from '../../app/shortcuts'
 import { useSettings } from '../../stores/settings'
+import { useUi } from '../../stores/ui'
 import { Segmented } from '../../ui/Segmented'
 import { Switch } from '../../ui/Switch'
 import { useWorkspace } from '../workspace/useWorkspace'
@@ -353,8 +354,24 @@ export function Privacy() {
 }
 
 export function Advanced() {
+  const update = useSettings((s) => s.update)
+  const closeSettings = useUi((s) => s.closeSettings)
   return (
     <SettingGroup>
+      <SettingRow
+        label="Replay onboarding"
+        description="Shows the welcome flow again. Your settings and accounts are kept."
+      >
+        <button
+          className={styles.button}
+          onClick={() => {
+            closeSettings()
+            void update({ onboardingDone: false })
+          }}
+        >
+          Replay
+        </button>
+      </SettingRow>
       <SettingRow
         label="Claude Code CLI"
         description="Bundled with YAAS, or the one on your PATH."

@@ -128,16 +128,20 @@
   --surface-alpha: calc(1 - var(--transparency) * 0.12);
 }
 
-/* Liquid glass: the cards themselves turn into frosted glass with a lit edge. */
+/* Liquid glass: the frame disappears — the desktop itself shows through (no native blur) — and
+   the sidebar and cards float on it as glass panels with a lit edge. */
 :root[data-glass='liquid'] {
-  --surface-alpha: 0.5;
-  --glass-blur: 30px;
-  --glass-edge: rgb(255 255 255 / 0.55);
+  --sidebar-alpha: 0;
+  --surface-alpha: 0.58;
+  --glass-blur: 24px;
+  --glass-edge: rgb(255 255 255 / 0.7);
+  --glass-panel: color-mix(in srgb, var(--neutral-surface) 52%, transparent);
 }
 
 :root[data-glass='liquid'][data-scheme='dark'] {
-  --surface-alpha: 0.42;
-  --glass-edge: rgb(255 255 255 / 0.16);
+  --surface-alpha: 0.55;
+  --glass-edge: rgb(255 255 255 / 0.18);
+  --glass-panel: color-mix(in srgb, var(--neutral-surface) 58%, transparent);
 }
 
 :root[data-platform='windows'] {

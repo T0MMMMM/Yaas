@@ -62,3 +62,24 @@ export function hsvToHex({ h, s, v }: Hsv): string {
       .padStart(2, '0')
   return `#${hex(f(5))}${hex(f(3))}${hex(f(1))}`.toUpperCase()
 }
+
+export interface Hsl {
+  /** 0..360 */
+  h: number
+  /** 0..1 */
+  s: number
+  /** 0..1 */
+  l: number
+}
+
+export function hexToHsl(hex: string): Hsl {
+  const { h, s: sv, v } = hexToHsv(hex)
+  const l = v * (1 - sv / 2)
+  const s = l === 0 || l === 1 ? 0 : (v - l) / Math.min(l, 1 - l)
+  return { h, s, l }
+}
+
+export function hslToHex({ h, s, l }: Hsl): string {
+  const v = l + s * Math.min(l, 1 - l)
+  return hsvToHex({ h, s: v === 0 ? 0 : 2 * (1 - l / v), v })
+}

@@ -36,7 +36,8 @@
   cursor: pointer;
   transition:
     color var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    transform var(--dur-base) var(--ease-bounce),
+    translate 260ms var(--ease-bounce);
 }
 
 .iconButton:hover,
@@ -202,7 +203,7 @@ kbd {
 /* ⋯ appears on hover, in place of the status dot. */
 .more {
   position: absolute;
-  top: 50%;
+  top: 5px; /* (34 px row − 24 px button) / 2 */
   right: 4px;
   display: grid;
   place-items: center;
@@ -213,7 +214,7 @@ kbd {
   background: transparent;
   color: var(--text-muted);
   opacity: 0;
-  transform: translateY(-50%) scale(0.8);
+  transform: scale(0.8);
   cursor: pointer;
   transition:
     opacity var(--dur-fast) var(--ease),
@@ -223,7 +224,7 @@ kbd {
 .item:hover .more,
 .more:focus-visible {
   opacity: 1;
-  transform: translateY(-50%) scale(1);
+  transform: scale(1);
 }
 
 .more:hover {
@@ -316,7 +317,8 @@ kbd {
   transform: scale(0.92);
   transition:
     opacity var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    transform var(--dur-base) var(--ease-bounce),
+    translate 260ms var(--ease-bounce);
 }
 
 .account:hover {

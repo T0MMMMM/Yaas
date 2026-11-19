@@ -5,6 +5,7 @@ import { useWorkspace } from '../workspace/useWorkspace'
 import type { EnvironmentView, SessionView } from '../workspace/workspace'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
+import { useMagnetic } from '../../ui/useMagnetic'
 import { FolderGlyph, SessionGlyph } from './glyphs'
 import { hashUnit } from './hash'
 import { SessionStatusIcon } from './SessionStatusIcon'
@@ -28,6 +29,7 @@ export function Sidebar() {
   const settings = useSettings((s) => s.settings)
   const switcher = settings?.spaceSwitcherStyle ?? 'emoji'
   const metersInSidebar = settings?.metersPlacement === 'sidebar'
+  const magnet = useMagnetic<HTMLButtonElement>(0.4)
   if (!space || !tree) return null
 
   const renderSession = (session: SessionView, nested: boolean) => (
@@ -74,7 +76,7 @@ export function Sidebar() {
       <div className={`${styles.titlebar} drag`} />
 
       <button className={`${styles.search} no-drag`}>
-        <MagnifyingGlass size={15} />
+        <MagnifyingGlass size={15} weight="bold" />
         <span>Search</span>
         <kbd>⌘K</kbd>
       </button>
@@ -95,7 +97,7 @@ export function Sidebar() {
         <ul className={styles.list}>{tree.environments.map(renderFolder)}</ul>
 
         <button className={styles.newSession}>
-          <Plus size={15} />
+          <Plus size={13} weight="bold" />
           <span>New session</span>
           <kbd>⌘T</kbd>
         </button>
@@ -120,6 +122,7 @@ export function Sidebar() {
               className={styles.account}
               style={tilt(s.id)}
               onClick={() => ui.setSpace(s.id)}
+              {...magnet}
             >
               {switcher === 'emoji' && s.emoji}
               {switcher === 'letter' && s.label.charAt(0).toUpperCase()}
@@ -130,6 +133,7 @@ export function Sidebar() {
         <button
           className={styles.iconButton}
           onClick={ui.openSettings}
+          {...magnet}
           aria-pressed={ui.view === 'settings'}
           title="Settings (⌘,)"
           aria-label="Settings"

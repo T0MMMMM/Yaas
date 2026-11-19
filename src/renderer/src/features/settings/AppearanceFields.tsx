@@ -7,6 +7,9 @@ import { Segmented } from '../../ui/Segmented'
 import { Slider } from '../../ui/Slider'
 import styles from './Fields.module.css'
 
+/** The slider covers the frosted range; liquid glass is its own cell at the end. */
+const FROSTED_MAX = LIQUID_FROM - 0.01
+
 /** Color, scheme, transparency, grain — used by onboarding and Settings. Applies live. */
 export function AppearanceFields() {
   const { settings, info, update } = useSettings()
@@ -37,22 +40,30 @@ export function AppearanceFields() {
       </div>
 
       <div className={styles.field}>
-        <span className={styles.label}>
-          Transparency
-          {liquid && <span className={styles.badge}>Liquid glass</span>}
-        </span>
-        <Slider
-          label="Transparency"
-          variant="wave"
-          value={glassSupported ? settings.transparency : 0}
-          disabled={!glassSupported}
-          onChange={(transparency) => set({ transparency })}
-          start={<Square size={15} />}
-          end={<Drop size={15} />}
-        />
+        <span className={styles.label}>Transparency</span>
+        <div className={styles.row}>
+          <Slider
+            label="Transparency"
+            variant="wave"
+            value={glassSupported ? Math.min(settings.transparency, FROSTED_MAX) / FROSTED_MAX : 0}
+            disabled={!glassSupported}
+            onChange={(v) => set({ transparency: v * FROSTED_MAX })}
+            start={<Square size={15} />}
+          />
+          <button
+            className={styles.liquid}
+            aria-pressed={liquid}
+            disabled={!glassSupported}
+            onClick={() => set({ transparency: liquid ? FROSTED_MAX : 1 })}
+            title="Liquid glass: the desktop shows through and the panels float on it"
+          >
+            <Drop size={16} weight={liquid ? 'fill' : 'duotone'} />
+            Liquid glass
+          </button>
+        </div>
         <p className={styles.hint}>
           {glassSupported
-            ? 'Lets your desktop show through. All the way right turns the window to liquid glass.'
+            ? 'Slide to frost the desktop through the window, or go all the way to liquid glass.'
             : 'Needs macOS or Windows 11.'}
         </p>
       </div>

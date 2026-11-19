@@ -36,8 +36,8 @@ Inspired by Arc: a quiet, fast UI where the **vertical sidebar is the app**. Acc
   accounts (left)  settings      session content card
 ```
 
-**Context bar** — the **header of the session card** (32 px, 10 px side padding, separated from the
-transcript by a gray hairline inset from the card edges), shown **only while a session is open**. It is also the window drag region.
+**Context bar** — the **header of the session card** (38 px, separated from the transcript by a gray
+hairline running edge to edge), shown **only while a session is open**. It is also the window drag region.
 Left: session title (editable inline) and environment path. Right, each stat as *ring + label*:
 - **Context** of the open session: `◔ Context 21% 42k / 200k` (`--warn` above 80 %; click → what the
   session loads).
@@ -62,6 +62,8 @@ caption buttons.
   items tilt a little (`--tilt-hover`, −0.4°), with a small bounce (`--ease-bounce`). Only the card layer tilts — the text never
   moves. Same motion in
   the sidebar (sessions, folders) and the Settings navigation.
+- Accounts and the Settings gear are **magnetic**: they lean toward the pointer and spring back
+  (`ui/useMagnetic`, CSS `translate` so it composes with their own transforms).
 - Hovering a session shows a **⋯** button on the right (session actions) in place of its status dot.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
@@ -81,6 +83,14 @@ caption buttons.
 **Session status dots** (5 px, like the Claude apps): **gray, blinking** = running · **orange** = waiting
 for your action (approval, question) · **blue** = finished, not yet seen · **red** = error ·
 **orange ring** = account limited · nothing = idle / seen. Always with a tooltip + `aria-label`.
+
+**Session view** (`features/session`, demo content until sessions are wired):
+- the user's messages are notes handed to Claude, right-aligned and slightly askew;
+- Claude's text flows as plain prose; tool steps sit on a **dotted timeline** with an icon node each
+  (search, read, edit, bash); edits expand into an inline diff;
+- the **approval sheet** docks above the composer, tinted with the waiting color, with
+  Deny / Always for project / Allow once and their keys;
+- the **composer** has chips for context profile and model, the folder path, and a round send button.
 
 **Main pane**
 - Header (also the window drag region): title (editable inline), account, model, cwd.
@@ -119,9 +129,10 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--status-running` / `--status-waiting` / `--status-done` | Session dots: gray / orange / blue |
 | `--control-active` | Selected segment / active control fill |
 
-**Accent picker** (`ui/ColorPicker`): eight presets on top (`#7C5CFF` default, `#FF5C8A`, `#FF8A3D`,
-`#F2C94C`, `#2BB673`, `#14B8C4`, `#2D9CDB`, `#111111`), a **hue/saturation wheel** (drag or arrow
-keys), a brightness ramp, and a **hex field** that applies as soon as the value is valid.
+**Accent picker** (`ui/ColorPicker`): eight presets on top, then a **dot field** — dots colored by hue
+(across) and lightness (down) that **swell like under a lens** around the chosen color and around
+the pointer; a big ringed knob marks the pick. Below: an **Intensity** wave slider (saturation) and a
+hex field that applies as soon as the value is valid. Drag, click or arrow keys.
 
 ### 3.0 Art direction
 
@@ -147,17 +158,17 @@ Two settings drive the material, both 0–1 and set as CSS variables:
 
 | Setting | Effect |
 |---|---|
-| `transparency` → `--transparency` | `0` = opaque frame. Above 0 the native material turns on and the frame fades (`--sidebar-alpha = 1 − t × 0.88`). From **0.9** (`LIQUID_FROM`) the UI switches to **liquid glass** (`data-glass="liquid"`): cards become frosted (`--surface-alpha` 0.5, `backdrop-filter` blur 30 px + saturate), with a lit top edge (`--glass-edge`) and a soft sheen. |
+| `transparency` → `--transparency` | `0` = opaque. The **slider** covers the frosted range (0–0.89): native blur of the desktop under a fading frame. **Liquid glass** is a separate cell at the end of the slider (value 1, `data-glass="liquid"`): no blur, the frame disappears and the **desktop itself shows through**; the sidebar and the session card float on it as glass panels (semi-opaque, lit edge, soft sheen, shadow). |
 | `grain` → `--grain` | Grain intensity on the frame (opacity `grain × 0.3`), `0` = off. |
 
 ### 3.4 Sliders
 
-`ui/Slider` draws its track, with a tall white pill thumb (Arc-like) and a transparent native range
-input on top for keyboard, pointer and screen readers:
+`ui/Slider` draws its track; the thumb is a **crescent** — a white pill with one concave side — and
+a transparent native range input sits on top for keyboard, pointer and screen readers:
 
 | Variant | Track | Used for |
 |---|---|---|
-| `wave` | a ripple up to the thumb whose amplitude grows to the right; flat line after | Transparency (square → drop icons; "Liquid glass" badge at the top) |
+| `wave` | a ripple up to the thumb whose amplitude grows to the right; flat line after | Transparency (followed by the Liquid glass cell), color intensity |
 | `speckle` | grain dots, denser to the right; dimmed past the thumb | Grain |
 | `gradient` | a color ramp from the caller | Brightness in the color picker |
 
@@ -176,9 +187,11 @@ input on top for keyboard, pointer and screen readers:
 
 | | macOS | Windows 11 | Windows 10 / fallback |
 |---|---|---|---|
-| Native material (when `transparency > 0`) | `vibrancy: 'under-window'`, transparent background | `backgroundMaterial: 'acrylic'` | none: transparency forced to 0 |
+| Window | `transparent: true` (always; set at creation) | normal | normal |
+| Frosted (0 < t < 0.9) | `vibrancy: 'under-window'` | `backgroundMaterial: 'acrylic'` | none: transparency forced to 0 |
+| Clear / liquid (t ≥ 0.9) | no vibrancy: the transparent window shows the desktop as is | acrylic (no clear mode) | — |
 | Title bar | `titleBarStyle: 'hiddenInset'`, traffic lights in the sidebar | `titleBarStyle: 'hidden'` + `titleBarOverlay` | same as Win 11 |
-| Toggle | `win.setVibrancy()` only when crossing 0 (not on every slider tick) | `win.setBackgroundMaterial()` | — |
+| Switching | `applyMaterial()` only when the material changes (opaque / frosted / clear), never on every slider tick | same | — |
 
 How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
 
@@ -249,6 +262,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Statement: no telemetry, no hidden model calls | — | MVP |
 | **Advanced** | Claude Code CLI: bundled · system (path + version) | Bundled | MVP |
 | | Open logs folder, developer tools | — | MVP |
+| | Replay onboarding (also `npm run dev:onboarding`) | — | MVP ✅ |
 | **About** | Version, docs, license, acknowledgements | — | MVP |
 
 Auto-archive only archives (never deletes); pinned sessions are never auto-archived.

@@ -5,7 +5,7 @@ import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
 import { emit, registerCommands } from './ipc/router'
-import { applyGlass, createMainWindow, glassSupported } from './windows/mainWindow'
+import { applyMaterial, createMainWindow, glassSupported, materialFor } from './windows/mainWindow'
 
 // Tests and parallel dev profiles can point YAAS at a throwaway data dir.
 const userDataOverride = process.env['YAAS_USER_DATA']
@@ -15,6 +15,8 @@ if (!app.requestSingleInstanceLock()) app.quit()
 
 const db = openDatabase(join(app.getPath('userData'), 'yaas.db'))
 const settings = new SettingsStore(db)
+// `npm run dev:onboarding` shows the onboarding on every launch (to work on it).
+if (process.env['YAAS_ONBOARDING'] === '1') settings.update({ onboardingDone: false })
 const accounts = new Accounts({
   db,
   authStatus: async (configDir) => {
@@ -33,7 +35,7 @@ function isTrustedSender(sender: WebContents): boolean {
 }
 
 function openMainWindow(): void {
-  mainWindow = createMainWindow({ glass: settings.get().transparency > 0 })
+  mainWindow = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow.on('closed', () => {
     mainWindow = null
   })
@@ -54,15 +56,15 @@ registerCommands(
   isTrustedSender,
 )
 
-// The native material is on as soon as the frame is see-through at all; how see-through is CSS.
-// Only toggle it when that changes: re-applying vibrancy on every tick of a slider flickers.
-let appliedGlass = settings.get().transparency > 0
+// The native material only changes at the thresholds (0 and liquid); how see-through the frame is
+// in between is CSS. Re-applying vibrancy on every tick of a slider flickers.
+let appliedMaterial = materialFor(settings.get().transparency)
 settings.subscribe((next) => {
   if (!mainWindow) return
-  const glass = next.transparency > 0
-  if (glass !== appliedGlass) {
-    appliedGlass = glass
-    applyGlass(mainWindow, glass)
+  const material = materialFor(next.transparency)
+  if (material !== appliedMaterial) {
+    appliedMaterial = material
+    applyMaterial(mainWindow, material)
   }
   emit(mainWindow.webContents, 'settings.changed', next)
 })

@@ -1,5 +1,5 @@
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
-import { hexToHsv, hsvToHex, isHex, type Hsv } from '../theme/color'
+import { useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
+import { hexToHsl, hslToHex, isHex, type Hsl } from '../theme/color'
 import { Slider } from './Slider'
 import styles from './ColorPicker.module.css'
 
@@ -14,9 +14,27 @@ const PRESETS = [
   '#111111',
 ]
 
+const COLS = 18
+const ROWS = 11
+/** Lightness from the top row to the bottom row. */
+const L_TOP = 0.86
+const L_BOTTOM = 0.3
+
+/** Field position (0..1) ↔ color: hue across, lightness down. */
+const toHsl = (x: number, y: number, s: number): Hsl => ({
+  h: x * 360,
+  s,
+  l: L_TOP + (L_BOTTOM - L_TOP) * y,
+})
+const toPoint = ({ h, l }: Hsl) => ({
+  x: h / 360,
+  y: Math.min(1, Math.max(0, (l - L_TOP) / (L_BOTTOM - L_TOP))),
+})
+
 /**
- * Accent picker (DESIGN.md §3.1): presets on top, a hue/saturation wheel, a brightness ramp and a
- * hex field. Every change is emitted live.
+ * Accent picker (DESIGN.md §3.1): presets, then a field of colored dots — hue across, lightness
+ * down — that swell like under a lens around the chosen color; an "intensity" wave for saturation;
+ * a hex field. Every change is emitted live.
  */
 export function ColorPicker({
   value,
@@ -25,45 +43,54 @@ export function ColorPicker({
   value: string
   onChange: (hex: string) => void
 }) {
-  const wheel = useRef<HTMLDivElement>(null)
-  const hsv = safeHsv(value)
-  // The field keeps what is being typed, even while it isn't a valid color yet.
+  const field = useRef<HTMLDivElement>(null)
+  const hsl = isHex(value) ? hexToHsl(value) : { h: 255, s: 0.8, l: 0.68 }
+  const saturation = Math.max(0.15, hsl.s)
+  const point = toPoint(hsl)
+  const [hover, setHover] = useState<{ x: number; y: number } | null>(null)
+  // The hex field keeps what is being typed, even while it isn't a valid color yet.
   const [draft, setDraft] = useState<string | null>(null)
 
-  const emit = (next: Hsv) => onChange(hsvToHex(next))
+  const dots = useMemo(
+    () =>
+      Array.from({ length: COLS * ROWS }, (_, i) => {
+        const x = (i % COLS) / (COLS - 1)
+        const y = Math.floor(i / COLS) / (ROWS - 1)
+        return { x, y, color: hslToHex(toHsl(x, y, saturation)) }
+      }),
+    [saturation],
+  )
 
-  const pick = (e: PointerEvent<HTMLDivElement>) => {
-    const box = wheel.current?.getBoundingClientRect()
+  const pickAt = (clientX: number, clientY: number) => {
+    const box = field.current?.getBoundingClientRect()
     if (!box) return
-    const r = box.width / 2
-    const dx = e.clientX - box.left - r
-    const dy = e.clientY - box.top - r
-    const h = ((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360
-    const s = Math.min(1, Math.hypot(dx, dy) / r)
-    emit({ h, s, v: hsv.v || 1 })
+    const x = Math.min(1, Math.max(0, (clientX - box.left) / box.width))
+    const y = Math.min(1, Math.max(0, (clientY - box.top) / box.height))
+    onChange(hslToHex(toHsl(x, y, saturation)))
   }
 
-  const onWheelKey = (e: KeyboardEvent) => {
-    const step = e.shiftKey ? 10 : 2
-    const moves: Record<string, Partial<Hsv>> = {
-      ArrowLeft: { h: (hsv.h - step + 360) % 360 },
-      ArrowRight: { h: (hsv.h + step) % 360 },
-      ArrowUp: { s: Math.min(1, hsv.s + step / 100) },
-      ArrowDown: { s: Math.max(0, hsv.s - step / 100) },
+  const onKey = (e: KeyboardEvent) => {
+    const step = e.shiftKey ? 0.1 : 1 / (COLS - 1)
+    const moves: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -1 / (ROWS - 1)],
+      ArrowDown: [0, 1 / (ROWS - 1)],
     }
     const move = moves[e.key]
     if (!move) return
     e.preventDefault()
-    emit({ ...hsv, ...move })
+    const x = (point.x + move[0] + 1) % 1
+    const y = Math.min(1, Math.max(0, point.y + move[1]))
+    onChange(hslToHex(toHsl(x, y, saturation)))
   }
 
-  // Knob position: angle = hue (0° at the top), distance = saturation.
-  const angle = ((hsv.h - 90) * Math.PI) / 180
-  const knob = {
-    left: `${50 + Math.cos(angle) * hsv.s * 50}%`,
-    top: `${50 + Math.sin(angle) * hsv.s * 50}%`,
+  /** Dots swell near the chosen color and near the pointer. */
+  const scaleOf = (x: number, y: number) => {
+    const near = (p: { x: number; y: number } | null, reach: number) =>
+      p ? Math.max(0, 1 - Math.hypot((x - p.x) * 1.6, y - p.y) / reach) : 0
+    return 1 + Math.max(near(point, 0.28) * 1.1, near(hover, 0.22) * 0.9)
   }
-  const pure = hsvToHex({ h: hsv.h, s: hsv.s, v: 1 })
 
   return (
     <div className={styles.picker}>
@@ -81,57 +108,74 @@ export function ColorPicker({
         ))}
       </div>
 
-      <div className={styles.body}>
-        <div
-          ref={wheel}
-          className={styles.wheel}
-          role="slider"
-          tabIndex={0}
-          aria-label="Hue and saturation"
-          aria-valuetext={value}
-          style={{ filter: `brightness(${0.25 + hsv.v * 0.75})` }}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture(e.pointerId)
-            pick(e)
-          }}
-          onPointerMove={(e) => e.buttons === 1 && pick(e)}
-          onKeyDown={onWheelKey}
-        >
-          <span className={styles.knob} style={{ ...knob, background: value }} />
-        </div>
-
-        <div className={styles.side}>
-          <span className={styles.swatch} style={{ background: value }} />
-          <label className={styles.hex}>
-            <span>Hex</span>
-            <input
-              value={draft ?? value}
-              spellCheck={false}
-              maxLength={7}
-              aria-label="Hex color"
-              aria-invalid={draft !== null && !isHex(draft)}
-              onChange={(e) => {
-                const text = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`
-                setDraft(text)
-                if (isHex(text)) onChange(text.toUpperCase())
-              }}
-              onBlur={() => setDraft(null)}
-            />
-          </label>
-        </div>
+      <div
+        ref={field}
+        className={styles.field}
+        role="slider"
+        tabIndex={0}
+        aria-label="Color field: hue across, lightness down"
+        aria-valuetext={value}
+        onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture(e.pointerId)
+          pickAt(e.clientX, e.clientY)
+        }}
+        onPointerMove={(e) => {
+          const box = field.current?.getBoundingClientRect()
+          if (box) {
+            setHover({
+              x: (e.clientX - box.left) / box.width,
+              y: (e.clientY - box.top) / box.height,
+            })
+          }
+          if (e.buttons === 1) pickAt(e.clientX, e.clientY)
+        }}
+        onPointerLeave={() => setHover(null)}
+        onKeyDown={onKey}
+      >
+        {dots.map((d, i) => (
+          <span
+            key={i}
+            className={styles.dot}
+            style={
+              {
+                left: `${d.x * 100}%`,
+                top: `${d.y * 100}%`,
+                background: d.color,
+                '--scale': scaleOf(d.x, d.y).toFixed(2),
+              } as CSSProperties
+            }
+          />
+        ))}
+        <span
+          className={styles.knob}
+          style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%`, background: value }}
+        />
       </div>
 
       <Slider
-        label="Brightness"
-        variant="gradient"
-        gradient={`linear-gradient(90deg, #000, ${pure})`}
-        value={hsv.v}
-        onChange={(v) => emit({ ...hsv, v: Math.max(0.04, v) })}
+        label="Intensity"
+        variant="wave"
+        value={saturation}
+        onChange={(s) => onChange(hslToHex({ ...hsl, s: Math.max(0.15, s) }))}
       />
+
+      <div className={styles.footer}>
+        <span className={styles.swatch} style={{ background: value }} />
+        <input
+          className={styles.hex}
+          value={draft ?? value}
+          spellCheck={false}
+          maxLength={7}
+          aria-label="Hex color"
+          aria-invalid={draft !== null && !isHex(draft)}
+          onChange={(e) => {
+            const text = e.target.value.startsWith('#') ? e.target.value : `#${e.target.value}`
+            setDraft(text)
+            if (isHex(text)) onChange(text.toUpperCase())
+          }}
+          onBlur={() => setDraft(null)}
+        />
+      </div>
     </div>
   )
-}
-
-function safeHsv(hex: string): Hsv {
-  return isHex(hex) ? hexToHsv(hex) : { h: 255, s: 0.64, v: 1 }
 }

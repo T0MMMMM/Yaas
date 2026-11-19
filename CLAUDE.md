@@ -19,6 +19,7 @@ Personal project, pre-alpha.
 ```bash
 npm run setup:fonts -- <path>  # once: install Satoshi locally (not in git, see DESIGN.md §3.0)
 npm run dev         # app with hot reload
+npm run dev:onboarding  # same, but shows the onboarding on every launch
 npm run check       # typecheck + lint + format:check + unit tests — must pass before every commit
 npm run test:e2e    # builds, then Playwright against the real app (no tokens)
 npm run format      # Prettier

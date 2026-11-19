@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { hexToHsv, hsvToHex, isHex, onAccentColor, relativeLuminance } from './color'
+import {
+  hexToHsl,
+  hexToHsv,
+  hslToHex,
+  hsvToHex,
+  isHex,
+  onAccentColor,
+  relativeLuminance,
+} from './color'
 
 describe('theme color helpers', () => {
   it('computes luminance at the extremes', () => {
@@ -35,5 +43,13 @@ describe('hsv conversions', () => {
     expect(isHex('#a1b2c3')).toBe(true)
     expect(isHex('a1b2c3')).toBe(false)
     expect(isHex('#abc')).toBe(false)
+  })
+})
+
+describe('hsl conversions', () => {
+  it('round-trips hex → hsl → hex', () => {
+    for (const hex of ['#7C5CFF', '#14B8C4', '#F2C94C', '#111111']) {
+      expect(hslToHex(hexToHsl(hex))).toBe(hex)
+    }
   })
 })

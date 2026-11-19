@@ -8,6 +8,19 @@
 
 /* ---------- right column: top bar + card ---------- */
 
+/* Liquid glass: the sidebar becomes a floating glass panel over the desktop. */
+:root[data-glass='liquid'] .sidebarSlot {
+  margin: 5px 5px 5px 5px;
+  border: 1px solid var(--glass-edge);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(170deg, rgb(255 255 255 / 0.25), rgb(255 255 255 / 0) 35%), var(--glass-panel);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    0 10px 30px rgb(0 0 0 / 0.12);
+}
+
 .sidebarSlot {
   position: relative;
   flex: none;
@@ -58,21 +71,21 @@
 
 .contextbar {
   position: relative;
-  height: 32px;
+  height: 38px;
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  padding: 0 10px;
-  padding-right: calc(10px + var(--titlebar-overlay-w));
+  padding: 0 14px;
+  padding-right: calc(14px + var(--titlebar-overlay-w));
 }
 
-/* A plain gray hairline, inset from the card's edges. */
+/* A plain gray hairline, edge to edge. */
 .contextbar::after {
   content: '';
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: 0;
+  right: 0;
   bottom: 0;
   height: 1px;
   background: var(--border-strong);
@@ -126,6 +139,9 @@
 
 :root[data-glass='liquid'] .card {
   border-color: var(--glass-edge);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    0 10px 30px rgb(0 0 0 / 0.12);
   background:
     linear-gradient(160deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 40%), var(--bg-surface);
 }

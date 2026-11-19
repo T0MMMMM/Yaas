@@ -14,8 +14,24 @@ export function glassSupported(): boolean {
   return build >= 22000
 }
 
-export function createMainWindow(options: { glass: boolean }): BrowserWindow {
-  const glass = options.glass && glassSupported()
+/**
+ * Window material, from the transparency setting (DESIGN.md §4):
+ * - `opaque`: no material, CSS paints everything
+ * - `frosted`: native blur of the desktop (vibrancy / acrylic) under a fading frame
+ * - `clear`: liquid glass — no blur, the desktop itself shows through the frame
+ */
+export type Material = 'opaque' | 'frosted' | 'clear'
+
+export const LIQUID_FROM = 0.9
+
+export function materialFor(transparency: number): Material {
+  if (!glassSupported() || transparency <= 0) return 'opaque'
+  return transparency >= LIQUID_FROM ? 'clear' : 'frosted'
+}
+
+export function createMainWindow(options: { material: Material }): BrowserWindow {
+  const { material } = options
+  const glass = material !== 'opaque'
 
   const win = new BrowserWindow({
     width: 1280,
@@ -26,10 +42,13 @@ export function createMainWindow(options: { glass: boolean }): BrowserWindow {
     title: 'YAAS',
     // Transparent so native material shows through; opaque fallback is set by CSS tokens.
     backgroundColor: glass ? '#00000000' : '#f3f2f5',
+    // macOS: a transparent window is what lets the desktop show through in `clear` mode.
+    // It must be decided at creation, so it is always on; CSS keeps the opaque modes opaque.
+    transparent: isMac,
     ...(isMac && {
       titleBarStyle: 'hiddenInset' as const,
       trafficLightPosition: { x: 18, y: 16 },
-      vibrancy: glass ? ('under-window' as const) : undefined,
+      vibrancy: material === 'frosted' ? ('under-window' as const) : undefined,
       visualEffectState: 'followWindow' as const,
     }),
     ...(isWindows && {
@@ -65,12 +84,13 @@ export function createMainWindow(options: { glass: boolean }): BrowserWindow {
   return win
 }
 
-/** Applies the glass setting live (DESIGN.md §4). */
-export function applyGlass(win: BrowserWindow, enabled: boolean): void {
-  const glass = enabled && glassSupported()
+/** Applies the material live (DESIGN.md §4). */
+export function applyMaterial(win: BrowserWindow, material: Material): void {
+  const glass = material !== 'opaque'
   if (isMac) {
-    win.setVibrancy(glass ? 'under-window' : null)
+    win.setVibrancy(material === 'frosted' ? 'under-window' : null)
   } else if (isWindows) {
+    // No clear mode on Windows: acrylic is the closest to see-through.
     win.setBackgroundMaterial(glass ? 'acrylic' : 'none')
   }
   win.setBackgroundColor(glass ? '#00000000' : '#f3f2f5')

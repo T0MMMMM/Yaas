@@ -39,7 +39,10 @@ export function Slider({
         {variant === 'gradient' && (
           <span className={styles.gradient} style={{ background: gradient }} />
         )}
-        <span className={styles.thumb} />
+        {/* A pill with one concave side, like a sliver of moon riding the track. */}
+        <svg className={styles.thumb} viewBox="0 0 14 28" aria-hidden>
+          <path d="M4 1.5h4.5A5 5 0 0 1 13.5 6.5v15a5 5 0 0 1-5 5H4c2.6-3.2 3.9-7.4 3.9-12.5S6.6 4.7 4 1.5Z" />
+        </svg>
         <input
           type="range"
           min={0}

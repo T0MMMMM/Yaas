@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { SessionView } from '../features/session/SessionView'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { useWorkspace } from '../features/workspace/useWorkspace'
@@ -37,18 +38,16 @@ export function Shell() {
       <div className={styles.column} data-has-contextbar={open !== null}>
         <main className={styles.card}>
           <ContextBar />
-          <section className={styles.empty} data-testid="empty-state">
-            {open ? (
-              <p className={styles.emptyHint}>The session view is not wired yet.</p>
-            ) : (
-              <>
-                <p className={styles.emptyTitle}>No session open</p>
-                <p className={styles.emptyHint}>
-                  Press <kbd>⌘T</kbd> to start a session.
-                </p>
-              </>
-            )}
-          </section>
+          {open ? (
+            <SessionView path={open.environment.path} />
+          ) : (
+            <section className={styles.empty} data-testid="empty-state">
+              <p className={styles.emptyTitle}>No session open</p>
+              <p className={styles.emptyHint}>
+                Press <kbd>⌘T</kbd> to start a session.
+              </p>
+            </section>
+          )}
         </main>
       </div>
 
