@@ -59,7 +59,8 @@ caption buttons.
   order. No pin icon — being above the separator *is* the pinned state.
 - Separator.
 - **Askew cards**: the selected item sits slightly askew (`--tilt-selected`, −0.8°) and hovered
-  items tilt a little (`--tilt-hover`, −0.4°), with a small bounce (`--ease-bounce`). Same motion in
+  items tilt a little (`--tilt-hover`, −0.4°), with a small bounce (`--ease-bounce`). Only the card layer tilts — the text never
+  moves. Same motion in
   the sidebar (sessions, folders) and the Settings navigation.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.

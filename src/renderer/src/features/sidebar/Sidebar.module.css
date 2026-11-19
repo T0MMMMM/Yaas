@@ -100,6 +100,8 @@ kbd {
 
 .row,
 .folder {
+  position: relative;
+  isolation: isolate;
   width: 100%;
   display: flex;
   align-items: center;
@@ -111,6 +113,17 @@ kbd {
   background: transparent;
   text-align: left;
   cursor: pointer;
+}
+
+/* The card is a separate layer behind the text: only it tilts, the text stays straight. */
+.row::before,
+.folder::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
   transition:
     background var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce);
@@ -120,16 +133,15 @@ kbd {
   padding-left: 31px; /* aligned with the folder name */
 }
 
-.row:hover,
-.folder:hover {
+.row:hover::before,
+.folder:hover::before {
   background: color-mix(in srgb, var(--neutral-surface) 45%, transparent);
   transform: rotate(var(--tilt-hover));
 }
 
-.row[data-active='true'] {
+.row[data-active='true']::before {
   background: var(--neutral-surface);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
-  /* The selected card sits slightly askew, with a small bounce. */
   transform: rotate(var(--tilt-selected));
 }
 

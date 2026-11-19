@@ -52,9 +52,21 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
+  position: relative;
+  isolation: isolate;
   color: var(--text-muted);
   text-align: left;
   cursor: pointer;
+}
+
+/* Card layer behind the label: only it tilts (same motion as the sidebar). */
+.navItem::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
   transition:
     background var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce);
@@ -62,12 +74,18 @@
 
 .navItem:hover {
   color: var(--text);
+}
+
+.navItem:hover::before {
   background: color-mix(in srgb, var(--neutral-surface) 45%, transparent);
   transform: rotate(var(--tilt-hover));
 }
 
 .navItem[aria-current='page'] {
   color: var(--text);
+}
+
+.navItem[aria-current='page']::before {
   background: var(--control-active);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
   transform: rotate(var(--tilt-selected));
