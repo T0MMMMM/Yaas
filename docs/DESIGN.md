@@ -167,8 +167,8 @@ remapped later.
 
 ## 8. Accessibility
 
-- Text contrast ≥ 4.5:1 in both schemes for any accent (checked when computing `--accent-strong`
-  and `--on-accent`).
+- Body text contrast ≥ 4.5:1 in both schemes. Body text never sits on the accent; labels on the
+  accent (buttons, badges — short and bold) use `--on-accent`: white when it reaches 3:1, else black.
 - Full keyboard navigation with visible focus rings (`--accent`).
 - Status glyphs always have a text label (tooltip + `aria-label`), never color alone.
 - `prefers-reduced-motion` and `prefers-reduced-transparency` (forces glass off) respected.

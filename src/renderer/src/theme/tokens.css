@@ -1,0 +1,133 @@
+/* Design tokens — docs/DESIGN.md §3. Components reference these, never raw values.
+   Toggled by <html data-scheme data-glass data-grain data-platform> and --accent (set from JS). */
+
+:root {
+  /* accent (overridden at runtime) */
+  --accent: #7c5cff;
+  --on-accent: #ffffff;
+  --accent-soft: color-mix(in oklch, var(--accent) 16%, transparent);
+  --accent-strong: color-mix(in oklch, var(--accent) 85%, var(--text));
+
+  /* material */
+  --sidebar-alpha: 1;
+  --surface-alpha: 1;
+  --grain-opacity: 0;
+
+  /* space (4 px scale) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* type */
+  --font-sans: system-ui, -apple-system, 'Segoe UI Variable', 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 13px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+
+  /* layout */
+  --sidebar-w: 248px;
+  --titlebar-h: 44px;
+  --titlebar-overlay-w: 0px; /* Windows caption buttons */
+
+  /* motion */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ---------- schemes ---------- */
+
+:root,
+:root[data-scheme='light'] {
+  color-scheme: light;
+  --neutral-window: #f6f6f8;
+  --neutral-sidebar: #ececf0;
+  --neutral-surface: #ffffff;
+  --bg-raised: #ffffff;
+  --border: rgb(0 0 0 / 0.08);
+  --border-strong: rgb(0 0 0 / 0.16);
+  --text: #18181b;
+  --text-muted: #5b5b66;
+  --text-faint: #9a9aa6;
+  --ok: #1f9d5c;
+  --warn: #c77a12;
+  --danger: #d33a3a;
+  --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.12);
+}
+
+:root[data-scheme='dark'] {
+  color-scheme: dark;
+  --neutral-window: #16161a;
+  --neutral-sidebar: #1d1d22;
+  --neutral-surface: #121215;
+  --bg-raised: #222228;
+  --border: rgb(255 255 255 / 0.07);
+  --border-strong: rgb(255 255 255 / 0.14);
+  --text: #ececf1;
+  --text-muted: #a3a3ae;
+  --text-faint: #6c6c78;
+  --ok: #3ccf86;
+  --warn: #f0a63a;
+  --danger: #ff6b6b;
+  --shadow-raised: 0 10px 32px rgb(0 0 0 / 0.45);
+}
+
+/* ---------- derived surfaces ---------- */
+
+:root {
+  --sidebar-tint: color-mix(in oklch, var(--accent) 12%, var(--neutral-sidebar));
+  --bg-window: var(--neutral-window);
+  --bg-sidebar: color-mix(
+    in srgb,
+    var(--sidebar-tint) calc(var(--sidebar-alpha) * 100%),
+    transparent
+  );
+  --bg-surface: color-mix(
+    in srgb,
+    var(--neutral-surface) calc(var(--surface-alpha) * 100%),
+    transparent
+  );
+}
+
+/* ---------- glass & grain ---------- */
+
+:root[data-glass='on'] {
+  --bg-window: transparent;
+  --sidebar-alpha: 0.55;
+  --surface-alpha: 0.85;
+}
+
+:root[data-grain='on'] {
+  --grain-opacity: var(--grain-level, 0.08);
+}
+
+:root[data-platform='windows'] {
+  --titlebar-overlay-w: 140px;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-glass='on'] {
+    --bg-window: var(--neutral-window);
+    --sidebar-alpha: 1;
+    --surface-alpha: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
+}
