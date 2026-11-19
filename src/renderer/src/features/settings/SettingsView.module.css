@@ -55,17 +55,22 @@
   color: var(--text-muted);
   text-align: left;
   cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
 }
 
 .navItem:hover {
   color: var(--text);
   background: color-mix(in srgb, var(--neutral-surface) 45%, transparent);
+  transform: rotate(var(--tilt-hover));
 }
 
 .navItem[aria-current='page'] {
   color: var(--text);
   background: var(--control-active);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  transform: rotate(var(--tilt-selected));
 }
 
 .navItem[aria-current='page'] svg {
