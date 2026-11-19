@@ -35,14 +35,14 @@ export function SettingsView() {
       >
         <nav className={styles.nav} aria-label="Settings sections">
           <h1 className={styles.navTitle}>Settings</h1>
-          {SECTIONS.map(({ id, label }, index) => (
+          {SECTIONS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               className={styles.navItem}
               aria-current={id === section.id ? 'page' : undefined}
               onClick={() => setSectionId(id)}
             >
-              <span className={styles.navIndex}>{String(index + 1).padStart(2, '0')}</span>
+              <Icon size={15} />
               {label}
             </button>
           ))}

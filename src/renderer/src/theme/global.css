@@ -16,7 +16,6 @@ body {
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--text-md);
-  font-variation-settings: 'opsz' 14;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   user-select: none;
@@ -29,18 +28,8 @@ button {
 }
 
 :focus-visible {
-  outline: 2px dashed var(--accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-/* Display type: condensed, heavy, with the accent ink printed slightly off-register. */
-.display {
-  font-family: var(--font-display);
-  font-stretch: 75%;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  line-height: 0.95;
-  text-shadow: 2px 1.5px 0 var(--misprint);
 }
 
 .drag {

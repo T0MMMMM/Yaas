@@ -8,8 +8,8 @@ export function Logo({ withWordmark = true }: { withWordmark?: boolean }) {
   return (
     <span className={styles.logo}>
       <svg className={styles.mark} viewBox="0 0 48 48" aria-hidden>
-        <rect x="16" y="14" width="28" height="28" rx="7" className={styles.front} />
-        <rect x="5" y="6" width="28" height="28" rx="7" className={styles.back} />
+        <rect x="4" y="10" width="26" height="26" rx="8" className={styles.back} />
+        <rect x="18" y="12" width="26" height="26" rx="8" className={styles.front} />
       </svg>
       {withWordmark && <span className={styles.wordmark}>yaas</span>}
     </span>

@@ -1,13 +1,12 @@
-/* Switch — an ink-outlined slot; on = accent ink with a hard-shadowed knob. */
 .switch {
   position: relative;
   flex: none;
-  width: 38px;
-  height: 22px;
+  width: 32px;
+  height: 18px;
   padding: 0;
-  border: var(--line);
+  border: none;
   border-radius: var(--radius-pill);
-  background: var(--bg-surface);
+  background: var(--border-strong);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease);
 }
@@ -18,21 +17,21 @@
 
 .switch:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.5;
 }
 
 .thumb {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 15px;
-  height: 15px;
-  border: 1.5px solid var(--ink);
+  width: 14px;
+  height: 14px;
   border-radius: var(--radius-pill);
-  background: var(--neutral-surface);
-  transition: transform var(--dur-base) var(--ease-bounce);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform var(--dur-fast) var(--ease);
 }
 
 .switch[aria-checked='true'] .thumb {
-  transform: translateX(16px);
+  transform: translateX(14px);
 }

@@ -8,20 +8,6 @@
   background: var(--bg-sidebar);
 }
 
-/* A big halftone disc bleeding off the corner — the print motif. */
-.page::before {
-  content: '';
-  position: absolute;
-  right: -180px;
-  bottom: -220px;
-  width: 560px;
-  height: 560px;
-  border-radius: 50%;
-  background: var(--halftone);
-  opacity: 0.55;
-  pointer-events: none;
-}
-
 .titlebar {
   position: absolute;
   inset: 0 0 auto;
@@ -36,7 +22,7 @@
   padding: 0;
   border: none;
   background: none;
-  font-size: 96px;
+  font-size: 56px;
   cursor: default;
   transform: translate(-50%, -50%);
   transition:
@@ -54,7 +40,7 @@
 .page:not([data-stage='intro']) .logo {
   top: 12px;
   left: var(--space-6);
-  font-size: 24px;
+  font-size: 20px;
   transform: none;
 }
 
@@ -64,15 +50,13 @@
 
 .tagline {
   position: absolute;
-  top: calc(50% + 78px);
+  top: calc(50% + 52px);
   left: 0;
   right: 0;
   margin: 0;
   text-align: center;
   color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-md);
-  letter-spacing: 0.04em;
+  font-size: var(--text-lg);
   animation: fade-in 600ms 250ms var(--ease) both;
   transition: opacity 300ms var(--ease);
 }
@@ -125,14 +109,10 @@
 }
 
 .header h1 {
-  margin: 0 0 var(--space-2);
-  font-family: var(--font-display);
-  font-size: 64px;
-  font-stretch: 75%;
-  font-weight: 800;
-  line-height: 0.88;
+  margin: 0 0 var(--space-1);
+  font-size: 26px;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  text-shadow: 4px 3px 0 var(--misprint);
 }
 
 .header p {
@@ -160,10 +140,9 @@
   align-items: flex-start;
   padding: var(--space-4);
   text-align: left;
-  border: var(--line);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow-hard);
+  background: color-mix(in srgb, var(--bg-raised) 70%, transparent);
 }
 
 .card svg {
@@ -183,7 +162,6 @@
 
 .card:disabled {
   opacity: 0.6;
-  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -199,7 +177,7 @@
   justify-content: space-between;
   align-items: center;
   padding-top: var(--space-4);
-  border-top: var(--line);
+  border-top: 1px solid var(--border);
 }
 
 .primary,
@@ -209,25 +187,9 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
-  border: var(--line);
-  box-shadow: var(--shadow-hard);
+  border: 1px solid transparent;
   cursor: pointer;
-  font-weight: 650;
-  transition:
-    transform var(--dur-fast) var(--ease-bounce),
-    box-shadow var(--dur-fast) var(--ease);
-}
-
-.primary:hover,
-.secondary:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0 var(--shadow-ink);
-}
-
-.primary:active,
-.secondary:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--shadow-ink);
+  font-weight: 600;
 }
 
 .primary {
@@ -236,13 +198,13 @@
 }
 
 .secondary {
-  background: var(--bg-surface);
-  color: var(--text);
+  background: transparent;
+  border-color: var(--border-strong);
+  color: var(--text-muted);
 }
 
 .soon {
   color: var(--text-faint);
-  font-family: var(--font-mono);
   font-size: var(--text-sm);
 }
 
