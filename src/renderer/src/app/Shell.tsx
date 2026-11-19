@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
-import { findSession } from '../features/sidebar/demoData'
+import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useUi } from '../stores/ui'
 import { ContextBar } from './ContextBar'
 import { useSidebarResize } from './useSidebarResize'
@@ -9,8 +9,8 @@ import styles from './Shell.module.css'
 
 /** Main layout: sidebar + context bar (in a session) + content card (DESIGN.md §2). */
 export function Shell() {
-  const { activeSessionId, view } = useUi()
-  const found = findSession(activeSessionId)
+  const view = useUi((s) => s.view)
+  const { open } = useWorkspace()
   const resize = useSidebarResize()
 
   return (
@@ -34,11 +34,11 @@ export function Shell() {
         />
       </div>
 
-      <div className={styles.column} data-has-contextbar={found !== null}>
+      <div className={styles.column} data-has-contextbar={open !== null}>
         <ContextBar />
         <main className={styles.card}>
           <section className={styles.empty} data-testid="empty-state">
-            {found ? (
+            {open ? (
               <p className={styles.emptyHint}>The session view is not wired yet.</p>
             ) : (
               <>

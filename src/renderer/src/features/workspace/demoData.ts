@@ -1,4 +1,5 @@
-// Placeholder content so the skeleton shows the layout. Replaced by real accounts/sessions later.
+// Placeholder content so the skeleton shows the layout. Only ./workspace.ts reads it: when real
+// accounts and sessions arrive over IPC, this file is deleted and nothing else changes.
 import type { SessionStatus } from '@shared/model'
 
 export interface DemoSession {
@@ -30,8 +31,6 @@ export interface DemoUsage {
   utilization: number
   minutesLeft: number
 }
-
-export const CONTEXT_LIMIT = 200_000
 
 export const DEMO_SPACES: DemoSpace[] = [
   {
@@ -103,24 +102,3 @@ export const DEMO_SPACES: DemoSpace[] = [
     ],
   },
 ]
-
-export function findSession(sessionId: string | null) {
-  for (const space of DEMO_SPACES) {
-    for (const environment of space.environments) {
-      const session = environment.sessions.find((s) => s.id === sessionId)
-      if (session) return { space, environment, session }
-    }
-  }
-  return null
-}
-
-const appStart = Date.now()
-
-/** Demo usage as absolute reset dates (computed once per app start). */
-export function usageView(space: DemoSpace) {
-  const at = (u: DemoUsage) => ({
-    utilization: u.utilization,
-    resetsAt: new Date(appStart + u.minutesLeft * 60_000),
-  })
-  return { session: at(space.usage.session), week: at(space.usage.week) }
-}

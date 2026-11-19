@@ -44,7 +44,11 @@ npm run dist:mac    # package (dist:win on Windows)
    stores Claude credentials.
 6. **Transcripts are the source of truth** for conversations; SQLite stores metadata and the search
    index only.
-7. **Provider-agnostic core**: Claude-specific code lives in `src/core/providers/claude-code/`
+7. **Workspace data goes through one module**: renderer components get spaces, the sidebar tree
+   (pinning rules), the open session and usage from `useWorkspace()`
+   (`src/renderer/src/features/workspace/`). Never import the data source or re-derive those rules
+   in a component — when real data arrives over IPC, only that module changes.
+8. **Provider-agnostic core**: Claude-specific code lives in `src/core/providers/claude-code/`
    behind the `Provider` interface (`src/core/providers/provider.ts`).
 
 ## Code style

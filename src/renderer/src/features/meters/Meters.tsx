@@ -1,4 +1,4 @@
-import { CONTEXT_LIMIT } from '../sidebar/demoData'
+import type { UsageWindowView } from '../workspace/workspace'
 import { formatReset } from './formatReset'
 import styles from './Meters.module.css'
 
@@ -30,27 +30,22 @@ function Ring({ ratio, warn }: { ratio: number; warn: boolean }) {
 }
 
 /** Context window of the open session (DESIGN.md §2). Demo values for now. */
-export function ContextMeter({ tokens }: { tokens: number }) {
-  const ratio = tokens / CONTEXT_LIMIT
+export function ContextMeter({ tokens, limit }: { tokens: number; limit: number }) {
+  const ratio = tokens / limit
   return (
     <div
       className={styles.meter}
       data-testid="context-indicator"
-      title={`Context window: ${tokens.toLocaleString()} / ${CONTEXT_LIMIT.toLocaleString()} tokens`}
+      title={`Context window: ${tokens.toLocaleString()} / ${limit.toLocaleString()} tokens`}
     >
       <Ring ratio={ratio} warn={ratio > 0.8} />
       <span className={styles.label}>Context</span>
       <span className={styles.value}>{pct(ratio)}</span>
       <span className={styles.reset}>
-        {k(tokens)} / {k(CONTEXT_LIMIT)}
+        {k(tokens)} / {k(limit)}
       </span>
     </div>
   )
-}
-
-export interface UsageWindowView {
-  utilization: number
-  resetsAt: Date
 }
 
 /** Account usage: Session (5 h) and Week (7 d) rings with reset time and time left. */

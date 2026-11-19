@@ -35,9 +35,15 @@ registerCommands(
   isTrustedSender,
 )
 
+// Native material is only touched when the glass setting actually changes: re-applying vibrancy
+// on every update (e.g. each tick of the grain slider) makes the window flicker.
+let appliedGlass = settings.get().glass
 settings.subscribe((next) => {
   if (!mainWindow) return
-  applyGlass(mainWindow, next.glass)
+  if (next.glass !== appliedGlass) {
+    appliedGlass = next.glass
+    applyGlass(mainWindow, next.glass)
+  }
   emit(mainWindow.webContents, 'settings.changed', next)
 })
 

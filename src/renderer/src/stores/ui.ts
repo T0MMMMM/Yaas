@@ -2,7 +2,8 @@ import { create } from 'zustand'
 
 /** Purely visual state of the window (active space / session, view, open folders). */
 interface UiState {
-  activeSpaceId: string
+  /** null = the first space. */
+  activeSpaceId: string | null
   activeSessionId: string | null
   view: 'session' | 'settings'
   closedEnvironments: ReadonlySet<string>
@@ -14,7 +15,7 @@ interface UiState {
 }
 
 export const useUi = create<UiState>((set) => ({
-  activeSpaceId: 'work',
+  activeSpaceId: null,
   activeSessionId: null,
   view: 'session',
   closedEnvironments: new Set(['website']),

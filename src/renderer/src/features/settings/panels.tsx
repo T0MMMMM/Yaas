@@ -2,7 +2,7 @@ import { SHORTCUTS } from '../../app/shortcuts'
 import { useSettings } from '../../stores/settings'
 import { Segmented } from '../../ui/Segmented'
 import { Switch } from '../../ui/Switch'
-import { DEMO_SPACES } from '../sidebar/demoData'
+import { useWorkspace } from '../workspace/useWorkspace'
 import { AppearanceFields, SwitcherField } from './AppearanceFields'
 import fields from './Fields.module.css'
 import { SettingGroup, SettingRow } from './SettingRow'
@@ -106,10 +106,11 @@ export function Appearance() {
 }
 
 export function Accounts() {
+  const { spaces } = useWorkspace()
   return (
     <>
       <SettingGroup>
-        {DEMO_SPACES.map((space) => (
+        {spaces.map((space) => (
           <SettingRow
             key={space.id}
             label={`${space.emoji}  ${space.label}`}

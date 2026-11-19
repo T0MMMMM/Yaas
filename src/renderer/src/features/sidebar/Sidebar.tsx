@@ -1,39 +1,27 @@
 import { Folder, FolderOpen, Plus, Search, Settings } from 'lucide-react'
 import { ContextMeter, UsageMeter } from '../meters/Meters'
+import { useWorkspace } from '../workspace/useWorkspace'
+import type { EnvironmentView, SessionView } from '../workspace/workspace'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
-import {
-  DEMO_SPACES,
-  findSession,
-  usageView,
-  type DemoEnvironment,
-  type DemoSession,
-} from './demoData'
 import { SessionStatusIcon } from './SessionStatusIcon'
 import styles from './Sidebar.module.css'
 
-/** Arc-style vertical sidebar (DESIGN.md §2). Static demo data, nothing is wired yet. */
+/** Arc-style vertical sidebar (DESIGN.md §2). Renders the workspace views; no data logic here. */
 export function Sidebar() {
   const ui = useUi()
+  const { spaces, space, tree, open, usage } = useWorkspace()
   const settings = useSettings((s) => s.settings)
   const switcher = settings?.spaceSwitcherStyle ?? 'emoji'
   const metersInSidebar = settings?.metersPlacement === 'sidebar'
+  if (!space || !tree) return null
 
-  const space = DEMO_SPACES.find((s) => s.id === ui.activeSpaceId) ?? DEMO_SPACES[0]
-  if (!space) return null
-
-  // Pinned section: pinned environments + individually pinned sessions. Below: the rest.
-  const pinnedEnvs = space.environments.filter((e) => e.pinned)
-  const otherEnvs = space.environments.filter((e) => !e.pinned)
-  const pinnedSessions = otherEnvs.flatMap((e) => e.sessions.filter((s) => s.pinned))
-  const found = findSession(ui.activeSessionId)
-
-  const renderSession = (session: DemoSession, nested: boolean) => (
+  const renderSession = (session: SessionView, nested: boolean) => (
     <li key={session.id}>
       <button
         className={styles.row}
         data-nested={nested}
-        data-active={session.id === ui.activeSessionId && ui.view === 'session'}
+        data-active={session.id === open?.session.id && ui.view === 'session'}
         onClick={() => ui.openSession(session.id)}
       >
         <span className={styles.rowTitle}>{session.title}</span>
@@ -42,23 +30,24 @@ export function Sidebar() {
     </li>
   )
 
-  const renderFolder = (env: DemoEnvironment) => {
-    const open = !ui.closedEnvironments.has(env.id)
-    const sessions = env.pinned ? env.sessions : env.sessions.filter((s) => !s.pinned)
-    const Icon = open ? FolderOpen : Folder
+  const renderFolder = (env: EnvironmentView) => {
+    const isOpen = !ui.closedEnvironments.has(env.id)
+    const Icon = isOpen ? FolderOpen : Folder
     return (
       <li key={env.id} data-testid="environment">
         <button
           className={styles.folder}
           onClick={() => ui.toggleEnvironment(env.id)}
-          aria-expanded={open}
+          aria-expanded={isOpen}
           title={env.path}
         >
           <Icon size={15} className={styles.folderIcon} />
           <span className={styles.rowTitle}>{env.name}</span>
-          {!open && <span className={styles.count}>{sessions.length}</span>}
+          {!isOpen && <span className={styles.count}>{env.sessions.length}</span>}
         </button>
-        {open && <ul className={styles.list}>{sessions.map((s) => renderSession(s, true))}</ul>}
+        {isOpen && (
+          <ul className={styles.list}>{env.sessions.map((s) => renderSession(s, true))}</ul>
+        )}
       </li>
     )
   }
@@ -74,16 +63,19 @@ export function Sidebar() {
       </button>
 
       <div className={styles.scroll}>
-        {(pinnedEnvs.length > 0 || pinnedSessions.length > 0) && (
+        {tree.pinned.length > 0 && (
           <>
             <ul className={styles.list} aria-label="Pinned" data-testid="pinned">
-              {pinnedEnvs.map(renderFolder)}
-              {pinnedSessions.map((s) => renderSession(s, false))}
+              {tree.pinned.map((item) =>
+                item.kind === 'environment'
+                  ? renderFolder(item.environment)
+                  : renderSession(item.session, false),
+              )}
             </ul>
             <hr className={styles.separator} />
           </>
         )}
-        <ul className={styles.list}>{otherEnvs.map(renderFolder)}</ul>
+        <ul className={styles.list}>{tree.environments.map(renderFolder)}</ul>
 
         <button className={styles.newSession}>
           <Plus size={14} />
@@ -92,16 +84,16 @@ export function Sidebar() {
         </button>
       </div>
 
-      {metersInSidebar && found && (
+      {metersInSidebar && open && (
         <div className={styles.meters}>
-          <ContextMeter tokens={found.session.contextTokens} />
-          <UsageMeter layout="stacked" {...usageView(space)} />
+          <ContextMeter tokens={open.session.contextTokens} limit={open.session.contextLimit} />
+          {usage && <UsageMeter layout="stacked" {...usage} />}
         </div>
       )}
 
       <div className={styles.bottom}>
         <div className={styles.accounts} data-style={switcher} role="tablist" aria-label="Accounts">
-          {DEMO_SPACES.map((s) => (
+          {spaces.map((s) => (
             <button
               key={s.id}
               role="tab"
