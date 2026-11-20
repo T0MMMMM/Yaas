@@ -70,3 +70,27 @@
 :global([data-compact='true']) .children {
   padding-left: 0;
 }
+
+/* The folded tabs: a grid row that animates 1fr to 0fr (height without measuring). Closed, they
+   stay mounted but hidden once the fold has played (visibility is delayed, then immediate). */
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease),
+    visibility 0s;
+}
+
+.fold[data-collapsed='true'] {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease),
+    visibility 0s linear var(--dur-base);
+}
+
+.fold > .children {
+  min-height: 0;
+  /* Clips the fold only vertically, so the tabs' shadows keep spilling sideways. */
+  overflow-y: clip;
+}

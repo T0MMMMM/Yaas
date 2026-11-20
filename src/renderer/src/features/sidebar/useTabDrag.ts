@@ -380,7 +380,8 @@ export function useTabDrag(
 
       const measure: Measure = (key) => {
         const el = container.current?.querySelector(`[data-drop="${CSS.escape(key)}"]`)
-        if (!el) return null
+        // A row that is folded away or leaving (inert) is not drawn: no height, but still counts.
+        if (!el || el.closest('[inert]')) return null
         const { top, height } = el.getBoundingClientRect()
         return { top, height }
       }

@@ -13,7 +13,18 @@ import styles from './TabRow.module.css'
  * One tab of the pinned or today list, indented under its parent tab by `depth`. Dragging the row
  * moves the tab (useTabDrag).
  */
-export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; active: boolean }) {
+export function TabRow({
+  tab,
+  depth,
+  active,
+  exiting = false,
+}: {
+  tab: TabView
+  depth: number
+  active: boolean
+  /** The tab is closed: the row plays its exit animation, inert and not counted as a tab. */
+  exiting?: boolean
+}) {
   const drag = useTabDragHandle(tab.id)
   const compact = useCompact()
   const trail = useContext(FolderTrailContext)
@@ -21,9 +32,12 @@ export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; ac
     <li
       className={styles.item}
       style={{ ...tilt(tab.id), '--depth': depth } as CSSProperties}
-      data-testid="tab"
+      data-testid={exiting ? 'tab-exiting' : 'tab'}
       data-depth={depth}
-      data-drop={`tab:${tab.id}`}
+      data-exiting={exiting || undefined}
+      inert={exiting}
+      aria-hidden={exiting || undefined}
+      data-drop={exiting ? undefined : `tab:${tab.id}`}
       data-dragged={drag.dragged || undefined}
       onContextMenu={(e) => {
         e.preventDefault()

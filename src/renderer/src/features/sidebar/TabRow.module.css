@@ -7,6 +7,36 @@
   margin-left: calc(var(--depth, 0) * var(--space-3));
 }
 
+/* A new row fades and slides in; a closed one (Rows, Sidebar.tsx) shrinks and fades out before
+   it leaves the DOM. */
+.item {
+  animation: row-in var(--dur-base) var(--ease);
+}
+
+.item[data-exiting] {
+  overflow: hidden;
+  pointer-events: none;
+  animation: row-out var(--dur-base) var(--ease) forwards;
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) * -1));
+  }
+}
+
+@keyframes row-out {
+  from {
+    max-height: var(--row-h);
+  }
+
+  to {
+    max-height: 0;
+    opacity: 0;
+  }
+}
+
 .row {
   position: relative;
   isolation: isolate;

@@ -302,7 +302,7 @@ test('the sidebar uses the system font and 38 px rows', async () => {
     expect(fontFamily).toMatch(/^(system-ui|-apple-system)/)
     const rowHeight = await page
       .getByTestId('tab')
-      .evaluate((el) => el.getBoundingClientRect().height)
+      .evaluate((el) => (el as HTMLElement).offsetHeight)
     expect(rowHeight).toBe(38)
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()

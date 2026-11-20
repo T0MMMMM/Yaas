@@ -2,9 +2,11 @@ import { useContext, useMemo, useRef, useState } from 'react'
 import { Folder, FolderOpen } from '@phosphor-icons/react'
 import type { SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
+import { usePresence } from '../../ui/usePresence'
 import { FolderTrailContext } from './FolderTrailContext'
 import { folderHue } from './hash'
 import { showFolderMenu } from './menus'
+import { nodeKey, ROW_EXIT_MS } from './rows'
 import { TabRow } from './TabRow'
 import { tilt } from './tilt'
 import { TabDragContext } from './useTabDrag'
@@ -69,6 +71,7 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
   const Icon = collapsed ? Folder : FolderOpen
   // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue.
   const hue = String(folderHue(name))
+  const children = usePresence(node.children, nodeKey, ROW_EXIT_MS)
   const trail = useMemo(() => [...outerTrail, hue], [outerTrail, hue])
 
   const toggle = (): void => {
@@ -124,22 +127,26 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
           </button>
         )}
       </div>
-      {!collapsed && node.children.length > 0 && (
-        <FolderTrailContext.Provider value={trail}>
-          <ul className={styles.children} aria-label={name}>
-            {node.children.map(
-              (child) =>
-                child.kind === 'tab' && (
-                  <TabRow
-                    key={child.tab.id}
-                    tab={child.tab}
-                    depth={child.depth}
-                    active={child.tab.id === activeId}
-                  />
-                ),
-            )}
-          </ul>
-        </FolderTrailContext.Provider>
+      {/* Always mounted so the fold animates; inert (and hidden from assistive tech) when closed. */}
+      {children.length > 0 && (
+        <div className={styles.fold} data-collapsed={collapsed} inert={collapsed}>
+          <FolderTrailContext.Provider value={trail}>
+            <ul className={styles.children} aria-label={name}>
+              {children.map(
+                ({ item: child, exiting }) =>
+                  child.kind === 'tab' && (
+                    <TabRow
+                      key={nodeKey(child)}
+                      tab={child.tab}
+                      depth={child.depth}
+                      active={child.tab.id === activeId}
+                      exiting={exiting}
+                    />
+                  ),
+              )}
+            </ul>
+          </FolderTrailContext.Provider>
+        </div>
       )}
     </li>
   )

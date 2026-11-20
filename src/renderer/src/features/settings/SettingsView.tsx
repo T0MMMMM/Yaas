@@ -1,15 +1,32 @@
 import { X } from '@phosphor-icons/react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useUi } from '../../stores/ui'
 import { SECTIONS } from './catalog'
 import styles from './SettingsView.module.css'
 
+/** Length of the exit animation (`--dur-fast`): the view is unmounted once it has played. */
+const EXIT_MS = 120
+
 /**
  * Settings as a modal dialog with a left navigation (DESIGN.md §7).
- * Esc, the close button or a click on the backdrop closes it.
+ * Esc, the close button or a click on the backdrop closes it, after an exit animation.
  */
 export function SettingsView() {
-  const closeSettings = useUi((s) => s.closeSettings)
+  const unmount = useUi((s) => s.closeSettings)
+  const [closing, setClosing] = useState(false)
+  /** The pending unmount while the exit animation plays; a repeated close is ignored. */
+  const exit = useRef<number | null>(null)
+  const closeSettings = useCallback(() => {
+    if (exit.current !== null) return
+    setClosing(true)
+    exit.current = window.setTimeout(unmount, EXIT_MS)
+  }, [unmount])
+  useEffect(
+    () => () => {
+      if (exit.current !== null) window.clearTimeout(exit.current)
+    },
+    [],
+  )
   const [sectionId, setSectionId] = useState(SECTIONS[0]?.id)
   const section = SECTIONS.find((s) => s.id === sectionId) ?? SECTIONS[0]
 
@@ -24,6 +41,7 @@ export function SettingsView() {
   return (
     <div
       className={`${styles.backdrop} no-drag`}
+      data-state={closing ? 'closing' : undefined}
       onMouseDown={(e) => e.target === e.currentTarget && closeSettings()}
     >
       <div

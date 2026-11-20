@@ -56,9 +56,10 @@ test('pinned tabs and folders: pin, file into a folder, collapse, rename', async
     const folderRow = pinned.getByTestId('folder')
     await expect(folderRow.getByTestId('tab')).toHaveText(['Page A'])
 
-    // A click on the folder row collapses it: its tab is no longer drawn.
+    // A click on the folder row collapses it: its tab stays mounted but is no longer shown.
     await folderRow.getByRole('button', { name: 'Reading' }).click()
-    await expect(folderRow.getByTestId('tab')).toHaveCount(0)
+    await expect(folderRow.getByTestId('tab')).toHaveCount(1)
+    await expect(folderRow.getByRole('button', { name: 'Page A' })).toHaveCount(0)
     await expect(folderRow.getByRole('button', { name: 'Reading' })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -92,8 +93,9 @@ test('three tabs of one site are drawn as an automatic folder, unless turned off
 
     // Collapsing an automatic folder hides its tabs too (kept per host in the UI).
     await folderButton.click()
-    await expect(auto.getByTestId('tab')).toHaveCount(0)
+    await expect(auto.getByRole('button', { name: 'Page A' })).toHaveCount(0)
     await folderButton.click()
+    await expect(auto.getByRole('button', { name: 'Page A' })).toHaveCount(1)
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
     await (await overlayPage(app)).getByRole('menuitem', { name: 'Settings' }).click()
@@ -362,5 +364,71 @@ test('favourite tiles fill the width and wrap', async () => {
 test('no Search button at the top of the sidebar', async () => {
   await withBrowser(async ({ page }) => {
     await expect(page.getByTestId('sidebar').getByRole('button', { name: 'Search' })).toHaveCount(0)
+  })
+})
+
+test('closing a tab animates its row out', async () => {
+  await withBrowser(async ({ page, site }) => {
+    // Three tabs of one site would be an automatic folder, which dissolves when one closes.
+    await page.evaluate(() => window.acab.invoke('settings.update', { autoFolders: false }))
+    await openTab(page, site.url('/a'))
+    const second = await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+    const remaining = ['Page A', 'Page C']
+
+    // Watches the DOM through the exit: an exiting row shows up, and the live rows never change.
+    const seen = await page.evaluate(async (tabId) => {
+      const list = document.querySelector('[data-testid=today]')
+      if (!list) throw new Error('no today list')
+      const live = (): string =>
+        [...list.querySelectorAll('[data-testid=tab]')].map((e) => e.textContent).join('|')
+      const lives = new Set<string>([live()])
+      let exiting = 0
+      const observer = new MutationObserver(() => {
+        lives.add(live())
+        exiting = Math.max(exiting, list.querySelectorAll('[data-testid=tab-exiting]').length)
+      })
+      observer.observe(list, { childList: true, subtree: true, attributes: true })
+      await window.acab.invoke('browser.closeTab', { tabId })
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      observer.disconnect()
+      return {
+        exiting,
+        lives: [...lives],
+        after: list.querySelectorAll('[data-testid=tab-exiting]').length,
+      }
+    }, second.id)
+    expect(seen.exiting).toBe(1)
+    expect(seen.after).toBe(0)
+    // Right after the close the rows read Page A and Page C, never anything else.
+    expect(seen.lives.filter((titles) => titles !== 'Page A|Page B|Page C')).toEqual([
+      remaining.join('|'),
+    ])
+    await expect(today.getByTestId('tab')).toHaveText(remaining)
+  })
+})
+
+test('collapsing a folder keeps its tab rows in the DOM but hides them from assistive tech', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const tab = await openTab(page, site.url('/a'))
+    const folder = await page.evaluate(() =>
+      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+    )
+    await page.evaluate(
+      ({ tabId, folderId }) =>
+        window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', folderId, index: 0 }),
+      { tabId: tab.id, folderId: folder.id },
+    )
+    const folderRow = page.getByTestId('pinned').getByTestId('folder')
+    await expect(folderRow.getByRole('button', { name: 'Page A' })).toHaveCount(1)
+
+    await folderRow.getByRole('button', { name: 'Reading' }).click()
+    await expect(folderRow.getByTestId('tab')).toHaveCount(1)
+    await expect(folderRow.getByRole('button', { name: 'Page A' })).toHaveCount(0)
+
+    await folderRow.getByRole('button', { name: 'Reading' }).click()
+    await expect(folderRow.getByRole('button', { name: 'Page A' })).toHaveCount(1)
   })
 })

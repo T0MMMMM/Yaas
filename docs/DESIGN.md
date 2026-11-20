@@ -230,7 +230,11 @@ thousand times.
   Only the card layer tilts — text never moves. Hover/selected fills are **neutral** (a light lift
   on the frame), never the accent.
 - **Drawn controls**: sliders draw what they do (§3.4); the accent picker is a wheel (§3.1).
-- **Animations everywhere** come in a later pass; for now only hover/press motion.
+- **Motion**: hover/press, plus rows and cards that enter and leave. A closed tab row shrinks and
+  fades out (`--dur-base`, `ui/usePresence` keeps it mounted, inert, as `tab-exiting`); folders fold
+  with a `grid-template-rows` 1fr to 0fr transition and keep their tabs mounted but inert; the
+  Settings view and the overlay cards play their open animation backwards (`--dur-fast`) before
+  they go. All of it uses `--dur-*` / `--ease-*`, so `prefers-reduced-motion` removes it.
 
 ### 3.2 Material
 
