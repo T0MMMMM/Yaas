@@ -1,5 +1,9 @@
 # YAAS — features & roadmap
 
+> **Note (2026-11-20):** the product is pivoting to **ACAB**, an AI-customizable browser
+> ([ADR-0006](adr/0006-pivot-to-acab-browser.md)). This page now describes the **AI tabs** pillar
+> of ACAB; the guiding principles below still apply to the whole product.
+
 YAAS runs **Claude Code** sessions across several isolated accounts ("spaces"), e.g. work and
 personal side by side, in one Arc-style window. Personal project for now; open source or
 freemium later.

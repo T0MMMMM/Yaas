@@ -13,6 +13,8 @@ export default tseslint.config(
       'coverage/**',
       'test-results/**',
       'playwright-report/**',
+      // throwaway spike code, not part of the app
+      'scripts/spikes/**',
     ],
   },
   js.configs.recommended,

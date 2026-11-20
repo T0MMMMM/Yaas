@@ -1,0 +1,115 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ACAB spike</title>
+    <style>
+      body {
+        margin: 0;
+        font:
+          13px system-ui,
+          sans-serif;
+        background: #1e1e22;
+        color: #ddd;
+      }
+      #tabs {
+        display: flex;
+        gap: 4px;
+        padding: 6px 6px 0;
+        height: 32px;
+        overflow-x: auto;
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        max-width: 200px;
+        padding: 0 10px;
+        background: #2b2b31;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tab.active {
+        background: #3a3a42;
+      }
+      .tab span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tab button {
+        background: none;
+        border: 0;
+        color: #aaa;
+        cursor: pointer;
+      }
+      #bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px;
+        height: 34px;
+        background: #3a3a42;
+      }
+      #bar button {
+        background: #2b2b31;
+        color: #ddd;
+        border: 0;
+        border-radius: 4px;
+        height: 26px;
+        min-width: 26px;
+        cursor: pointer;
+      }
+      #url {
+        flex: 1;
+        height: 24px;
+        border: 0;
+        border-radius: 4px;
+        padding: 0 8px;
+        background: #1e1e22;
+        color: #eee;
+      }
+      browser-action-list {
+        height: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="tabs"></div>
+    <div id="bar">
+      <button onclick="spike.nav('back')">←</button>
+      <button onclick="spike.nav('forward')">→</button>
+      <button onclick="spike.nav('reload')">⟳</button>
+      <input id="url" placeholder="URL ou recherche" />
+      <browser-action-list partition="persist:acab" alignment="bottom left"></browser-action-list>
+      <button title="Nouvel onglet" onclick="spike.newTab()">＋</button>
+      <button title="DevTools de la page" onclick="spike.nav('devtools')">⚙</button>
+    </div>
+    <script>
+      const tabsEl = document.getElementById('tabs')
+      const url = document.getElementById('url')
+      url.addEventListener('keydown', (e) => e.key === 'Enter' && spike.navigate(url.value))
+      spike.onTabs(({ list, activeId }) => {
+        tabsEl.replaceChildren(
+          ...list.map((t) => {
+            const el = document.createElement('div')
+            el.className = 'tab' + (t.id === activeId ? ' active' : '')
+            const s = document.createElement('span')
+            s.textContent = t.title
+            const x = document.createElement('button')
+            x.textContent = '×'
+            x.onclick = (e) => {
+              e.stopPropagation()
+              spike.closeTab(t.id)
+            }
+            el.append(s, x)
+            el.onclick = () => spike.selectTab(t.id)
+            return el
+          }),
+        )
+        const active = list.find((t) => t.id === activeId)
+        if (active && document.activeElement !== url) url.value = active.url
+      })
+    </script>
+  </body>
+</html>
