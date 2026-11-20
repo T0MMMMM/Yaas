@@ -57,7 +57,8 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
     transparent: isMac,
     ...(isMac && {
       titleBarStyle: 'hiddenInset' as const,
-      trafficLightPosition: { x: 18, y: 16 },
+      // In the window's top margin once it is open (WINDOW_CONTROLS_H), centred in its height.
+      trafficLightPosition: { x: 14, y: 9 },
       vibrancy: material === 'frosted' ? ('under-window' as const) : undefined,
       visualEffectState: 'followWindow' as const,
     }),
@@ -75,6 +76,9 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
       spellcheck: false,
     },
   })
+
+  // macOS: the traffic lights hide until the pointer rests on the top margin (WindowControls).
+  if (isMac) win.setWindowButtonVisibility(false)
 
   win.once('ready-to-show', () => win.show())
 
@@ -99,6 +103,24 @@ export function setWindowControlsVisible(
   platform: NodeJS.Platform = process.platform,
 ): void {
   if (platform === 'darwin') win.setWindowButtonVisibility(visible)
+}
+
+/**
+ * Whether the pointer (screen DIP) is in the window's top band (`height` px tall, full width):
+ * on macOS the traffic lights stay shown while it is, since the page gets no pointer events over
+ * them.
+ */
+export function inTopBand(
+  point: { x: number; y: number },
+  bounds: { x: number; y: number; width: number; height: number },
+  height: number,
+): boolean {
+  return (
+    point.x >= bounds.x &&
+    point.x < bounds.x + bounds.width &&
+    point.y >= bounds.y &&
+    point.y < bounds.y + height
+  )
 }
 
 /** The drawn maximize button (Windows): maximizes the window, or restores a maximized one. */

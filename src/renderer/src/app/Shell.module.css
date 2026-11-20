@@ -1,6 +1,7 @@
 .shell {
   position: relative;
   display: flex;
+  flex-direction: column;
   height: 100%;
   /* Arc-style: the tinted frame wraps the sidebar, the top bar and the content card. */
   background: var(--bg-sidebar);
@@ -25,16 +26,11 @@
   display: flex;
 }
 
-/* Icon-only: the top-left corner (where the traffic lights sit) shows them while hovered. */
-.controlsZone {
-  position: absolute;
-  z-index: 5;
-  top: 0;
-  left: 0;
-  /* Never wider than the sidebar: it must not spill over the address bar's buttons. */
-  width: min(var(--controls-zone-w), 100%);
-  height: var(--titlebar-h);
-  -webkit-app-region: no-drag;
+/* The sidebar and the page column, under the window's top margin. */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
 }
 
 /* Drag handle on the sidebar's right edge (min/max width in the IPC contract). */
@@ -81,8 +77,9 @@
   padding: var(--frame-gap) var(--frame-gap) var(--frame-gap) 0;
 }
 
-/* Windows: the top margin is the window controls' strip (WindowControls), which grows. */
-:root[data-platform='windows'] .column {
+/* macOS and Windows: the top margin is the window controls' strip (WindowControls), which grows. */
+:root[data-platform='windows'] .column,
+:root[data-platform='mac'] .column {
   padding-top: 0;
 }
 

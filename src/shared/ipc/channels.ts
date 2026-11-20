@@ -54,6 +54,7 @@ export const EVENT_CHANNELS = [
   'overlay.tooltip',
   'overlay.closed',
   'window.maximized',
+  'window.topHover',
 ] as const
 
 export type CommandChannel = (typeof COMMAND_CHANNELS)[number]

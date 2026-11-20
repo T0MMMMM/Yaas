@@ -18,7 +18,12 @@ import {
 } from './tooltip'
 
 /** What a row calls when the pointer enters it: its tooltip shows beside it, over the page. */
-export type EnterRow = (row: HTMLElement, title: string, detail: string) => void
+export type EnterRow = (
+  row: HTMLElement,
+  title: string,
+  detail: string,
+  icon: string | null,
+) => void
 
 export const TooltipContext = createContext<EnterRow>(() => undefined)
 
@@ -81,14 +86,14 @@ export function useTooltip(
   )
 
   const enter = useCallback<EnterRow>(
-    (row, title, detail) => {
+    (row, title, detail, icon) => {
       const nav = sidebar.current
       if (disabled || !nav) return
       clearGrace()
       const rest = anchorOf(row)
       const right = Math.round(nav.getBoundingClientRect().right)
       const anchor = { ...rest, width: Math.max(0, right - rest.x) }
-      dispatch({ type: 'enter', tooltip: clipTooltip(anchor, title, detail) })
+      dispatch({ type: 'enter', tooltip: clipTooltip(anchor, title, detail, icon) })
       // The delay runs from the first row entered; later rows only change what it will show.
       delay.current ??= window.setTimeout(() => {
         delay.current = null

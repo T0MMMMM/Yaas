@@ -1,4 +1,9 @@
-import { TOOLTIP_TEXT_MAX, type PageBounds, type Tooltip } from '@shared/ipc/contract'
+import {
+  TOOLTIP_ICON_MAX,
+  TOOLTIP_TEXT_MAX,
+  type PageBounds,
+  type Tooltip,
+} from '@shared/ipc/contract'
 
 /** How long the pointer rests on a row before its tooltip shows. */
 export const TOOLTIP_DELAY_MS = 500
@@ -48,7 +53,21 @@ export function tooltipReducer(state: TooltipState, event: TooltipEvent): Toolti
 const clip = (text: string): string =>
   text.length > TOOLTIP_TEXT_MAX ? `${text.slice(0, TOOLTIP_TEXT_MAX - 1)}…` : text
 
-/** A row's tooltip, its texts clipped to what the contract takes (a page title can be huge). */
-export function clipTooltip(anchor: PageBounds, title: string, detail: string): Tooltip {
-  return { anchor, title: clip(title), detail: clip(detail) }
+/**
+ * A row's tooltip, its texts clipped to what the contract takes (a page title can be huge). Only
+ * an inline (`data:`) favicon short enough for the contract is kept: a remote one would load
+ * outside the space's session, as the sidebar's own favicons never do.
+ */
+export function clipTooltip(
+  anchor: PageBounds,
+  title: string,
+  detail: string,
+  icon: string | null = null,
+): Tooltip {
+  return {
+    anchor,
+    title: clip(title),
+    detail: clip(detail),
+    ...(icon?.startsWith('data:') && icon.length <= TOOLTIP_ICON_MAX && { icon }),
+  }
 }

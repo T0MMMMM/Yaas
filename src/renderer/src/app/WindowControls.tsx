@@ -3,20 +3,44 @@ import { CopySimple, Minus, Square, X } from '@phosphor-icons/react'
 import { controlsDelay, controlsReducer } from './controlsReveal'
 import styles from './WindowControls.module.css'
 
+interface WindowControlsProps {
+  /** macOS shows its own traffic lights in the margin; Windows gets buttons drawn here. */
+  platform: 'mac' | 'windows'
+  /** Lays the margin over the content (the onboarding, with no page under it). */
+  floating?: boolean
+}
+
 /**
- * Windows: the window's top margin, holding minimize / maximize / close. The buttons are hidden;
- * resting the pointer on the margin opens it (it grows, the buttons slide in at the right) and it
- * closes a moment after the pointer leaves. `floating` lays it over the content (the onboarding,
- * which has no page under it) instead of pushing the content down.
+ * The window's top margin, across the whole window. The window buttons are hidden; resting the
+ * pointer on the margin opens it (it grows, the buttons come) and it closes a moment after the
+ * pointer leaves. On Windows the buttons are drawn here; on macOS the traffic lights are shown in
+ * it, and since the page gets no pointer events over them, main reports when the pointer leaves
+ * the top band (`window.topHover`).
  */
-export function WindowControls({ floating = false }: { floating?: boolean }) {
+export function WindowControls({ platform, floating = false }: WindowControlsProps) {
   const [state, dispatch] = useReducer(controlsReducer, 'hidden')
   const [maximized, setMaximized] = useState(false)
+  const open = state === 'shown' || state === 'hiding'
+  const mac = platform === 'mac'
 
   useEffect(() => {
+    if (mac) return
     void window.bigBrowser.invoke('window.isMaximized').then(setMaximized)
     return window.bigBrowser.on('window.maximized', setMaximized)
-  }, [])
+  }, [mac])
+
+  useEffect(() => {
+    if (!mac) return
+    void window.bigBrowser.invoke('window.setControlsVisible', { visible: open })
+  }, [mac, open])
+
+  useEffect(
+    () =>
+      mac
+        ? window.bigBrowser.on('window.topHover', (inside) => dispatch(inside ? 'enter' : 'leave'))
+        : undefined,
+    [mac],
+  )
 
   useEffect(() => {
     const delay = controlsDelay(state)
@@ -25,8 +49,6 @@ export function WindowControls({ floating = false }: { floating?: boolean }) {
     return () => window.clearTimeout(timer)
   }, [state])
 
-  const open = state === 'shown' || state === 'hiding'
-
   return (
     <div
       className={styles.strip}
@@ -34,36 +56,41 @@ export function WindowControls({ floating = false }: { floating?: boolean }) {
       data-floating={floating || undefined}
       data-testid="window-controls"
       onPointerEnter={() => dispatch('enter')}
-      onPointerLeave={() => dispatch('leave')}
+      // On macOS, once the lights show, main decides when the pointer has left (see above).
+      onPointerLeave={() => {
+        if (!mac || state === 'revealing') dispatch('leave')
+      }}
     >
-      {/* Hidden buttons take no focus or clicks. */}
-      <div className={styles.buttons} inert={!open}>
-        <button
-          className={styles.button}
-          aria-label="Minimize"
-          onClick={() => void window.bigBrowser.invoke('window.minimize')}
-        >
-          <Minus weight="regular" />
-        </button>
-        <button
-          className={styles.button}
-          aria-label={maximized ? 'Restore' : 'Maximize'}
-          onClick={() => void window.bigBrowser.invoke('window.toggleMaximize')}
-        >
-          {maximized ? (
-            <CopySimple weight="regular" size={14} />
-          ) : (
-            <Square weight="regular" size={13} />
-          )}
-        </button>
-        <button
-          className={`${styles.button} ${styles.close}`}
-          aria-label="Close"
-          onClick={() => void window.bigBrowser.invoke('window.close')}
-        >
-          <X weight="regular" />
-        </button>
-      </div>
+      {!mac && (
+        // Hidden buttons take no focus or clicks.
+        <div className={styles.buttons} inert={!open}>
+          <button
+            className={styles.button}
+            aria-label="Minimize"
+            onClick={() => void window.bigBrowser.invoke('window.minimize')}
+          >
+            <Minus weight="regular" />
+          </button>
+          <button
+            className={styles.button}
+            aria-label={maximized ? 'Restore' : 'Maximize'}
+            onClick={() => void window.bigBrowser.invoke('window.toggleMaximize')}
+          >
+            {maximized ? (
+              <CopySimple weight="regular" size={14} />
+            ) : (
+              <Square weight="regular" size={13} />
+            )}
+          </button>
+          <button
+            className={`${styles.button} ${styles.close}`}
+            aria-label="Close"
+            onClick={() => void window.bigBrowser.invoke('window.close')}
+          >
+            <X weight="regular" />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

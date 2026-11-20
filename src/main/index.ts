@@ -1,5 +1,14 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, clipboard, Menu, session, ShareMenu, type WebContents } from 'electron'
+import {
+  app,
+  BrowserWindow,
+  clipboard,
+  Menu,
+  screen,
+  session,
+  ShareMenu,
+  type WebContents,
+} from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { Accounts } from '@core/accounts/accounts'
 import { diffHosts } from '@core/browser/adblock'
@@ -8,7 +17,12 @@ import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
 import { DB_FILE, migrateLegacyData } from '@core/store/legacyData'
-import type { BrowserState, Settings, Shortcut } from '@shared/ipc/contract'
+import {
+  WINDOW_CONTROLS_H,
+  type BrowserState,
+  type Settings,
+  type Shortcut,
+} from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
@@ -24,6 +38,7 @@ import {
   materialFor,
   PRELOAD_PATH,
   rendererUrl,
+  inTopBand,
   setWindowControlsVisible,
   toggleMaximize,
 } from './windows/mainWindow'
@@ -248,6 +263,28 @@ function setupMenu(): void {
   )
 }
 
+/** How often main checks the pointer while the macOS traffic lights show. */
+const TOP_BAND_POLL_MS = 100
+let topBandWatch: ReturnType<typeof setInterval> | null = null
+
+/**
+ * macOS, while the traffic lights show: the page gets no pointer events over them, so main
+ * watches the pointer and tells the UI when it leaves (or comes back to) the window's top band.
+ */
+function watchTopBand(win: BrowserWindow, visible: boolean): void {
+  if (topBandWatch !== null) clearInterval(topBandWatch)
+  topBandWatch = null
+  if (!visible || process.platform !== 'darwin') return
+  let inside = true
+  topBandWatch = setInterval(() => {
+    if (win.isDestroyed()) return
+    const now = inTopBand(screen.getCursorScreenPoint(), win.getBounds(), WINDOW_CONTROLS_H)
+    if (now === inside) return
+    inside = now
+    emit(win.webContents, 'window.topHover', now)
+  }, TOP_BAND_POLL_MS)
+}
+
 function openMainWindow(): void {
   const win = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow = win
@@ -315,7 +352,9 @@ registerCommands(
       browser.openTab(browser.snapshot().activeSpaceId, CHROME_WEB_STORE)
     },
     'window.setControlsVisible': ({ visible }) => {
-      if (mainWindow) setWindowControlsVisible(mainWindow, visible)
+      if (!mainWindow) return
+      setWindowControlsVisible(mainWindow, visible)
+      watchTopBand(mainWindow, visible)
     },
     'window.minimize': () => mainWindow?.minimize(),
     'window.toggleMaximize': () => {

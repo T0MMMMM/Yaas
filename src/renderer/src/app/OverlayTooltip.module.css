@@ -1,30 +1,60 @@
-/* A sidebar row's tooltip: the popovers' opaque card, small, beside the sidebar, vertically centred
-   on its row. `top` is set inline; moving it slides the card to the next row. */
+/* A sidebar row's tooltip: the popovers' opaque card beside the sidebar, vertically centred on its
+   row. `top` is set inline; moving it springs the card to the next row. */
 .tooltip {
   position: fixed;
-  left: var(--space-2);
-  max-width: calc(100vw - 2 * var(--space-2));
+  left: var(--space-3);
+  max-width: min(var(--tooltip-max-w), calc(100vw - 2 * var(--space-3)));
   translate: 0 -50%;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-hair);
-  padding: var(--space-1) var(--space-2);
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
   border: 1px solid var(--border-menu);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--bg-menu);
   box-shadow: var(--shadow-menu);
   color: var(--text);
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
   pointer-events: none;
+  transform-origin: left center;
   transition:
-    top var(--dur-base) var(--ease),
-    opacity var(--dur-fast) var(--ease);
-  animation: fade-in var(--dur-fast) var(--ease);
+    top var(--dur-base) var(--ease-bounce),
+    opacity var(--dur-fast) var(--ease),
+    scale var(--dur-fast) var(--ease);
+  animation: pop-in var(--dur-base) var(--ease-bounce);
 }
 
 .tooltip[data-state='closing'] {
   opacity: 0;
+  scale: 0.96;
+}
+
+/* The favicon sits in a small tile, like the sidebar's favourite tiles. */
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--control-size-xs);
+  height: var(--control-size-xs);
+  border-radius: var(--radius-md);
+  background: var(--bg-tile);
+  color: var(--text-muted);
+}
+
+.icon img {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  border-radius: var(--radius-sm);
+}
+
+.text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-hair);
+  /* Level with the icon tile when the title fits on one line. */
+  padding-top: var(--space-hair);
 }
 
 /* A huge page title or URL never makes the card taller than the window. */
@@ -36,19 +66,22 @@
 }
 
 .title {
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .detail {
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   color: var(--text-muted);
   font-size: var(--text-xs);
 }
 
-@keyframes fade-in {
+@keyframes pop-in {
   from {
     opacity: 0;
+    transform: translateX(calc(var(--space-2) * -1)) scale(0.94);
   }
 }

@@ -21,17 +21,9 @@ export function Shell() {
   const view = useUi((s) => s.view)
   const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
-  // Only macOS has traffic lights to bring back; elsewhere the corner keeps dragging the window.
-  const mac = useSettings((s) => s.info?.platform === 'mac')
-  const windows = useSettings((s) => s.info?.platform === 'windows')
+  const platform = useSettings((s) => s.info?.platform)
 
   useEffect(() => initBrowser(), [initBrowser])
-
-  // Icon-only: the traffic lights go (they would not fit); the top-left corner brings them back
-  // while the pointer is on it. Leaving icon-only shows them again.
-  useEffect(() => {
-    void window.bigBrowser.invoke('window.setControlsVisible', { visible: !resize.compact })
-  }, [resize.compact])
 
   // Shortcuts pressed while a page has focus arrive from main's menu.
   useEffect(
@@ -65,40 +57,32 @@ export function Shell() {
       data-resizing={resize.resizing}
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
-      <div className={styles.sidebarSlot}>
-        {resize.compact && mac && (
-          <div
-            className={styles.controlsZone}
-            data-testid="controls-zone"
-            onPointerEnter={() =>
-              void window.bigBrowser.invoke('window.setControlsVisible', { visible: true })
-            }
-            onPointerLeave={() =>
-              void window.bigBrowser.invoke('window.setControlsVisible', { visible: false })
-            }
-          />
-        )}
-        <Sidebar compact={resize.compact} />
-        <div
-          className={styles.resizer}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Resize sidebar"
-          aria-valuenow={resize.width}
-          title="Drag to resize · double-click to reset"
-          onPointerDown={resize.onPointerDown}
-          onDoubleClick={resize.reset}
-          data-testid="sidebar-resizer"
-        />
-      </div>
+      {/* The window buttons wait in the top margin (Linux keeps its native title bar). */}
+      {(platform === 'mac' || platform === 'windows') && <WindowControls platform={platform} />}
 
-      <div className={styles.column}>
-        {windows && <WindowControls />}
-        <div className={styles.page}>
-          <AddressBar />
-          <main className={styles.card}>
-            <PageSlot />
-          </main>
+      <div className={styles.body}>
+        <div className={styles.sidebarSlot}>
+          <Sidebar compact={resize.compact} />
+          <div
+            className={styles.resizer}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            aria-valuenow={resize.width}
+            title="Drag to resize · double-click to reset"
+            onPointerDown={resize.onPointerDown}
+            onDoubleClick={resize.reset}
+            data-testid="sidebar-resizer"
+          />
+        </div>
+
+        <div className={styles.column}>
+          <div className={styles.page}>
+            <AddressBar />
+            <main className={styles.card}>
+              <PageSlot />
+            </main>
+          </div>
         </div>
       </div>
 

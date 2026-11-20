@@ -58,6 +58,16 @@ describe('tooltipReducer', () => {
 })
 
 describe('clipTooltip', () => {
+  it('carries an inline favicon, never a remote or oversized one', () => {
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(clipTooltip(anchor, 'A', 'a.com', 'data:image/png;base64,AA').icon).toBe(
+      'data:image/png;base64,AA',
+    )
+    expect(clipTooltip(anchor, 'A', 'a.com', 'https://a.com/favicon.ico').icon).toBeUndefined()
+    expect(clipTooltip(anchor, 'A', 'a.com', `data:${'x'.repeat(5000)}`).icon).toBeUndefined()
+    expect(clipTooltip(anchor, 'A', 'a.com', null).icon).toBeUndefined()
+  })
+
   const anchor = { x: 0, y: 0, width: 240, height: 38 }
 
   it('keeps short texts as they are', () => {

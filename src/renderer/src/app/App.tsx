@@ -42,7 +42,9 @@ export function App() {
       ) : (
         <>
           <Onboarding />
-          {info?.platform === 'windows' && <WindowControls floating />}
+          {(info?.platform === 'mac' || info?.platform === 'windows') && (
+            <WindowControls platform={info.platform} floating />
+          )}
         </>
       )}
     </IconContext.Provider>

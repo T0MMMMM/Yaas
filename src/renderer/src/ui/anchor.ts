@@ -1,7 +1,7 @@
 import type { PageBounds } from '@shared/ipc/contract'
 
 /** Gap between a popover and the button it opens from (and the window's edges). */
-export const POPOVER_GAP = 6
+export const POPOVER_GAP = 10
 
 /**
  * Rect of the button a popover opens from, in window coordinates, as `overlay.open` takes it: the

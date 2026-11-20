@@ -25,7 +25,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
         aria-current={active ? 'page' : undefined}
         aria-label={tab.title}
         {...TOOLTIP_ROW}
-        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
+        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host, tab.faviconUrl)}
         onPointerDown={drag.onPointerDown}
         onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
         onContextMenu={(e) => {

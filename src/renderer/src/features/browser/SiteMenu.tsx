@@ -4,6 +4,7 @@ import type { PageBounds } from '@shared/ipc/contract'
 import { spacePartition } from '@shared/spaces'
 import { useSettings } from '../../stores/settings'
 import { POPOVER_GAP } from '../../ui/anchor'
+import { PopoverNeck } from '../../ui/PopoverNeck'
 import { useConnector } from '../../ui/connector'
 import popover from '../../ui/Popover.module.css'
 import { Switch } from '../../ui/Switch'
@@ -80,13 +81,7 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
       aria-label="Site menu"
       data-testid="site-menu"
     >
-      <span
-        ref={connector}
-        className={popover.connector}
-        data-side="top"
-        aria-hidden
-        data-testid="connector"
-      />
+      <PopoverNeck ref={connector} side="top" />
       {site && (
         <div className={styles.quickActions}>
           <button

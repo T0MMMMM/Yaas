@@ -20,19 +20,24 @@
 }
 
 /* Where a card sits so the neck can be centred on the button: `--anchor-mid` (the button's centre
-   along the window's width, set inline) lies radius + half a neck + border inside the card's edge,
-   so the neck clears the rounded corner (ui/connector.ts). Bounded to the window's edge. */
+   along the window's width, set inline) lies radius + half a neck (its flares included) + border
+   inside the card's edge, so the neck clears the rounded corner (ui/connector.ts). Bounded to the
+   window's edge. */
+.card {
+  --neck-half: calc(var(--connector-w) / 2 + var(--connector-flare));
+}
+
 .alignLeft {
   left: max(
     0px,
-    calc(var(--anchor-mid) - var(--radius-lg) - var(--connector-w) / 2 - var(--card-border))
+    calc(var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
   );
 }
 
 .alignRight {
   right: max(
     0px,
-    calc(100vw - var(--anchor-mid) - var(--radius-lg) - var(--connector-w) / 2 - var(--card-border))
+    calc(100vw - var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
   );
 }
 
@@ -50,25 +55,41 @@
   }
 }
 
-/* The neck joining a card to the button it opens from: the card's fill and border, open on the
-   card's side so it covers that stretch of the card's border. Its left is set at runtime
-   (ui/connector.ts); its height is the gap plus the card's border. */
+/* The neck joining a card to the button it opens from (ui/PopoverNeck): the card's fill, its edges
+   curving out of the card's border into a stem that meets the button. It covers that stretch of
+   the card's border. Its left is set at runtime (ui/connector.ts); its height is the gap plus the
+   card's border. */
 .connector {
   position: absolute;
-  box-sizing: border-box;
-  width: var(--connector-w);
-  border: 1px solid var(--border-menu);
-  background: var(--bg-menu);
+  width: calc(var(--connector-w) + 2 * var(--connector-flare));
+}
+
+.connector svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
 .connector[data-side='bottom'] {
   top: 100%;
-  border-top: none;
-  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
 }
 
+/* The same shape, leaving the card's top edge. */
 .connector[data-side='top'] {
   bottom: 100%;
-  border-bottom: none;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+.connector[data-side='top'] svg {
+  scale: 1 -1;
+}
+
+.neckFill {
+  fill: var(--bg-menu);
+}
+
+.neckEdge {
+  fill: none;
+  stroke: var(--border-menu);
+  stroke-width: 1;
 }

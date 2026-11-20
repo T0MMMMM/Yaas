@@ -514,7 +514,10 @@ results come back to the lead as a short summary + branch name, never the full c
   `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
-  lights (the main window; a no-op on Windows and Linux): the UI hides them in icon-only mode.
+  lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
+  the window's top margin is open. While they show, main polls the pointer (100 ms) and emits
+  `window.topHover` when it leaves or re-enters the top band (`WINDOW_CONTROLS_H`), since the
+  page gets no pointer events over the traffic lights.
   Windows has no native caption buttons (no `titleBarOverlay`): the UI draws minimize / maximize /
   close and calls `window.minimize`, `window.toggleMaximize`, `window.close`; it reads
   `window.isMaximized` once and follows the `window.maximized` event (maximize / restore icon).

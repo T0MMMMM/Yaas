@@ -13,6 +13,8 @@ export const SIDEBAR_COMPACT = 56
 export const SIDEBAR_COMPACT_FROM = 120
 export const SIDEBAR_MAX = 440
 export const SIDEBAR_DEFAULT = 248
+/** Height of the window's top margin once open, with the window buttons (= `--window-controls-h`). */
+export const WINDOW_CONTROLS_H = 32
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #RRGGBB')
 
@@ -179,11 +181,16 @@ export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 /** Longest tooltip title or detail; the sidebar clips longer ones before sending (clipTooltip). */
 export const TOOLTIP_TEXT_MAX = 500
 
+/** Longest favicon URL a tooltip carries (a data: URL can be long; longer ones are dropped). */
+export const TOOLTIP_ICON_MAX = 4096
+
 export const tooltipSchema = z
   .object({
     anchor: pageBoundsSchema,
     title: z.string().max(TOOLTIP_TEXT_MAX),
     detail: z.string().max(TOOLTIP_TEXT_MAX),
+    /** The row's favicon, shown before the title. */
+    icon: z.string().max(TOOLTIP_ICON_MAX).optional(),
   })
   .strict()
 export type Tooltip = z.infer<typeof tooltipSchema>
@@ -281,7 +288,10 @@ export const commands = {
   'browser.share': { input: tabRef, output: z.void() },
   /** Opens or closes the developer tools of the tab's page. */
   'browser.toggleDevTools': { input: tabRef, output: z.void() },
-  /** Shows or hides the window's traffic lights (macOS; no-op elsewhere): hidden in icon-only mode. */
+  /**
+   * Shows or hides the window's traffic lights (macOS; no-op elsewhere): shown while the top margin
+   * is open. While shown, main reports the pointer leaving the top band with `window.topHover`.
+   */
   'window.setControlsVisible': {
     input: z.object({ visible: z.boolean() }).strict(),
     output: z.void(),
@@ -327,6 +337,11 @@ export const events = {
   'overlay.closed': z.void(),
   /** To the UI: the window was maximized (`true`) or restored, so the drawn button follows. */
   'window.maximized': z.boolean(),
+  /**
+   * To the UI (macOS, while the traffic lights show): whether the pointer is still in the window's
+   * top band. Over the traffic lights the page gets no pointer events, so main watches instead.
+   */
+  'window.topHover': z.boolean(),
 } as const satisfies Record<EventChannel, z.ZodType>
 
 export type Commands = typeof commands

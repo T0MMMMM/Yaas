@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Globe } from '@phosphor-icons/react'
 import type { Tooltip } from '@shared/ipc/contract'
 import styles from './OverlayTooltip.module.css'
 
@@ -6,13 +7,15 @@ let mounts = 0
 
 /**
  * A sidebar row's tooltip in the overlay (tooltip mode: the view is a strip from the sidebar's
- * edge). One card for the whole hover: moving to another row slides it there (`top` follows the
- * anchor's vertical centre); it fades in when mounted and out while `closing`.
+ * edge): the row's favicon and title, its site below. One card for the whole hover: moving to
+ * another row springs it there (`top` follows the anchor's vertical centre); it pops in when
+ * mounted and fades out while `closing`.
  */
 export function OverlayTooltip({ tooltip, closing }: { tooltip: Tooltip; closing: boolean }) {
   // Set once at mount: the same card slides from row to row instead of being replaced.
   const [key] = useState(() => String(++mounts))
-  const { anchor, title, detail } = tooltip
+  const [brokenIcon, setBrokenIcon] = useState<string | null>(null)
+  const { anchor, title, detail, icon } = tooltip
   return (
     <div
       role="tooltip"
@@ -22,8 +25,17 @@ export function OverlayTooltip({ tooltip, closing }: { tooltip: Tooltip; closing
       data-key={key}
       data-state={closing ? 'closing' : 'open'}
     >
-      <span className={styles.title}>{title}</span>
-      {detail && <span className={styles.detail}>{detail}</span>}
+      <span className={styles.icon} aria-hidden>
+        {icon && icon !== brokenIcon ? (
+          <img src={icon} alt="" onError={() => setBrokenIcon(icon)} />
+        ) : (
+          <Globe weight="regular" />
+        )}
+      </span>
+      <span className={styles.text}>
+        <span className={styles.title}>{title}</span>
+        {detail && <span className={styles.detail}>{detail}</span>}
+      </span>
     </div>
   )
 }

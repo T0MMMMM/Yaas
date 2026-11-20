@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
 import type { PageBounds } from '@shared/ipc/contract'
 import { POPOVER_GAP as GAP } from './anchor'
+import { PopoverNeck } from './PopoverNeck'
 import { useConnector } from './connector'
 import { useDismiss } from './useDismiss'
 import styles from './Menu.module.css'
@@ -97,13 +98,7 @@ export function Menu({
       onKeyDown={onKeyDown}
       data-testid="menu"
     >
-      <span
-        ref={connector}
-        className={popover.connector}
-        data-side={placement === 'above' ? 'bottom' : 'top'}
-        aria-hidden
-        data-testid="connector"
-      />
+      <PopoverNeck ref={connector} side={placement === 'above' ? 'bottom' : 'top'} />
       {filter && (
         <input
           className={styles.filter}

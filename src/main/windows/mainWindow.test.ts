@@ -4,7 +4,7 @@ import type { BrowserWindow } from 'electron'
 // mainWindow.ts imports electron at load time; only the pure helper is under test here.
 vi.mock('electron', () => ({ BrowserWindow: vi.fn(), shell: {} }))
 
-import { setWindowControlsVisible, toggleMaximize } from './mainWindow'
+import { inTopBand, setWindowControlsVisible, toggleMaximize } from './mainWindow'
 
 function fakeWindow() {
   const setWindowButtonVisibility = vi.fn()
@@ -49,5 +49,21 @@ describe('toggleMaximize', () => {
     toggleMaximize(win)
     expect(unmaximize).toHaveBeenCalledOnce()
     expect(maximize).not.toHaveBeenCalled()
+  })
+})
+
+describe('inTopBand', () => {
+  const bounds = { x: 100, y: 50, width: 800, height: 600 }
+
+  it('is true across the whole width of the window, in its top band', () => {
+    expect(inTopBand({ x: 100, y: 50 }, bounds, 32)).toBe(true)
+    expect(inTopBand({ x: 899, y: 81 }, bounds, 32)).toBe(true)
+  })
+
+  it('is false below the band or beside the window', () => {
+    expect(inTopBand({ x: 500, y: 82 }, bounds, 32)).toBe(false)
+    expect(inTopBand({ x: 99, y: 60 }, bounds, 32)).toBe(false)
+    expect(inTopBand({ x: 900, y: 60 }, bounds, 32)).toBe(false)
+    expect(inTopBand({ x: 500, y: 49 }, bounds, 32)).toBe(false)
   })
 })

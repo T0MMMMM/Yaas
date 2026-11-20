@@ -211,21 +211,10 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
   })
 })
 
-test('icon-only mode hides the window buttons and marks filed tabs', async () => {
+test('icon-only mode marks filed tabs', async () => {
   await withBrowser(async ({ app, page }) => {
     await blankTab(page)
     await expect.poll(() => shownView(app)).toBeTruthy()
-    // The traffic lights exist on macOS only.
-    const mac = process.platform === 'darwin'
-    // Record what main would do to the traffic lights (they are not observable otherwise).
-    await app.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed())
-      const calls: boolean[] = []
-      ;(globalThis as { controlCalls?: boolean[] }).controlCalls = calls
-      if (win) win.setWindowButtonVisibility = (visible: boolean) => void calls.push(visible)
-    })
-    const lastCall = () =>
-      app.evaluate(() => (globalThis as { controlCalls?: boolean[] }).controlCalls?.at(-1))
     const sidebar = page.getByTestId('sidebar')
     const dragTo = async (x: number) => {
       const handle = await page.getByTestId('sidebar-resizer').boundingBox()
@@ -257,23 +246,15 @@ test('icon-only mode hides the window buttons and marks filed tabs', async () =>
 
     await dragTo(90)
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(72)
-    if (mac) await expect.poll(lastCall).toBe(false)
     const filed = page.getByTestId('folder').getByTestId('tab')
     await expect(filed.getByTestId('folder-bar')).toHaveCount(1)
     await expect(
       page.getByTestId('today').getByTestId('tab').getByTestId('folder-bar'),
     ).toHaveCount(0)
 
-    // The hover zone exists on macOS only: elsewhere the top of the sidebar still drags the window.
-    await expect(page.getByTestId('controls-zone')).toHaveCount(mac ? 1 : 0)
-
-    // The top-left corner shows them while hovered.
-    await page.mouse.move(20, 20)
-    if (mac) await expect.poll(lastCall).toBe(true)
-
     await dragTo(40)
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(48)
-    // The hover zone stays inside the sidebar: the address bar's Back button is still hit.
+    // Nothing covers the address bar: its Back button is still hit.
     const backIsHit = await page.getByRole('button', { name: 'Back' }).evaluate((el) => {
       const box = el.getBoundingClientRect()
       const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
@@ -283,7 +264,6 @@ test('icon-only mode hides the window buttons and marks filed tabs', async () =>
 
     await dragTo(300)
     await expect(sidebar).toHaveAttribute('data-compact', 'false')
-    if (mac) await expect.poll(lastCall).toBe(true)
   })
 })
 

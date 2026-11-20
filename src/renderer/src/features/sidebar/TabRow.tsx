@@ -63,7 +63,7 @@ export function TabRow({
         aria-current={active ? 'page' : undefined}
         aria-label={compact ? tab.title : undefined}
         {...TOOLTIP_ROW}
-        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
+        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host, tab.faviconUrl)}
         onPointerDown={drag.onPointerDown}
         onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
       >
