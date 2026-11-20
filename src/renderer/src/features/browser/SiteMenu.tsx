@@ -13,7 +13,7 @@ import { blocksAdsOn, withAdsBlockedOn } from './siteAdBlock'
 import styles from './SiteMenu.module.css'
 
 interface SiteMenuProps {
-  /** Rect of the address bar button it opens from; the card opens below it, right-aligned. */
+  /** Rect of the address bar button it opens from; the card opens below it, the connector centred on the button. */
   anchor: PageBounds
   /** Plays the exit animation (the overlay hides it once done). */
   closing?: boolean
@@ -62,15 +62,15 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
     onClose()
   }
 
-  const place: CSSProperties = {
+  const place: CSSProperties & { '--anchor-mid': string } = {
+    '--anchor-mid': `${anchor.x + anchor.width / 2}px`,
     top: anchor.y + anchor.height + POPOVER_GAP,
-    right: Math.max(0, window.innerWidth - anchor.x - anchor.width),
   }
 
   return (
     <div
       ref={ref}
-      className={`${styles.card} no-drag`}
+      className={`${styles.card} ${popover.alignRight} no-drag`}
       style={place}
       data-state={closing ? 'closing' : 'open'}
       role="dialog"

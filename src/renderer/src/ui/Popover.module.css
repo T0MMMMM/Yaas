@@ -4,7 +4,8 @@
 .card {
   position: fixed;
   z-index: 20;
-  border: 1px solid var(--border-menu);
+  --card-border: 1px;
+  border: var(--card-border) solid var(--border-menu);
   border-radius: var(--radius-lg);
   background: var(--bg-menu);
   box-shadow: var(--shadow-menu);
@@ -16,6 +17,23 @@
 .card[data-state='closing'] {
   pointer-events: none;
   animation: close var(--dur-fast) var(--ease) forwards;
+}
+
+/* Where a card sits so the neck can be centred on the button: `--anchor-mid` (the button's centre
+   along the window's width, set inline) lies radius + half a neck + border inside the card's edge,
+   so the neck clears the rounded corner (ui/connector.ts). Bounded to the window's edge. */
+.alignLeft {
+  left: max(
+    0px,
+    calc(var(--anchor-mid) - var(--radius-lg) - var(--connector-w) / 2 - var(--card-border))
+  );
+}
+
+.alignRight {
+  right: max(
+    0px,
+    calc(100vw - var(--anchor-mid) - var(--radius-lg) - var(--connector-w) / 2 - var(--card-border))
+  );
 }
 
 @keyframes open {

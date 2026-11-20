@@ -14,7 +14,7 @@ export type MenuItem =
 interface MenuProps {
   /** Rect of the button the menu opens from, in viewport coordinates. */
   anchor: PageBounds
-  /** Opens above the anchor or below it; either way it starts at the anchor's left edge. */
+  /** Opens above the anchor or below it; either way the card is placed so the connector sits centred on the anchor. */
   placement: 'above' | 'below'
   items: MenuItem[]
   /** A field at the top that narrows the items to those whose label has what is typed. */
@@ -74,8 +74,8 @@ export function Menu({
   // <body> because an ancestor with backdrop-filter (liquid glass) would otherwise become the
   // containing block of a fixed element. It runs in the overlay view, above the page, so it may
   // extend over the page; it only keeps clear of the window's right edge.
-  const place: CSSProperties = {
-    left: anchor.x,
+  const place: CSSProperties & { '--anchor-mid': string } = {
+    '--anchor-mid': `${anchor.x + anchor.width / 2}px`,
     maxWidth: Math.max(0, window.innerWidth - anchor.x - GAP),
     ...(placement === 'above'
       ? { bottom: window.innerHeight - anchor.y + GAP }
@@ -85,7 +85,7 @@ export function Menu({
   return createPortal(
     <div
       ref={ref}
-      className={`${styles.menu} no-drag`}
+      className={`${styles.menu} ${popover.alignLeft} no-drag`}
       style={place}
       data-placement={placement}
       data-state={closing ? 'closing' : 'open'}

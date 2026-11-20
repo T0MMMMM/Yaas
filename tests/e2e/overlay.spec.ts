@@ -116,7 +116,7 @@ test('the + menu is joined to its button', async () => {
     const neck = await connector.boundingBox()
     const button = await plusButton(page).boundingBox()
     if (!neck || !button) throw new Error('connector or + button not found')
-    expect(Math.abs(neck.x + neck.width / 2 - (button.x + button.width / 2))).toBeLessThanOrEqual(2)
+    expect(Math.abs(neck.x + neck.width / 2 - (button.x + button.width / 2))).toBeLessThanOrEqual(1)
     expect(Math.abs(neck.y + neck.height - button.y)).toBeLessThanOrEqual(1)
   })
 })
@@ -131,5 +131,29 @@ test('menus animate out', async () => {
     await expect(menu).toHaveAttribute('data-state', 'closing')
     await expect(menu).toHaveCount(0)
     await expect(plusButton(page)).toHaveAttribute('aria-expanded', 'false')
+  })
+})
+
+test('the site menu is joined to its button', async () => {
+  await withPage(async ({ page, overlay }) => {
+    const button = page.getByRole('button', { name: 'Site menu' })
+    await button.click()
+    const connector = overlay.getByTestId('connector')
+    await expect(connector).toBeVisible()
+    await overlay.waitForFunction(
+      () => document.querySelector('[data-testid="site-menu"]')?.getAnimations().length === 0,
+    )
+    await page.waitForFunction(
+      () =>
+        document.querySelector('[aria-label="Site menu"]')?.getAnimations({ subtree: true })
+          .length === 0,
+    )
+
+    const neck = await connector.boundingBox()
+    const box = await button.boundingBox()
+    if (!neck || !box) throw new Error('connector or site menu button not found')
+    expect(Math.abs(neck.x + neck.width / 2 - (box.x + box.width / 2))).toBeLessThanOrEqual(1)
+    // The neck hangs from the button's bottom edge down to the card.
+    expect(Math.abs(neck.y - (box.y + box.height))).toBeLessThanOrEqual(1)
   })
 })

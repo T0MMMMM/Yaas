@@ -128,7 +128,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-menu`,
 `--border-menu`, `--shadow-menu`, rows hovered with `--bg-menu-hover`). A connector joins the card
 to its button: a `--connector-w` neck, the gap tall, in the card's fill and border, centred on the
-button but kept clear of the card's rounded corners (`ui/connector.ts`); the button takes the
+button but kept clear of the card's rounded corners (`ui/connector.ts`; the card is placed so the button's centre lies that far inside its edge, `.alignLeft`/`.alignRight` in `Popover.module.css`); the button takes the
 `--bg-menu` fill while open, at rest (no hover tilt or magnetic lean). Closing plays the open
 animation backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
 a chosen item's action runs first, never after the animation. The + menu has a
