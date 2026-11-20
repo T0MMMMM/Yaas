@@ -6,11 +6,14 @@ import {
   type Page,
 } from '@playwright/test'
 
-/** Launches the built app with its data in `userData`. */
-export function launchApp(userData: string): Promise<ElectronApplication> {
+/** Launches the built app with its data in `userData`, plus any extra environment. */
+export function launchApp(
+  userData: string,
+  env: Record<string, string> = {},
+): Promise<ElectronApplication> {
   return electron.launch({
     args: [join(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, ACAB_USER_DATA: userData },
+    env: { ...process.env, ACAB_USER_DATA: userData, ...env },
   })
 }
 

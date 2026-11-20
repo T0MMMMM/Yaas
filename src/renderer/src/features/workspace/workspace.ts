@@ -40,7 +40,13 @@ export interface BrowserView {
 }
 
 /** A tab without a view yet (never shown since launch) has no live state. */
-const IDLE: TabRuntime = { loading: false, canGoBack: false, canGoForward: false, themeColor: null }
+const IDLE: TabRuntime = {
+  loading: false,
+  canGoBack: false,
+  canGoForward: false,
+  themeColor: null,
+  webContentsId: null,
+}
 
 const toSpace = (s: BrowserSpace): SpaceSummary => ({ id: s.id, label: s.name, color: s.color })
 

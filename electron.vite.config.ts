@@ -10,9 +10,30 @@ const alias = {
 export default defineConfig({
   main: {
     resolve: { alias },
+    build: {
+      // Dependencies stay external (electron-vite's default, spelled out for these three): the
+      // extension packages resolve their own preload files from node_modules at runtime.
+      externalizeDeps: {
+        include: [
+          'electron-chrome-extensions',
+          'electron-chrome-web-store',
+          '@ghostery/adblocker-electron',
+        ],
+      },
+    },
   },
   preload: {
     resolve: { alias },
+    build: {
+      rollupOptions: {
+        input: {
+          // The app preload (UI window and overlay).
+          index: resolve(__dirname, 'src/preload/index.ts'),
+          // The `browser.*` mirror registered on space sessions (spike fix 1).
+          browserMirror: resolve(__dirname, 'src/preload/browserMirror.ts'),
+        },
+      },
+    },
   },
   renderer: {
     root: resolve(__dirname, 'src/renderer'),

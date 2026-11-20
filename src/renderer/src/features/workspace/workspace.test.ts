@@ -99,7 +99,13 @@ const browser: BrowserState = {
   ],
   activeTabIds: { s1: 'b', s2: 'x' },
   runtime: {
-    b: { loading: true, canGoBack: true, canGoForward: false, themeColor: '#123456' },
+    b: {
+      loading: true,
+      canGoBack: true,
+      canGoForward: false,
+      themeColor: '#123456',
+      webContentsId: 7,
+    },
   },
 }
 
@@ -123,6 +129,7 @@ describe('browserView', () => {
       canGoBack: true,
       canGoForward: false,
       themeColor: '#123456',
+      webContentsId: 7,
       loaded: true,
     })
   })
@@ -144,6 +151,7 @@ describe('browserView', () => {
       canGoBack: false,
       canGoForward: false,
       themeColor: null,
+      webContentsId: null,
     })
   })
 

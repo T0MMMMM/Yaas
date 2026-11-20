@@ -1,0 +1,10 @@
+{
+  "manifest_version": 3,
+  "name": "ACAB Test Action",
+  "version": "1.0.0",
+  "description": "Local fixture for the extensions e2e (never published).",
+  "action": {
+    "default_title": "ACAB Test Action",
+    "default_popup": "popup.html"
+  }
+}

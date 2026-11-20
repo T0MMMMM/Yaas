@@ -90,6 +90,8 @@ export interface TabRuntime {
   canGoForward: boolean
   /** The page's `theme-color`, or null when it has none. */
   themeColor: string | null
+  /** Id of the tab's web contents in main, or null when it has none. */
+  webContentsId: number | null
 }
 
 export const tabRuntimeSchema = z.object({
@@ -97,6 +99,7 @@ export const tabRuntimeSchema = z.object({
   canGoBack: z.boolean(),
   canGoForward: z.boolean(),
   themeColor: z.string().nullable(),
+  webContentsId: z.number().int().nullable(),
 }) satisfies z.ZodType<TabRuntime>
 
 /** The browser model plus the runtime state of each tab that has a view, keyed by tab id. */

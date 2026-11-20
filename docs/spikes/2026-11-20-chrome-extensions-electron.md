@@ -19,6 +19,7 @@
 | 6 | Built-in ad blocker (Ghostery engine) | ❓ | Enabled in the spike, not checked on a real site |
 | 7 | Other extensions (uBlock Lite, Dark Reader…) | ❓ | Not tested |
 | 8 | Toolbar icon updates | ⚠️ | `chrome.action.setIcon` / `setPopup` log "not supported in Electron" |
+| 9 | macOS: per-space sessions load an unpacked extension; window.open from an extension page becomes a tab | ✅ | `tests/e2e/extensions.spec.ts` (Electron 45.4.1, the same package versions); 1Password itself not re-tested on macOS |
 
 ## Fix 1 — mirror `chrome.*` onto `browser.*`
 
@@ -38,6 +39,12 @@ pages as a tab of the browser window. Fix: `app.on('web-contents-created')` inst
 `setWindowOpenHandler` on every web contents that denies the window and opens a tab instead (real
 tabs install their own handler right after). After this, sign-in happens in a tab and the
 extension picks it up.
+
+## In the app (plan 2, task 2)
+
+`main/browser/spaceSessions.ts` applies both fixes to every space session. `ElectronChromeExtensions`
+4.10.0 takes no `license` option (checked against its README), so none is passed. The Web Store's
+auto-update is turned off under test (`ACAB_USER_DATA`), so the e2e never touches the network.
 
 ## Other things learned
 
@@ -62,6 +69,6 @@ Electron (ADR-0006) and fix extension gaps as they show up.
 ## Next checks
 
 - ❓ 6 and 7 above: ad blocker on a real site, and 3–5 everyday extensions.
-- ❓ Same spike on macOS.
+- ❓ Same spike on macOS with 1Password (row 9 covers the two fixes with a local extension).
 - ❓ Whether 1Password's desktop-app integration can be reached another way (e.g. 1Password CLI
   `op`, as yab does when the extension is off).

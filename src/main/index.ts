@@ -8,6 +8,7 @@ import { openDatabase } from '@core/store/database'
 import type { BrowserState } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { OverlayView } from './browser/overlayView'
+import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
@@ -19,6 +20,9 @@ import {
   PRELOAD_PATH,
   rendererUrl,
 } from './windows/mainWindow'
+
+/** The `browser.*` mirror registered on every space session (spike fix 1). */
+const MIRROR_PRELOAD_PATH = join(__dirname, '../preload/browserMirror.js')
 
 // Tests and parallel dev profiles can point ACAB at a throwaway data dir.
 const userDataOverride = process.env['ACAB_USER_DATA']
@@ -78,6 +82,55 @@ function views(): TabViews {
   return tabViews
 }
 
+/** URLs an extension may open as a tab: web pages and extension pages, nothing local. */
+const isTabUrl = (url: string): boolean =>
+  url === 'about:blank' || /^(https?|chrome-extension):/i.test(url)
+
+/** Tabs and the window, as the space sessions' extensions see them. */
+const extensionHost: ExtensionHost = {
+  openTab: async (spaceId, url) => {
+    if (!isTabUrl(url)) throw new Error(`Extensions cannot open ${url} as a tab`)
+    const tab = browser.openTab(spaceId, url)
+    // Only the active space's tabs get a view: an extension of another space brings it forward.
+    if (browser.snapshot().activeSpaceId !== spaceId) browser.activateSpace(spaceId)
+    const contents = views().webContentsOf(tab.id)
+    if (!contents) throw new Error('The new tab has no view')
+    return contents
+  },
+  selectTab: (contents) => {
+    const tabId = tabViews?.tabIdOf(contents)
+    if (tabId) browser.activateTab(tabId)
+  },
+  closeTab: (contents) => {
+    const tabId = tabViews?.tabIdOf(contents)
+    if (tabId) browser.closeTab(tabId)
+  },
+  window: () => mainWindow,
+}
+
+const testExtension = process.env['ACAB_TEST_EXTENSION']
+const spaceSessions = new SpaceSessions({
+  userData: app.getPath('userData'),
+  mirrorPreload: MIRROR_PRELOAD_PATH,
+  host: extensionHost,
+  ...(testExtension ? { testExtension } : {}),
+  // Tests run on a throwaway data dir and never touch the network.
+  autoUpdate: !userDataOverride,
+})
+
+// Spike fix 2: window.open from an extension page (popup, background) opens a tab of its space,
+// like Chrome, instead of a window that steals focus and closes the popup. Tab views, the UI and
+// the overlay install their own handler right after creation, which replaces this one.
+app.on('web-contents-created', (_event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    const spaceId = spaceSessions.spaceOf(contents.session)
+    if (spaceId && isTabUrl(url)) {
+      setImmediate(() => void extensionHost.openTab(spaceId, url).catch(() => undefined))
+    }
+    return { action: 'deny' }
+  })
+})
+
 function activeTabId(): string | null {
   const snapshot = browser.snapshot()
   return snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
@@ -130,7 +183,7 @@ function openMainWindow(): void {
     emit(win.webContents, 'overlay.closed', undefined)
   })
   overlay = overlayView
-  tabViews = new TabViews(win, browser, emitBrowserState, () => overlayView.raise())
+  tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, () => overlayView.raise())
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
     mainWindow = null

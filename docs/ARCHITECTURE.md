@@ -86,6 +86,7 @@ src/
     events.ts              # typed in-process event bus (core → ipc)
   preload/
     index.ts               # exposes window.yaas (invoke/on), nothing else
+    browserMirror.ts       # space sessions only: mirrors chrome.* onto browser.* (extensions)
   renderer/
     app/                   # routes: onboarding, main layout
     features/              # sidebar, tabs, chat, approvals, palette, settings, crew
@@ -408,15 +409,35 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Model in core.** `core/browser/browserStore.ts` owns spaces and tabs (SQLite, `spaces` /
   `tabs` tables) and knows nothing of Electron. Main mirrors it; the renderer only sees it through
   `browser.state` and the `browser.changed` event (`BrowserState` = the snapshot plus each tab's
-  `runtime`: loading, back/forward, `theme-color` — live data, never persisted).
+  `runtime`: loading, back/forward, `theme-color`, the view's `webContentsId` — live data, never
+  persisted).
 - **One view per tab.** `main/browser/tabViews.ts` gives every tab its own `WebContentsView`,
   added to the window's `contentView` above the UI. Only the active tab of the active space is
-  visible. Views are `sandbox` + `contextIsolation`, no `nodeIntegration`, **no preload**; the
+  visible. Views are `sandbox` + `contextIsolation`, no `nodeIntegration`, **no app preload; the
+  session's `browser.*` mirror only**; the
   user agent is plain Chrome (`core/browser/userAgent.ts` drops the `Electron/` and `ACAB/`
   tokens). Popups and `target=_blank` become tabs in the same space (`deny` + `openTab`), never
   windows; `will-navigate` to a non-http(s) scheme is blocked.
 - **Partitions.** Each space browses in its own persistent session,
   `persist:space-<spaceId>`: cookies and storage never leak between spaces.
+  `main/browser/spaceSessions.ts` (`SpaceSessions.get`) sets a session up once, when the space's
+  first tab view is created: user agent, permission handlers, extensions.
+- **Extensions.** Chrome extensions are per space (they follow the space's sign-ins, like Arc):
+  every space session gets its own `ElectronChromeExtensions` (`electron-chrome-extensions`) and
+  the Chrome Web Store (`electron-chrome-web-store`, "Add to Chrome" works), with extensions
+  stored under `<userData>/extensions/<spaceId>`. Web Store update checks are off when
+  `ACAB_USER_DATA` is set (tests). `TabViews` registers each tab (`addTab`), reports the shown one
+  (`selectTab`) and adds the extensions' `chrome.contextMenus` items to the page menu (own group
+  before Inspect). Extensions reach tabs through an `ExtensionHost` in `main/index.ts`:
+  `chrome.tabs.create` and `chrome.windows.create` open a tab in the extension's space (bringing
+  that space forward), never a window. Two fixes from the spike
+  (`docs/spikes/2026-11-20-chrome-extensions-electron.md`): the `browserMirror` preload, registered
+  for frames and service workers, copies missing `chrome.*` keys onto Electron's native
+  `browser.*` (1Password needs it); and `app.on('web-contents-created')` makes `window.open` from
+  any non-tab web contents of a space session (extension popups, background pages) open a tab in
+  that space and deny the window (tab views, the UI and the overlay replace it with their own
+  handler). The three packages stay external in the main build so they resolve their own preload
+  files. E2E loads an unpacked fixture through `ACAB_TEST_EXTENSION` (no network).
 - **Permissions.** Every space session denies page permissions except
   `clipboard-sanitized-write`, `fullscreen` and `pointerLock` (`core/browser/permissions.ts`):
   no camera, microphone, location, notifications or `openExternal` until a per-site prompt exists.

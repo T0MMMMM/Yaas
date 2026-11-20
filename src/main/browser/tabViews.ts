@@ -3,20 +3,18 @@
 import {
   clipboard,
   Menu,
-  session,
   WebContentsView,
   type BrowserWindow,
+  type MenuItem,
   type MenuItemConstructorOptions,
-  type Session,
   type WebContents,
 } from 'electron'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
-import { isPermissionGranted } from '@core/browser/permissions'
-import { chromeUserAgent } from '@core/browser/userAgent'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
 import { DEFAULT_SEARCH } from '@shared/url'
+import type { SpaceSessions } from './spaceSessions'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
 export const PAGE_RADIUS = 9
@@ -55,7 +53,6 @@ const isWebUrl = (url: string): boolean => {
 export class TabViews {
   private readonly views = new Map<string, TabView>()
   private readonly state = new Map<string, TabRuntime>()
-  private readonly sessions = new Set<string>()
   private bounds: PageBounds = { x: 0, y: 0, width: 0, height: 0 }
   private visible = true
   private shownTabId: string | null = null
@@ -63,6 +60,7 @@ export class TabViews {
   constructor(
     private readonly win: BrowserWindow,
     private readonly store: BrowserStore,
+    private readonly sessions: SpaceSessions,
     private readonly onRuntime: () => void,
     /** Called after a view joins the window, so the overlay can go back on top. */
     private readonly onViewAdded: () => void = () => undefined,
@@ -87,8 +85,20 @@ export class TabViews {
     const activeId = snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
     const active = activeId ? tabs.get(activeId) : undefined
     if (active && !this.views.has(active.id)) this.create(active.id, active.spaceId, active.url)
-    this.shownTabId = active?.id ?? null
+    const shown = active?.id ?? null
+    if (shown !== this.shownTabId && shown) this.selectForExtensions(shown)
+    this.shownTabId = shown
     this.layout()
+  }
+
+  webContentsOf(tabId: string): WebContents | null {
+    return this.views.get(tabId)?.view.webContents ?? null
+  }
+
+  /** The tab shown by these web contents, or null when they are not a tab. */
+  tabIdOf(contents: WebContents): string | null {
+    for (const [tabId, { view }] of this.views) if (view.webContents === contents) return tabId
+    return null
   }
 
   setBounds(bounds: PageBounds): void {
@@ -135,24 +145,16 @@ export class TabViews {
     }
   }
 
-  private sessionFor(spaceId: string): Session {
-    const partition = `persist:space-${spaceId}`
-    const ses = session.fromPartition(partition)
-    if (!this.sessions.has(partition)) {
-      ses.setUserAgent(chromeUserAgent(ses.getUserAgent()))
-      ses.setPermissionRequestHandler((_contents, permission, callback) =>
-        callback(isPermissionGranted(permission)),
-      )
-      ses.setPermissionCheckHandler((_contents, permission) => isPermissionGranted(permission))
-      this.sessions.add(partition)
-    }
-    return ses
+  /** Tells the space's extensions which tab is active (`chrome.tabs`, actions). */
+  private selectForExtensions(tabId: string): void {
+    const entry = this.views.get(tabId)
+    if (entry) this.sessions.extensionsFor(entry.spaceId)?.selectTab(entry.view.webContents)
   }
 
   private create(tabId: string, spaceId: string, url: string): void {
     const view = new WebContentsView({
       webPreferences: {
-        session: this.sessionFor(spaceId),
+        session: this.sessions.get(spaceId),
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
@@ -166,9 +168,11 @@ export class TabViews {
       canGoBack: false,
       canGoForward: false,
       themeColor: null,
+      webContentsId: view.webContents.id,
     })
     this.win.contentView.addChildView(view)
     this.onViewAdded()
+    this.sessions.extensionsFor(spaceId)?.addTab(view.webContents, this.win)
     this.wire(tabId, view)
     void view.webContents.loadURL(url).catch(() => undefined)
   }
@@ -268,11 +272,21 @@ export class TabViews {
       canGoBack: contents.navigationHistory.canGoBack(),
       canGoForward: contents.navigationHistory.canGoForward(),
     })
-    const template = entries.map((entry): MenuItemConstructorOptions =>
-      entry === 'separator'
-        ? { type: 'separator' }
-        : { label: PAGE_MENU_LABELS[entry.id], enabled: entry.enabled, click: run[entry.id] },
+    const template: (MenuItemConstructorOptions | MenuItem)[] = entries.map(
+      (entry): MenuItemConstructorOptions =>
+        entry === 'separator'
+          ? { type: 'separator' }
+          : { label: PAGE_MENU_LABELS[entry.id], enabled: entry.enabled, click: run[entry.id] },
     )
+    // `chrome.contextMenus` items of the space's extensions, in their own group before Inspect
+    // (always the last entry, after a separator).
+    const spaceId = this.views.get(tabId)?.spaceId
+    const extensionItems = spaceId
+      ? (this.sessions.extensionsFor(spaceId)?.getContextMenuItems(contents, params) ?? [])
+      : []
+    if (extensionItems.length > 0) {
+      template.splice(template.length - 1, 0, ...extensionItems, { type: 'separator' })
+    }
     Menu.buildFromTemplate(template).popup({ window: this.win })
   }
 }
