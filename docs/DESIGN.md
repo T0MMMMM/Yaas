@@ -140,7 +140,7 @@ at once), New space, Settings.
 the row (the title, then the host in `--text-muted`), on the popovers' opaque card (`--bg-menu`,
 `--border-menu`, `--shadow-menu`, `--radius-md`; no blur). Once shown, hovering another row
 slides the same card there (`top`, `--dur-base`) with no new delay. It fades in and out
-(`--dur-fast`); leaving the sidebar fades it out (the overlay's strip hides 150 ms later), moving
+(`--dur-fast`); leaving the sidebar, or resting 80 ms off the tab rows and tiles (a folder row, a button, a gap), fades it out (the overlay's strip hides 150 ms later), moving
 onto it hides it at once so the page gets the click, and a press or a drag start clears it. A menu
 always wins: opening one drops the tooltip, and none shows while a menu is open. Folder rows and
 buttons keep their native `title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
