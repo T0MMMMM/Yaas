@@ -82,6 +82,19 @@ export class SpaceSessions {
     return this.extensions.get(spaceId) ?? null
   }
 
+  /**
+   * Erases a deleted space's browsing data (cookies, storage, cache) and forgets its extensions.
+   * Its tab views are already gone.
+   */
+  async wipe(spaceId: string): Promise<void> {
+    const ses = session.fromPartition(spacePartition(spaceId))
+    this.extensions.delete(spaceId)
+    this.windowTabs.delete(spaceId)
+    this.spaces.delete(ses)
+    await ses.clearStorageData()
+    await ses.clearCache()
+  }
+
   /** The space whose session this is, or null for any other session (the UI's, the default). */
   spaceOf(ses: Session): string | null {
     return this.spaces.get(ses) ?? null

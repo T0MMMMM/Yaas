@@ -347,6 +347,18 @@ registerCommands(
     'browser.reload': ({ tabId }) => views().reload(tabId),
     'browser.createSpace': ({ name, color }) => browser.createSpace(name, color),
     'browser.activateSpace': ({ spaceId }) => browser.activateSpace(spaceId),
+    'browser.renameSpace': ({ spaceId, name }) => browser.renameSpace(spaceId, name),
+    'browser.setSpaceIcon': ({ spaceId, icon }) => browser.setSpaceIcon(spaceId, icon),
+    'browser.setSpaceColor': ({ spaceId, color }) => browser.setSpaceColor(spaceId, color),
+    'browser.setSpaceSectionCollapsed': ({ spaceId, collapsed }) =>
+      browser.setSpaceSectionCollapsed(spaceId, collapsed),
+    'browser.deleteSpace': async ({ spaceId }) => {
+      // The store's change event runs TabViews.sync: the deleted tabs' views are destroyed and
+      // the next space's active tab is shown.
+      browser.deleteSpace(spaceId)
+      await spaceSessions.wipe(spaceId)
+      // Task 7 adds the space's history wipe here.
+    },
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
     'browser.copyLink': ({ tabId }) => {

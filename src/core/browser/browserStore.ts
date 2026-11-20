@@ -138,7 +138,7 @@ function treeOrder(tabs: TabRow[]): string[] {
 
 export class BrowserError extends Error {
   constructor(
-    readonly code: 'not_found' | 'invalid_move',
+    readonly code: 'not_found' | 'invalid_move' | 'last_space',
     message: string,
   ) {
     super(message)
@@ -207,6 +207,51 @@ export class BrowserStore {
   activateSpace(id: string): void {
     this.requireSpace(id)
     this.setActiveSpace(id)
+    this.emit()
+  }
+
+  renameSpace(id: string, name: string): void {
+    this.requireSpace(id)
+    this.db.prepare('UPDATE spaces SET name = ? WHERE id = ?').run(name, id)
+    this.emit()
+  }
+
+  setSpaceIcon(id: string, icon: string | null): void {
+    this.requireSpace(id)
+    this.db.prepare('UPDATE spaces SET icon = ? WHERE id = ?').run(icon, id)
+    this.emit()
+  }
+
+  setSpaceColor(id: string, color: string): void {
+    this.requireSpace(id)
+    this.db.prepare('UPDATE spaces SET color = ? WHERE id = ?').run(color, id)
+    this.emit()
+  }
+
+  setSpaceSectionCollapsed(id: string, collapsed: boolean): void {
+    this.requireSpace(id)
+    this.db
+      .prepare('UPDATE spaces SET section_collapsed = ? WHERE id = ?')
+      .run(collapsed ? 1 : 0, id)
+    this.emit()
+  }
+
+  /**
+   * Deletes a space with its tabs and folders (cascade). Not reopenable. When it was the active
+   * space the next one by position becomes active, else the previous one. The last space stays
+   * (`last_space`).
+   */
+  deleteSpace(id: string): void {
+    this.requireSpace(id)
+    const rows = this.spaceRows()
+    if (rows.length <= 1) throw new BrowserError('last_space', "The last space can't be deleted")
+    const index = rows.findIndex((r) => r.id === id)
+    const wasActive = this.activeSpaceId(rows) === id
+    const successor = rows[index + 1] ?? rows[index - 1]
+    this.transaction(() => {
+      this.db.prepare('DELETE FROM spaces WHERE id = ?').run(id)
+      if (wasActive && successor) this.setActiveSpace(successor.id)
+    })
     this.emit()
   }
 
@@ -516,6 +561,10 @@ export class BrowserStore {
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  private spaceRows(): SpaceRow[] {
+    return this.db.prepare('SELECT * FROM spaces ORDER BY position').all() as unknown as SpaceRow[]
   }
 
   private insertSpace(name: string, color: string): BrowserSpace {

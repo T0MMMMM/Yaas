@@ -483,3 +483,70 @@ describe('BrowserStore nested folders', () => {
     expect(store.snapshot().spaces.at(-1)).toMatchObject({ icon: null, sectionCollapsed: false })
   })
 })
+
+describe('BrowserStore space model', () => {
+  const spaceOf = (store: BrowserStore, id: string) =>
+    store.snapshot().spaces.find((s) => s.id === id)
+
+  it('renames, decorates and folds a space', () => {
+    const { store, spaceId } = setup()
+    store.renameSpace(spaceId, 'Home')
+    store.setSpaceIcon(spaceId, '🏠')
+    store.setSpaceColor(spaceId, '#112233')
+    store.setSpaceSectionCollapsed(spaceId, true)
+    expect(spaceOf(store, spaceId)).toMatchObject({
+      name: 'Home',
+      icon: '🏠',
+      color: '#112233',
+      sectionCollapsed: true,
+    })
+    store.setSpaceIcon(spaceId, null)
+    store.setSpaceSectionCollapsed(spaceId, false)
+    expect(spaceOf(store, spaceId)).toMatchObject({ icon: null, sectionCollapsed: false })
+  })
+
+  it('rejects an unknown space', () => {
+    const { store } = setup()
+    expect(() => store.renameSpace('nope', 'x')).toThrow(BrowserError)
+    expect(() => store.deleteSpace('nope')).toThrow(BrowserError)
+  })
+
+  it('deletes the active space and activates the next one by position', () => {
+    const { store, spaceId } = setup()
+    const second = store.createSpace('Work', '#fff')
+    const third = store.createSpace('Play', '#000')
+    store.activateSpace(second.id)
+    store.openTab(second.id, 'https://work.test')
+    const folder = store.createFolder(second.id, 'F')
+    store.deleteSpace(second.id)
+    const snap = store.snapshot()
+    expect(snap.activeSpaceId).toBe(third.id)
+    expect(snap.spaces.map((s) => s.id)).toEqual([spaceId, third.id])
+    expect(snap.tabs.some((t) => t.spaceId === second.id)).toBe(false)
+    expect(snap.folders.some((f) => f.id === folder.id)).toBe(false)
+    expect(store.reopenClosed()).toBeNull()
+  })
+
+  it('activates the previous space when the last one is deleted', () => {
+    const { store, spaceId } = setup()
+    const second = store.createSpace('Work', '#fff')
+    store.deleteSpace(second.id)
+    expect(store.snapshot().activeSpaceId).toBe(spaceId)
+  })
+
+  it('keeps the active space when another is deleted', () => {
+    const { store, spaceId } = setup()
+    const second = store.createSpace('Work', '#fff')
+    store.activateSpace(spaceId)
+    store.deleteSpace(second.id)
+    expect(store.snapshot().activeSpaceId).toBe(spaceId)
+  })
+
+  it('refuses to delete the last space', () => {
+    const { store, spaceId } = setup()
+    expect(() => store.deleteSpace(spaceId)).toThrowError(
+      expect.objectContaining({ code: 'last_space' }),
+    )
+    expect(store.snapshot().spaces).toHaveLength(1)
+  })
+})

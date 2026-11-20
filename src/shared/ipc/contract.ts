@@ -298,6 +298,25 @@ export const commands = {
     output: browserSpaceSchema,
   },
   'browser.activateSpace': { input: z.object({ spaceId: id }).strict(), output: z.void() },
+  'browser.renameSpace': {
+    input: z.object({ spaceId: id, name: z.string().min(1).max(40) }).strict(),
+    output: z.void(),
+  },
+  /** An emoji or icon name; null goes back to the colour dot. */
+  'browser.setSpaceIcon': {
+    input: z.object({ spaceId: id, icon: z.string().min(1).max(16).nullable() }).strict(),
+    output: z.void(),
+  },
+  'browser.setSpaceColor': {
+    input: z.object({ spaceId: id, color: hexColor }).strict(),
+    output: z.void(),
+  },
+  'browser.setSpaceSectionCollapsed': {
+    input: z.object({ spaceId: id, collapsed: z.boolean() }).strict(),
+    output: z.void(),
+  },
+  /** Deletes a space with its tabs, folders and browsing data; the last space can't be deleted. */
+  'browser.deleteSpace': { input: z.object({ spaceId: id }).strict(), output: z.void() },
   'browser.setPageBounds': { input: pageBoundsSchema, output: z.void() },
   'browser.setPageVisible': {
     input: z.object({ visible: z.boolean() }).strict(),

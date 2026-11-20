@@ -12,6 +12,8 @@ export interface SpaceSummary {
   id: string
   label: string
   color: string
+  icon: string | null
+  sectionCollapsed: boolean
 }
 
 export interface TabView {
@@ -109,7 +111,13 @@ const IDLE: TabRuntime = {
   loaded: false,
 }
 
-const toSpace = (s: BrowserSpace): SpaceSummary => ({ id: s.id, label: s.name, color: s.color })
+const toSpace = (s: BrowserSpace): SpaceSummary => ({
+  id: s.id,
+  label: s.name,
+  color: s.color,
+  icon: s.icon,
+  sectionCollapsed: s.sectionCollapsed,
+})
 
 function connectionOf(url: string): TabView['connection'] {
   if (/^https:/i.test(url)) return 'secure'

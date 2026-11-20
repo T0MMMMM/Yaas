@@ -536,6 +536,8 @@ results come back to the lead as a short summary + branch name, never the full c
   (`webContents.close()`).
 - **Commands:** `browser.openTab` / `closeTab` / `removeTab` / `moveTab` / `activateTab` /
   `navigate` / `goBack` / `goForward` / `reload` / `createSpace` / `activateSpace` /
+  `renameSpace` / `setSpaceIcon` / `setSpaceColor` / `setSpaceSectionCollapsed` / `deleteSpace`
+  (store, then `SpaceSessions.wipe`: cookies, storage, cache; the last space throws `last_space`) /
   `createFolder` (optional `parentId`) / `moveFolder` / `renameFolder` / `setFolderCollapsed` /
   `deleteFolder` / `reopenClosed` /
   `showTabMenu` / `showFolderMenu` / `setPageBounds` / `setPageVisible`.

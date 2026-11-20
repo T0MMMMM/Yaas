@@ -151,7 +151,13 @@ const browser: BrowserState = {
 describe('browserView', () => {
   it("browserView lists the active space's tabs in order", () => {
     const view = browserView(browser)
-    expect(view.space).toEqual({ id: 's1', label: 'Personal', color: '#7C5CFF' })
+    expect(view.space).toEqual({
+      id: 's1',
+      label: 'Personal',
+      color: '#7C5CFF',
+      icon: null,
+      sectionCollapsed: false,
+    })
     expect(view.spaces.map((s) => s.label)).toEqual(['Personal', 'Work'])
     expect(view.tabs.map((t) => t.id)).toEqual(['a', 'b', 'c'])
   })
