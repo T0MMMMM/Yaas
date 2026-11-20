@@ -72,3 +72,29 @@ export interface UsageWindow {
   utilization: number
   resetsAt: string
 }
+
+export interface BrowserSpace {
+  id: string
+  name: string
+  color: string
+  position: number
+}
+
+export interface BrowserTab {
+  id: string
+  spaceId: string
+  url: string
+  title: string
+  faviconUrl: string | null
+  position: number
+}
+
+export interface BrowserSnapshot {
+  /** By position. */
+  spaces: BrowserSpace[]
+  activeSpaceId: string
+  /** All spaces, by spaceId then position. */
+  tabs: BrowserTab[]
+  /** Active tab per space. */
+  activeTabIds: Record<string, string | null>
+}

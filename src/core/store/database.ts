@@ -26,6 +26,17 @@ const MIGRATIONS: string[] = [
      created_at   TEXT NOT NULL,
      archived_at  TEXT
    )`,
+  // 3 — browser spaces and tabs (the active space lives in settings under `browser.activeSpace`)
+  `CREATE TABLE spaces (
+     id TEXT PRIMARY KEY, name TEXT NOT NULL, color TEXT NOT NULL, position INTEGER NOT NULL,
+     active_tab_id TEXT, created_at TEXT NOT NULL
+   );
+   CREATE TABLE tabs (
+     id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+     url TEXT NOT NULL, title TEXT NOT NULL, favicon_url TEXT, position INTEGER NOT NULL,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX tabs_space ON tabs(space_id, position);`,
 ]
 
 export type Database = DatabaseSync

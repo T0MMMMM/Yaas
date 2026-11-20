@@ -12,7 +12,12 @@ describe('openDatabase', () => {
     const db = openDatabase(':memory:')
     expect(db.prepare('PRAGMA user_version').get()).toEqual({ user_version: SCHEMA_VERSION })
     const tables = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all()
-    expect(tables.map((t) => (t as { name: string }).name)).toEqual(['settings', 'accounts'])
+    expect(tables.map((t) => (t as { name: string }).name)).toEqual([
+      'settings',
+      'accounts',
+      'spaces',
+      'tabs',
+    ])
   })
 
   it('is idempotent when reopened', () => {
