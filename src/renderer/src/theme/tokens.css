@@ -16,8 +16,11 @@
   --surface-alpha: 1;
   --glass-blur: 0px;
   --glass-edge: transparent;
+  /* lit top of glass cards (menus) */
+  --glass-sheen: linear-gradient(170deg, rgb(255 255 255 / 0.18), rgb(255 255 255 / 0) 40%);
 
   /* space (4 px scale) */
+  --space-hair: 2px; /* below the scale: tight icon rows */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -44,6 +47,12 @@
   --sidebar-w: 248px;
   --titlebar-h: 44px;
   --addressbar-h: 38px;
+  --frame-gap: 5px; /* between the frame's floating panels (address bar, card) */
+  --row-h: 34px; /* sidebar rows */
+  --control-size: 30px; /* icon buttons, menu rows, space dots' hit box */
+  --control-size-sm: 28px; /* address bar buttons and field */
+  --control-size-xs: 24px; /* in-row buttons (close tab) */
+  --icon-size: 16px; /* favicons, the dots' hit width */
   --titlebar-overlay-w: 0px; /* Windows caption buttons */
 
   /* motion */
@@ -51,6 +60,8 @@
   --dur-base: 200ms;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-spring: 260ms; /* magnetic spring-back */
+  --dur-spin: 900ms; /* one turn of the loading spinner */
 
   /* the "askew card" motion: selected and hovered items tilt slightly */
   --tilt-selected: -0.8deg;
@@ -79,6 +90,7 @@
   --status-waiting: #f08c1a;
   --status-done: #2f7cf6;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.12);
+  --fill-raised-hover: color-mix(in srgb, var(--neutral-sidebar) 70%, transparent);
 }
 
 :root[data-scheme='dark'] {
@@ -100,6 +112,7 @@
   --status-waiting: #ff9f2e;
   --status-done: #4b93ff;
   --shadow-raised: 0 10px 32px rgb(0 0 0 / 0.45);
+  --fill-raised-hover: rgb(255 255 255 / 0.08);
 }
 
 /* ---------- derived surfaces ---------- */
@@ -137,6 +150,7 @@
   --glass-blur: 24px;
   --glass-edge: rgb(255 255 255 / 0.7);
   --glass-panel: color-mix(in srgb, var(--neutral-surface) 52%, transparent);
+  --glass-sheen: linear-gradient(170deg, rgb(255 255 255 / 0.25), rgb(255 255 255 / 0) 35%);
 }
 
 :root[data-glass='liquid'][data-scheme='dark'] {
@@ -163,5 +177,6 @@
   :root {
     --dur-fast: 0ms;
     --dur-base: 0ms;
+    --dur-spring: 0ms;
   }
 }

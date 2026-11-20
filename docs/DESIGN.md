@@ -123,6 +123,8 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-sidebar` | Sidebar fill: accent-tinted neutral; translucent when glass is on |
 | `--bg-surface` | Main pane |
 | `--bg-raised` | Cards, approval sheet, palette, menus |
+| `--fill-raised-hover` | Hovered row on a raised surface (menus) |
+| `--glass-sheen` | Lit-top gradient of glass cards (menus); stronger in liquid glass |
 | `--border` / `--border-strong` | Hairlines |
 | `--text` / `--text-muted` / `--text-faint` | Text hierarchy |
 | `--ok` / `--warn` / `--danger` | Generic success / warning / error |
@@ -176,12 +178,13 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 
 | Group | Tokens |
 |---|---|
-| Spacing (4 px scale) | `--space-1` 4 · `--space-2` 8 · `--space-3` 12 · `--space-4` 16 · `--space-6` 24 · `--space-8` 32 |
+| Spacing (4 px scale) | `--space-hair` 2 (tight icon rows) · `--space-1` 4 · `--space-2` 8 · `--space-3` 12 · `--space-4` 16 · `--space-6` 24 · `--space-8` 32 |
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 |
-| Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--ease` `cubic-bezier(.2,.8,.2,1)` |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) |
+| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) |
+| Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 
 ## 4. Transparency, per platform
 

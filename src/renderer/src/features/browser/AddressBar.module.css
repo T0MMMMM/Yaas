@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: 5px;
+  margin-bottom: var(--frame-gap);
   padding: 0 var(--space-1);
   padding-right: calc(var(--space-1) + var(--titlebar-overlay-w));
   border: 1px solid var(--border);
@@ -30,17 +30,18 @@
 
 .nav {
   flex: none;
-  width: 96px; /* three 30 px buttons + gaps: the right-hand twin keeps the URL centred */
+  /* three buttons + gaps; the right-hand twin keeps the URL centred */
+  width: calc(3 * var(--control-size) + 2 * var(--space-hair));
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--space-hair);
 }
 
 .button {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 28px;
+  width: var(--control-size);
+  height: var(--control-size-sm);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -68,7 +69,7 @@
 }
 
 .button[data-loading='true'] svg {
-  animation: spin 0.9s linear infinite;
+  animation: spin var(--dur-spin) linear infinite;
 }
 
 @keyframes spin {
@@ -81,7 +82,7 @@
 .input {
   flex: 1;
   min-width: 0;
-  height: 28px;
+  height: var(--control-size-sm);
   border: none;
   border-radius: var(--radius-md);
   font: inherit;
@@ -94,7 +95,7 @@
   justify-content: center;
   align-items: baseline;
   padding: 0 var(--space-2);
-  line-height: 28px;
+  line-height: var(--control-size-sm);
   background: transparent;
   white-space: nowrap;
   overflow: hidden;

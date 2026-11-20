@@ -37,7 +37,7 @@
   transition:
     color var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce),
-    translate 260ms var(--ease-bounce);
+    translate var(--dur-spring) var(--ease-bounce);
 }
 
 .iconButton:hover {
@@ -57,7 +57,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 34px;
+  min-height: var(--row-h);
   padding: 0 var(--space-3);
   border: none;
   border-radius: var(--radius-lg);
@@ -83,7 +83,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 34px;
+  min-height: var(--row-h);
   margin-top: var(--space-1);
   padding: 0 var(--space-2);
   border: none;
@@ -136,7 +136,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 34px;
+  min-height: var(--row-h);
   padding: 7px var(--space-2);
   border: none;
   border-radius: var(--radius-lg);
@@ -188,25 +188,25 @@ kbd {
 
 .favicon {
   flex: none;
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size);
+  height: var(--icon-size);
   color: var(--text-muted);
 }
 
 /* Leaves room for the close button. */
 .row {
-  padding-right: 30px;
+  padding-right: var(--control-size);
 }
 
 /* × on hover and on the active tab. */
 .close {
   position: absolute;
-  top: 5px; /* (34 px row − 24 px button) / 2 */
-  right: 4px;
+  top: calc((var(--row-h) - var(--control-size-xs)) / 2);
+  right: var(--space-1);
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: var(--control-size-xs);
+  height: var(--control-size-xs);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
@@ -277,12 +277,12 @@ kbd {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: 0 2px;
+  padding: 0 var(--space-hair);
 }
 
 .slot {
   flex: none;
-  width: 30px;
+  width: var(--control-size);
 }
 
 .spaces {
@@ -291,15 +291,15 @@ kbd {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: var(--space-hair);
 }
 
 /* No card: each space is a dot in its colour; the active one is full opacity and a bit bigger. */
 .space {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 30px;
+  width: var(--icon-size);
+  height: var(--control-size);
   padding: 0;
   border: none;
   background: transparent;
@@ -309,7 +309,7 @@ kbd {
   transition:
     opacity var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce),
-    translate 260ms var(--ease-bounce);
+    translate var(--dur-spring) var(--ease-bounce);
 }
 
 .space:hover {
