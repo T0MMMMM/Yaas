@@ -97,7 +97,12 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
           >
             <Icon className={styles.icon} weight="fill" />
             <span className={styles.title}>{name}</span>
-            {collapsed && <span className={styles.count}>{node.children.length}</span>}
+            {/* Visual only: the name stays the folder's (aria-expanded says it is closed). */}
+            {collapsed && (
+              <span className={styles.count} aria-hidden="true">
+                {node.children.length}
+              </span>
+            )}
           </button>
         )}
       </div>
