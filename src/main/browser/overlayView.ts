@@ -1,6 +1,8 @@
 // A transparent view over the whole window, above the tab views, so UI popovers (the + menu, the
-// site menu, the tab finder, the command field) can float over the page. It loads the UI renderer under `#overlay` with the app
-// preload, so it is a trusted sender like the UI window. Hidden while no popover is open.
+// site menu, the tab finder, the command field) and main's menus (a sidebar row's menu at the
+// pointer, `context-menu` / `anchored-menu`) can float over the page. It loads the UI renderer
+// under `#overlay` with the app preload, so it is a trusted sender like the UI window. Hidden while
+// no popover is open.
 // It also draws the sidebar's tooltips: then it is only a strip beside the sidebar, never focused.
 import { WebContentsView, type BrowserWindow, type Rectangle, type WebContents } from 'electron'
 import { emit } from '../ipc/router'

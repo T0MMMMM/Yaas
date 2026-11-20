@@ -109,15 +109,64 @@ describe('IPC contract', () => {
     expect(input.safeParse({ name: 'Work', color: '#2BB673' }).success).toBe(true)
     expect(input.safeParse({ name: 'Work', color: 'green' }).success).toBe(false)
   })
-  it.each(['browser.removeTab', 'browser.showTabMenu'] as const)(
-    'accepts only a tab id on %s',
-    (channel) => {
-      const input = commands[channel].input
-      expect(input.safeParse({ tabId: 'x' }).success).toBe(true)
-      expect(input.safeParse({ tabId: '' }).success).toBe(false)
-      expect(input.safeParse({ tabId: 'x', section: 'pinned' }).success).toBe(false)
-    },
-  )
+  it('accepts only a tab id on browser.removeTab', () => {
+    const input = commands['browser.removeTab'].input
+    expect(input.safeParse({ tabId: 'x' }).success).toBe(true)
+    expect(input.safeParse({ tabId: '' }).success).toBe(false)
+    expect(input.safeParse({ tabId: 'x', section: 'pinned' }).success).toBe(false)
+  })
+
+  it('takes a tab or folder id and the pointer on the sidebar menus', () => {
+    const tab = commands['browser.showTabMenu'].input
+    expect(tab.safeParse({ tabId: 'x', at: { x: 10.5, y: 20 } }).success).toBe(true)
+    expect(tab.safeParse({ tabId: 'x' }).success).toBe(false)
+    expect(tab.safeParse({ tabId: '', at: { x: 0, y: 0 } }).success).toBe(false)
+    const folder = commands['browser.showFolderMenu'].input
+    expect(folder.safeParse({ folderId: 'f', at: { x: 0, y: 0 } }).success).toBe(true)
+    expect(folder.safeParse({ folderId: 'f', at: { x: 'a', y: 0 } }).success).toBe(false)
+  })
+
+  it("draws main's menus at a point or from a button", () => {
+    const input = commands['overlay.open'].input
+    const menu = {
+      id: 'm',
+      items: [
+        { kind: 'filter' },
+        {
+          kind: 'item',
+          id: 'a',
+          label: 'A',
+          enabled: true,
+          icon: 'PushPin',
+          submenu: [{ kind: 'item', id: 'b', label: 'B', enabled: false, checked: true }],
+        },
+        { kind: 'separator' },
+        { kind: 'item', id: 'c', label: 'C', enabled: true, icon: 'data:image/png;base64,AA==' },
+      ],
+    }
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(input.safeParse({ kind: 'context-menu', at: { x: 1, y: 2 }, menu }).success).toBe(true)
+    expect(
+      input.safeParse({ kind: 'anchored-menu', anchor, placement: 'below', menu }).success,
+    ).toBe(true)
+    expect(input.safeParse({ kind: 'context-menu', menu }).success).toBe(false)
+    expect(input.safeParse({ kind: 'anchored-menu', anchor, menu }).success).toBe(false)
+    const withIcon = (icon: string) => ({
+      kind: 'context-menu',
+      at: { x: 0, y: 0 },
+      menu: { id: 'm', items: [{ kind: 'item', id: 'a', label: 'A', enabled: true, icon }] },
+    })
+    // An icon is a Phosphor name or an image data URL, nothing a page could load.
+    expect(input.safeParse(withIcon('https://evil.test/x.png')).success).toBe(false)
+    expect(input.safeParse(withIcon('javascript:alert(1)')).success).toBe(false)
+  })
+
+  it('takes a menu id and an item id on overlay.choose', () => {
+    const input = commands['overlay.choose'].input
+    expect(input.safeParse({ menuId: 'm', itemId: 'pin' }).success).toBe(true)
+    expect(input.safeParse({ menuId: 'm' }).success).toBe(false)
+    expect(input.safeParse({ menuId: '', itemId: 'pin' }).success).toBe(false)
+  })
 
   it('accepts a known section and a non-negative index on browser.moveTab', () => {
     const input = commands['browser.moveTab'].input
@@ -154,15 +203,12 @@ describe('IPC contract', () => {
     expect(input.safeParse({ folderId: 'f', collapsed: 'yes' }).success).toBe(false)
   })
 
-  it.each(['browser.deleteFolder', 'browser.showFolderMenu'] as const)(
-    'accepts only a folder id on %s',
-    (channel) => {
-      const input = commands[channel].input
-      expect(input.safeParse({ folderId: 'f' }).success).toBe(true)
-      expect(input.safeParse({ folderId: 'f', tabId: 'x' }).success).toBe(false)
-      expect(input.safeParse({}).success).toBe(false)
-    },
-  )
+  it('accepts only a folder id on browser.deleteFolder', () => {
+    const input = commands['browser.deleteFolder'].input
+    expect(input.safeParse({ folderId: 'f' }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', tabId: 'x' }).success).toBe(false)
+    expect(input.safeParse({}).success).toBe(false)
+  })
 
   it('takes no input on browser.reopenClosed', () => {
     const input = commands['browser.reopenClosed'].input

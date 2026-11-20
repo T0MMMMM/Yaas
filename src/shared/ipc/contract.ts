@@ -2,6 +2,7 @@
 // Main validates every input with these schemas; the renderer gets the types for free.
 import { z } from 'zod'
 import type { Account, BrowserFolder, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
+import { menuSpecSchema, pointSchema } from '../menuSpec'
 import type { CommandChannel, EventChannel } from './channels'
 
 export const SIDEBAR_MIN = 48
@@ -169,15 +170,34 @@ export const pageBoundsSchema = z
 
 /**
  * What the overlay view shows: the + menu or the site menu of the address bar (popovers anchored
- * to a button), the tab finder (⌘K) or the command field (⌘T) (cards centred over the window).
+ * to a button), the tab finder (⌘K) or the command field (⌘T) (cards centred over the window), or
+ * a menu built by main (`MenuSpec`): at the pointer (a right-click) or from a button.
  */
-export const overlayKindSchema = z.enum(['new-menu', 'site-menu', 'tab-finder', 'command'])
+export const overlayKindSchema = z.enum([
+  'new-menu',
+  'site-menu',
+  'tab-finder',
+  'command',
+  'context-menu',
+  'anchored-menu',
+])
 export type OverlayKind = z.infer<typeof overlayKindSchema>
 
 /** A popover and the rect (window DIP) of the button it opens from, or a centred card. */
 export const overlayRequestSchema = z.union([
   z.object({ kind: z.enum(['new-menu', 'site-menu']), anchor: pageBoundsSchema }).strict(),
   z.object({ kind: z.enum(['tab-finder', 'command']) }).strict(),
+  /** Main's menu, opened at a point (window DIP): the pointer of a right-click. */
+  z.object({ kind: z.literal('context-menu'), at: pointSchema, menu: menuSpecSchema }).strict(),
+  /** Main's menu, joined to the button it opens from. */
+  z
+    .object({
+      kind: z.literal('anchored-menu'),
+      anchor: pageBoundsSchema,
+      placement: z.enum(['above', 'below']),
+      menu: menuSpecSchema,
+    })
+    .strict(),
 ])
 export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 
@@ -204,7 +224,7 @@ export type Tooltip = z.infer<typeof tooltipSchema>
 
 /**
  * What main asks the UI to do: shortcuts pressed while a page has focus, actions from the overlay
- * or from a native menu (a folder's Rename edits its name in the sidebar).
+ * or from main's menus (a folder's Rename edits its name in the sidebar).
  */
 export const shortcutSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('focus-address') }).strict(),
@@ -281,10 +301,16 @@ export const commands = {
   'browser.deleteFolder': { input: folderRef, output: z.void() },
   /** Reopens the last closed tab, or the last deleted folder with its subtree. */
   'browser.reopenClosed': { input: z.void(), output: z.void() },
-  /** The tab's native context menu, at the pointer (pin, favourites, folder, copy, close). */
-  'browser.showTabMenu': { input: tabRef, output: z.void() },
-  /** The folder's native context menu, at the pointer (rename, delete). */
-  'browser.showFolderMenu': { input: folderRef, output: z.void() },
+  /** The tab's menu, drawn at the pointer (pin, favourites, folder, copy, close). */
+  'browser.showTabMenu': {
+    input: z.object({ tabId: id, at: pointSchema }).strict(),
+    output: z.void(),
+  },
+  /** The folder's menu, drawn at the pointer (rename, move to folder, delete). */
+  'browser.showFolderMenu': {
+    input: z.object({ folderId: id, at: pointSchema }).strict(),
+    output: z.void(),
+  },
   'browser.activateTab': { input: tabRef, output: z.void() },
   'browser.navigate': {
     input: z.object({ tabId: id, input: z.string() }).strict(),
@@ -347,6 +373,11 @@ export const commands = {
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
   'overlay.close': { input: z.void(), output: z.void() },
+  /** From the overlay: the item chosen in main's menu (a stale or unknown menu does nothing). */
+  'overlay.choose': {
+    input: z.object({ menuId: id, itemId: id }).strict(),
+    output: z.void(),
+  },
   /**
    * Shows a sidebar tooltip in the overlay (never focused), or hides it with `null`: from the UI
    * after a fade, from the overlay (the pointer is on it) at once. Ignored while a popover is open.

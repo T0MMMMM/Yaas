@@ -51,7 +51,7 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
 }
 
 /**
- * A pinned folder (collapsed state in main, renamable, native menu on right-click) or an
+ * A pinned folder (collapsed state in main, renamable, its menu on right-click) or an
  * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs dragged
  * onto a pinned folder's row are filed into it. A pinned folder's children (tabs and folders)
  * are drawn by Rows one indent step further in, up to MAX_FOLDER_INDENT steps.
@@ -110,7 +110,7 @@ export function FolderRow({
         onContextMenu={(e) => {
           if (node.kind !== 'folder') return
           e.preventDefault()
-          showFolderMenu(node.folder.id)
+          showFolderMenu(node.folder.id, e)
         }}
       >
         {renaming && node.kind === 'folder' ? (

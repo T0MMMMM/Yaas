@@ -452,12 +452,29 @@ results come back to the lead as a short summary + branch name, never the full c
   the first tab. `Mod+Z` does the same from a keydown handler of
   the UI (`app/Shell.tsx`), only when no input, text area or editable element has focus; in a page
   or a field it stays the text undo.
-- **Sidebar menus.** `browser.showTabMenu` / `browser.showFolderMenu` pop native menus at the
-  pointer (`main/browser/sidebarMenus.ts`), so they float over the page view. Tab: Pin / Unpin
+- **Sidebar menus.** `browser.showTabMenu { tabId, at }` / `browser.showFolderMenu { folderId,
+  at }` (`at` = the right-click's `clientX/clientY`, window coordinates) build the row's items in
+  `main/browser/sidebarMenus.ts` (`tabMenu` / `folderMenu`) and draw them in the overlay at the
+  pointer (`showMenu`, see **Drawn menus**). Tab: Pin / Unpin
   (pinned end / today top), Add to / Remove from Favourites (favourites end / today top), Move to
-  Folder ▸ (the space's folders, New Folder…), Copy Link, Duplicate, then Remove (favourite,
-  pinned) or Close (today). Folder: Rename, Delete Folder. Rename (and New Folder…) emit
+  Folder ▸ (the space's folders, the current one checked, New Folder…), Copy Link, Duplicate, then
+  Remove (favourite, pinned) or Close (today). Folder: Rename, Move to Folder ▸ (Top level, then
+  every folder of the space outside its own subtree; where it is now is checked and disabled),
+  Delete Folder. Rename (and New Folder…) emit
   `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in place.
+- **Drawn menus.** Every menu is drawn by the overlay; no `Menu.popup` is left in `src/main`
+  except the macOS share menu and the app menu bar. Wire format (`shared/menuSpec.ts`):
+  `MenuSpec = { id, items: MenuSpecItem[] }`, an item `{ kind: 'item', id, label, enabled, icon?
+  (a Phosphor name or a `data:image/` URL), shortcut?, checked?, submenu? }`, `{ kind:
+  'separator' }`, or a leading `{ kind: 'filter' }` (a field narrowing the rows). Main builds
+  `MenuItemDef`s (the same, plus `run()`), and `showMenu(where, items)` hands them to the
+  `MenuRegistry` (`main/menus/menuRegistry.ts`), which keeps the actions, strips them and gives the
+  menu a fresh id, then opens the overlay with `{ kind: 'context-menu', at, menu }` (at a point)
+  or `{ kind: 'anchored-menu', anchor, placement, menu }` (from a button). The overlay answers
+  `overlay.choose { menuId, itemId }`: the registry runs that item once, only for the current menu
+  (a stale id, a disabled or unknown item does nothing), and ignores a `BrowserError('not_found')`
+  — the tab, folder or space vanished while the menu was open. Closing the overlay, or any
+  `overlay.open` from a renderer, clears the registry.
 - **Favicons.** On `page-favicon-updated` main fetches the first candidate through the tab's
   session (`session.fetch`, its cookies, 10 s timeout) and stores it as a `data:` URL
   (`core/browser/favicon.ts` `faviconDataUrl`: `image/*` only, at most 64 KB — reading stops past
@@ -540,7 +557,9 @@ results come back to the lead as a short summary + branch name, never the full c
   (store, then `SpaceSessions.wipe`: cookies, storage, cache; the last space throws `last_space`) /
   `createFolder` (optional `parentId`) / `moveFolder` / `renameFolder` / `setFolderCollapsed` /
   `deleteFolder` / `reopenClosed` /
-  `showTabMenu` / `showFolderMenu` / `setPageBounds` / `setPageVisible`.
+  `showTabMenu` / `showFolderMenu` (`{ id, at }`: drawn in the overlay) / `setPageBounds` /
+  `setPageVisible`. Overlay: `overlay.open` / `overlay.close` / `overlay.choose` /
+  `overlay.tooltip`.
   Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).
 - **Overlay.** `main/browser/overlayView.ts` is one transparent `WebContentsView` over the whole
   window (content size, kept in sync on resize), always above the tab views (raised again each
@@ -558,7 +577,9 @@ results come back to the lead as a short summary + branch name, never the full c
   `{ kind: 'rename-folder', folderId }`) to the UI; these shortcuts (and ⌘L, ⌘,) close an open
   overlay first, so its card never stays drawn over the field that takes the keyboard. Kinds: `new-menu` (the + menu, opens upward),
   `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`)
-  and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
+  and `command` (`Mod+T`), plus main's menus `context-menu` (at a point: a sidebar row's
+  right-click) and `anchored-menu` (from a button), both popovers like the others (see **Drawn
+  menus**). Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
   only when the command field is submitted (`browser.openTab { input }`).
 - **Overlay modes.** The overlay is either a **popover** (above: the whole window, focused) or a

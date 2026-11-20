@@ -43,7 +43,7 @@ export function TabRow({
       data-dragged={drag.dragged || undefined}
       onContextMenu={(e) => {
         e.preventDefault()
-        showTabMenu(tab.id)
+        showTabMenu(tab.id, e)
       }}
     >
       {compact &&

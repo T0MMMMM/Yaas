@@ -162,3 +162,99 @@ test('the site menu is joined to its button', async () => {
     expect(Math.abs(neck.y - (box.y + box.height))).toBeLessThanOrEqual(1)
   })
 })
+
+test('the tab menu is drawn', async () => {
+  await withPage(async ({ page, overlay }) => {
+    const row = page.getByTestId('today').getByTestId('tab').getByRole('button', { name: 'Page A' })
+    const box = await row.boundingBox()
+    if (!box) throw new Error('tab row not found')
+    const at = { x: Math.round(box.x + 20), y: Math.round(box.y + box.height / 2) }
+    await row.click({ button: 'right', position: { x: 20, y: box.height / 2 } })
+
+    const menu = overlay.getByTestId('menu')
+    await expect(menu).toBeVisible()
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Pin',
+      'Add to Favourites',
+      'Move to Folder',
+      'Copy Link',
+      'Duplicate',
+      'Close',
+    ])
+    // Opened at the pointer, with no neck: its corner sits on the click (once grown).
+    await expect(overlay.getByTestId('connector')).toHaveCount(0)
+    await overlay.waitForFunction(
+      () => document.querySelector('[data-testid="menu"]')?.getAnimations().length === 0,
+    )
+    const card = await menu.boundingBox()
+    expect(Math.abs((card?.x ?? 0) - at.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs((card?.y ?? 0) - at.y)).toBeLessThanOrEqual(1)
+
+    // A submenu opens beside its row on hover.
+    await menu.getByRole('menuitem', { name: 'Move to Folder' }).hover()
+    const submenu = overlay.getByTestId('submenu')
+    await expect(submenu.getByRole('menuitem', { name: 'New Folder…' })).toBeVisible()
+    const subBox = await submenu.boundingBox()
+    expect(subBox?.x ?? 0).toBeGreaterThan((card?.x ?? 0) + (card?.width ?? 0) - 1)
+    // Hovering another row closes it.
+    await menu.getByRole('menuitem', { name: 'Copy Link' }).hover()
+    await expect(submenu).toHaveCount(0)
+
+    await menu.getByRole('menuitem', { name: 'Pin' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('pinned').getByTestId('tab')).toHaveText(['Page A'])
+  })
+})
+
+test('the tab menu works from the keyboard', async () => {
+  await withPage(async ({ page, overlay }) => {
+    await page.getByTestId('tab').getByRole('button', { name: 'Page A' }).click({ button: 'right' })
+    const menu = overlay.getByTestId('menu')
+    await expect(menu).toBeVisible()
+    await overlay.keyboard.press('ArrowDown')
+    await expect(menu.getByRole('menuitem', { name: 'Pin' })).toBeFocused()
+    await overlay.keyboard.press('ArrowDown')
+    await overlay.keyboard.press('ArrowDown')
+    await overlay.keyboard.press('ArrowRight')
+    const submenu = overlay.getByTestId('submenu')
+    await expect(submenu.getByRole('menuitem', { name: 'New Folder…' })).toBeFocused()
+    await overlay.keyboard.press('ArrowLeft')
+    await expect(submenu).toHaveCount(0)
+    await expect(menu.getByRole('menuitem', { name: 'Move to Folder' })).toBeFocused()
+    await overlay.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('today').getByTestId('tab')).toHaveText(['Page A'])
+  })
+})
+
+test("a vanished tab's menu item does nothing", async () => {
+  await withPage(async ({ app, page, overlay }) => {
+    const errors: string[] = []
+    overlay.on('pageerror', (error) => errors.push(error.message))
+    overlay.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text())
+    })
+    app.process().stderr?.on('data', (chunk: Buffer) => {
+      const text = chunk.toString()
+      if (/error/i.test(text)) errors.push(text)
+    })
+
+    const tab = page.getByTestId('tab').getByRole('button', { name: 'Page A' })
+    await tab.click({ button: 'right' })
+    const menu = overlay.getByTestId('menu')
+    await expect(menu).toBeVisible()
+
+    // Closed elsewhere (a shortcut, another window) while its menu is open.
+    await page.evaluate(async () => {
+      const state = await window.bigBrowser.invoke('browser.state')
+      for (const t of state.tabs)
+        await window.bigBrowser.invoke('browser.closeTab', { tabId: t.id })
+    })
+    await expect(page.getByTestId('tab')).toHaveCount(0)
+
+    await menu.getByRole('menuitem', { name: 'Pin' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('pinned').getByTestId('tab')).toHaveCount(0)
+    expect(errors).toEqual([])
+  })
+})

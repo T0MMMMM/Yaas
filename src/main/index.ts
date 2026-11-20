@@ -26,7 +26,8 @@ import {
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
-import { showFolderMenu, showTabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
+import { folderMenu, tabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
+import { MenuRegistry, menuRequest, type MenuItemDef, type MenuWhere } from './menus/menuRegistry'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
@@ -221,11 +222,14 @@ function shareTab(tabId: string): void {
 
 const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
 
-const sidebarMenuHost: SidebarMenuHost = {
-  store: browser,
-  window: () => mainWindow,
-  closeTab,
-  emitShortcut,
+const sidebarMenuHost: SidebarMenuHost = { store: browser, closeTab, emitShortcut }
+
+/** The menu drawn in the overlay and what its items run. */
+const menus = new MenuRegistry()
+
+/** Draws a menu in the overlay, at a point or from a button; the chosen item runs here. */
+function showMenu(where: MenuWhere, items: MenuItemDef[]): void {
+  overlayView().open(menuRequest(where, menus.open(items)))
 }
 
 function emitShortcut(shortcut: Shortcut): void {
@@ -291,6 +295,7 @@ function openMainWindow(): void {
   mainWindow = win
   // Created before any tab view, then raised over each new one.
   const overlayView = new OverlayView(win, PRELOAD_PATH, rendererUrl(), () => {
+    menus.clear()
     emit(win.webContents, 'overlay.closed', undefined)
     emit(overlayView.webContents, 'overlay.closed', undefined)
   })
@@ -338,8 +343,9 @@ registerCommands(
     'browser.reopenClosed': () => {
       browser.reopenClosed()
     },
-    'browser.showTabMenu': ({ tabId }) => showTabMenu(sidebarMenuHost, tabId),
-    'browser.showFolderMenu': ({ folderId }) => showFolderMenu(sidebarMenuHost, folderId),
+    'browser.showTabMenu': ({ tabId, at }) => showMenu({ at }, tabMenu(sidebarMenuHost, tabId)),
+    'browser.showFolderMenu': ({ folderId, at }) =>
+      showMenu({ at }, folderMenu(sidebarMenuHost, folderId)),
     'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),
     'browser.navigate': ({ tabId, input }) => views().navigate(tabId, resolveInput(input)),
     'browser.goBack': ({ tabId }) => views().goBack(tabId),
@@ -381,8 +387,13 @@ registerCommands(
     },
     'window.close': () => mainWindow?.close(),
     'window.isMaximized': () => mainWindow?.isMaximized() ?? false,
-    'overlay.open': (request) => overlayView().open(request),
+    'overlay.open': (request) => {
+      // A popover of the UI replaces main's menu: its ids go stale.
+      menus.clear()
+      overlayView().open(request)
+    },
     'overlay.close': () => overlayView().close(),
+    'overlay.choose': ({ menuId, itemId }) => menus.choose(menuId, itemId),
     // From the overlay itself, the pointer is on the strip: hide it at once so the page gets the click.
     'overlay.tooltip': (tooltip, event) =>
       overlayView().tooltip(tooltip, { now: event.sender === overlayView().webContents }),

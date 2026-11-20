@@ -29,7 +29,7 @@ async function withBrowser(
 const openTab = (page: Page, url: string) =>
   page.evaluate((input) => window.bigBrowser.invoke('browser.openTab', { input }), url)
 
-// Native context menus can't be clicked from Playwright: the tests call what their items call.
+// Most tests drive the model through the bridge; the sidebar menus are drawn, so they are clicked.
 
 test('pinned tabs and folders: pin, file into a folder, collapse, rename', async () => {
   await withBrowser(async ({ app, page, site }) => {
@@ -707,5 +707,40 @@ test('a huge page title keeps its tooltip small', async () => {
     const box = await tooltip.boundingBox()
     if (!box) throw new Error('tooltip has no box')
     expect(box.height).toBeLessThan(150)
+  })
+})
+
+test('the folder menu moves a folder', async () => {
+  await withBrowser(async ({ app, page }) => {
+    const [outer, inner] = await page.evaluate(async () => [
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Outer' }),
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Inner' }),
+    ])
+    if (!outer || !inner) throw new Error('folders not created')
+    const pinned = page.getByTestId('pinned')
+    await pinned.getByRole('button', { name: 'Inner', exact: true }).click({ button: 'right' })
+
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Rename',
+      'Move to Folder',
+      'Delete Folder',
+    ])
+    await menu.getByRole('menuitem', { name: 'Move to Folder' }).hover()
+    const submenu = overlay.getByTestId('submenu')
+    // Top level (where it is), then every folder outside its own subtree.
+    await expect(submenu.getByRole('menuitem')).toHaveText(['Top level', 'Outer'])
+    await expect(submenu.getByRole('menuitem', { name: 'Top level' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    await submenu.getByRole('menuitem', { name: 'Outer' }).click()
+    await expect(menu).toHaveCount(0)
+
+    const outerRow = pinned
+      .getByTestId('folder')
+      .filter({ has: page.getByRole('button', { name: 'Outer', exact: true }) })
+    await expect(outerRow.getByRole('button', { name: 'Inner', exact: true })).toBeVisible()
   })
 })

@@ -30,7 +30,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
         onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
         onContextMenu={(e) => {
           e.preventDefault()
-          showTabMenu(tab.id)
+          showTabMenu(tab.id, e)
         }}
       >
         <Favicon tab={tab} className={styles.favicon} />

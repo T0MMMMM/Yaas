@@ -1,17 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FolderSimplePlus, GearSix, Plus, SquaresFour } from '@phosphor-icons/react'
 import type { OverlayRequest, Tooltip } from '@shared/ipc/contract'
+import type { MenuSpecItem } from '@shared/menuSpec'
 import { SiteMenu } from '../features/browser/SiteMenu'
 import { CommandField } from '../features/finder/CommandField'
 import { TabFinder } from '../features/finder/TabFinder'
 import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
-import { Menu, type MenuItem } from '../ui/Menu'
+import { Menu } from '../ui/Menu'
 import { OverlayTooltip } from './OverlayTooltip'
 
 /** Name of a folder made from the + menu; the sidebar then edits it. */
 const NEW_FOLDER_NAME = 'New Folder'
+
+/** The + menu: its actions run here, in the overlay. */
+const NEW_MENU: MenuSpecItem[] = [
+  { kind: 'filter' },
+  { kind: 'item', id: 'new-tab', label: 'New tab', icon: 'Plus', shortcut: '⌘T', enabled: true },
+  { kind: 'item', id: 'new-folder', label: 'New folder', icon: 'FolderSimplePlus', enabled: true },
+  { kind: 'item', id: 'new-space', label: 'New space', icon: 'SquaresFour', enabled: true },
+  { kind: 'separator' },
+  {
+    kind: 'item',
+    id: 'settings',
+    label: 'Settings',
+    icon: 'GearSix',
+    shortcut: '⌘,',
+    enabled: true,
+  },
+]
 
 /** Length of a card's exit animation (`--dur-fast`): the view is hidden once it has played. */
 const EXIT_MS = 120
@@ -119,66 +136,69 @@ export function Overlay() {
     return tooltip && <OverlayTooltip tooltip={tooltip.tooltip} closing={tooltip.closing} />
   }
 
-  // The centred cards (⌘K, ⌘T) have no anchor.
-  if (!('anchor' in request)) {
-    return request.kind === 'tab-finder' ? (
-      <TabFinder closing={closing} onClose={close} />
-    ) : (
-      <CommandField closing={closing} onClose={close} />
-    )
+  switch (request.kind) {
+    // The centred cards (⌘K, ⌘T) have no anchor.
+    case 'tab-finder':
+      return <TabFinder closing={closing} onClose={close} />
+    case 'command':
+      return <CommandField closing={closing} onClose={close} />
+    case 'site-menu':
+      return <SiteMenu anchor={request.anchor} closing={closing} onClose={close} />
+    case 'new-menu': {
+      const actions: Record<string, () => void> = {
+        // Swaps this menu for the command field (⌘T), which creates the tab on submit.
+        'new-tab': () => void window.bigBrowser.invoke('overlay.open', { kind: 'command' }),
+        'new-folder': () => {
+          void window.bigBrowser
+            .invoke('browser.createFolder', { name: NEW_FOLDER_NAME })
+            .then((folder) => window.bigBrowser.invoke('ui.renameFolder', { folderId: folder.id }))
+        },
+        'new-space': () => {
+          if (!workspace || !accent) return
+          void window.bigBrowser.invoke('browser.createSpace', {
+            name: `Space ${workspace.spaces.length + 1}`,
+            color: accent,
+          })
+        },
+        settings: () => void window.bigBrowser.invoke('ui.openSettings'),
+      }
+      return (
+        <Menu
+          anchor={request.anchor}
+          placement="above"
+          items={NEW_MENU}
+          closing={closing}
+          onChoose={(id) => actions[id]?.()}
+          onClose={close}
+        />
+      )
+    }
+    // Main's menus: the chosen item runs in main.
+    case 'context-menu':
+    case 'anchored-menu': {
+      const { menu } = request
+      const onChoose = (itemId: string) =>
+        void window.bigBrowser.invoke('overlay.choose', { menuId: menu.id, itemId })
+      return request.kind === 'context-menu' ? (
+        <Menu
+          key={menu.id}
+          at={request.at}
+          items={menu.items}
+          closing={closing}
+          onChoose={onChoose}
+          onClose={close}
+        />
+      ) : (
+        <Menu
+          key={menu.id}
+          anchor={request.anchor}
+          placement={request.placement}
+          items={menu.items}
+          closing={closing}
+          onChoose={onChoose}
+          onClose={close}
+        />
+      )
+    }
   }
-  if (request.kind === 'site-menu') {
-    return <SiteMenu anchor={request.anchor} closing={closing} onClose={close} />
-  }
-
-  const newMenu: MenuItem[] = [
-    {
-      id: 'new-tab',
-      label: 'New tab',
-      icon: Plus,
-      shortcut: '⌘T',
-      // Swaps this menu for the command field (⌘T), which creates the tab on submit.
-      onSelect: () => void window.bigBrowser.invoke('overlay.open', { kind: 'command' }),
-    },
-    {
-      id: 'new-folder',
-      label: 'New folder',
-      icon: FolderSimplePlus,
-      onSelect: () => {
-        void window.bigBrowser
-          .invoke('browser.createFolder', { name: NEW_FOLDER_NAME })
-          .then((folder) => window.bigBrowser.invoke('ui.renameFolder', { folderId: folder.id }))
-      },
-    },
-    {
-      id: 'new-space',
-      label: 'New space',
-      icon: SquaresFour,
-      onSelect: () => {
-        if (!workspace || !accent) return
-        void window.bigBrowser.invoke('browser.createSpace', {
-          name: `Space ${workspace.spaces.length + 1}`,
-          color: accent,
-        })
-      },
-    },
-    'separator',
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: GearSix,
-      shortcut: '⌘,',
-      onSelect: () => void window.bigBrowser.invoke('ui.openSettings'),
-    },
-  ]
-  return (
-    <Menu
-      anchor={request.anchor}
-      placement="above"
-      items={newMenu}
-      filter
-      closing={closing}
-      onClose={close}
-    />
-  )
 }

@@ -96,7 +96,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
   opens and closes on click; a closed folder shows its tab count on the right. Its tabs are listed
-  one `--space-3` indent below. "New Folder…" and "Rename" (native menus) put its name in an
+  one `--space-3` indent below. "New Folder…" and "Rename" (its menus) put its name in an
   inline field: Enter or leaving it saves, Esc cancels.
 - **Separator**: a hairline, with **Clear** on the right when today has tabs — shown only while
   the separator is hovered or Clear has keyboard focus. It closes all of today's tabs (children
@@ -108,8 +108,8 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a
   folder named after the host, where the first of them was; open/closed per host for the session
   (UI store), never stored. Settings → Appearance → Automatic folders turns them off.
-- Every row and tile: right-click opens its native menu (tab: pin, favourites, folders, copy,
-  close; folder: rename, delete). A tab whose page is not loaded is dimmed
+- Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
+  move to folder ▸, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
   (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
 - **Drag and drop** (`useTabDrag`, pointer events): drag a tab row or tile to reorder it, pin it,
   favourite it or file it into a folder. The upper half of a row drops before it, the lower half
@@ -138,6 +138,20 @@ centred cards from their top centre); closing plays it backwards (`--dur-fast`, 
 a chosen item's action runs first, never after the animation. The + menu has a
 filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
 at once), New space, Settings.
+
+**Menus** (`ui/Menu`) — every menu is drawn by Big Browser, never a native one (except macOS
+Share and the menu bar). Rows: a leading `--icon-size` slot (the item's icon, a check for the
+checked item, or empty so labels line up; only when some row of the card has one), the label, then
+the shortcut or a submenu's caret. A disabled row is `--text-faint` and takes no hover. A menu
+opened from a button keeps the funnel and grows from it; a menu opened at the pointer (a
+right-click) has no neck: its top-left corner sits on the pointer and it grows from there, flipped
+left of / above the pointer where there is no room (`placeCard`, kept `POPOVER_GAP` inside the
+window; taller than the window, it scrolls). A **submenu** is a second card of the same look
+beside its row (4 px from the card, its first row level with the row; flipped to the left side
+when there is no room), opened by hovering the row, → or Enter, closed by ← or by hovering another
+row; its row keeps the hover fill while open. Keyboard: ↓/↑ within a card (↓ from a menu opened at
+the pointer reaches its first row), Enter or Space chooses, Escape or a click outside closes every
+card.
 
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
 `title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on

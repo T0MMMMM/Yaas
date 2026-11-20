@@ -1,16 +1,16 @@
-// Native context menus of the sidebar's tabs and folders, popped at the pointer by main (a native
-// menu floats over the page view, which a renderer popover can't).
-import { clipboard, Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
+// The menus of the sidebar's tabs and folders: main builds the items (and what each runs), the
+// overlay draws them at the pointer (menus/menuRegistry).
+import { clipboard } from 'electron'
 import { BrowserError, type BrowserStore } from '@core/browser/browserStore'
 import type { Shortcut } from '@shared/ipc/contract'
-import type { BrowserSnapshot, BrowserTab, TabSection } from '@shared/model'
+import type { BrowserSnapshot, TabSection } from '@shared/model'
+import type { MenuItemDef } from '../menus/menuRegistry'
 
 /** Name of a folder made from a tab's menu; the sidebar then edits it. */
 export const NEW_FOLDER_NAME = 'New Folder'
 
 export interface SidebarMenuHost {
   store: BrowserStore
-  window: () => BrowserWindow | null
   /** The user's close (unloads a favourite or pinned tab). */
   closeTab: (tabId: string) => void
   emitShortcut: (shortcut: Shortcut) => void
@@ -33,39 +33,35 @@ export function endOf(
   return tabs + folders
 }
 
-/**
- * The tab or folder can vanish while its menu is open (closed by a shortcut, a page, another
- * window): the click then does nothing instead of throwing in main.
- */
-function ignoreVanished(items: MenuItemConstructorOptions[]): MenuItemConstructorOptions[] {
-  return items.map((item) => {
-    const { click, submenu } = item
-    return {
-      ...item,
-      ...(click && {
-        click: (...args: Parameters<typeof click>) => {
-          try {
-            click(...args)
-          } catch (error) {
-            if (!(error instanceof BrowserError)) throw error
-          }
-        },
-      }),
-      ...(Array.isArray(submenu) && { submenu: ignoreVanished(submenu) }),
+/** The ids of `folderId` and of every folder under it. */
+function subtreeOf(snapshot: BrowserSnapshot, folderId: string): Set<string> {
+  const ids = new Set([folderId])
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const folder of snapshot.folders) {
+      if (folder.parentId !== null && ids.has(folder.parentId) && !ids.has(folder.id)) {
+        ids.add(folder.id)
+        grew = true
+      }
     }
-  })
+  }
+  return ids
 }
 
-function popup(host: SidebarMenuHost, template: MenuItemConstructorOptions[]): void {
-  const win = host.window()
-  if (win) Menu.buildFromTemplate(ignoreVanished(template)).popup({ window: win })
-}
-
-function tabMenu(host: SidebarMenuHost, tab: BrowserTab): MenuItemConstructorOptions[] {
+/** Pin, favourites, folder, copy, duplicate, then remove or close. */
+export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
   const { store } = host
   const snapshot = store.snapshot()
-  const move = (section: TabSection, folderId: string | null, index: number) => (): void =>
-    store.moveTab(tab.id, { section, folderId, index })
+  const tab = snapshot.tabs.find((t) => t.id === tabId)
+  if (!tab) throw new BrowserError('not_found', `Unknown tab ${tabId}`)
+  // Read the store when the action runs: the sidebar may change while the menu is open.
+  const move = (section: TabSection, folderId: string | null) => (): void =>
+    store.moveTab(tab.id, {
+      section,
+      folderId,
+      index: section === 'today' ? 0 : endOf(store.snapshot(), tab.spaceId, section, folderId),
+    })
   const folders = snapshot.folders.filter((f) => f.spaceId === tab.spaceId)
   const newFolder = (): void => {
     // Checked first so a vanished tab leaves no empty folder behind.
@@ -77,56 +73,144 @@ function tabMenu(host: SidebarMenuHost, tab: BrowserTab): MenuItemConstructorOpt
   const kept = tab.section !== 'today'
   return [
     tab.section === 'pinned'
-      ? { label: 'Unpin', click: move('today', null, 0) }
-      : {
-          label: 'Pin',
-          click: move('pinned', null, endOf(snapshot, tab.spaceId, 'pinned', null)),
-        },
+      ? {
+          kind: 'item',
+          id: 'unpin',
+          label: 'Unpin',
+          icon: 'PushPinSlash',
+          run: move('today', null),
+        }
+      : { kind: 'item', id: 'pin', label: 'Pin', icon: 'PushPin', run: move('pinned', null) },
     tab.section === 'favorites'
-      ? { label: 'Remove from Favourites', click: move('today', null, 0) }
+      ? {
+          kind: 'item',
+          id: 'unfavourite',
+          label: 'Remove from Favourites',
+          icon: 'Star',
+          run: move('today', null),
+        }
       : {
+          kind: 'item',
+          id: 'favourite',
           label: 'Add to Favourites',
-          click: move('favorites', null, endOf(snapshot, tab.spaceId, 'favorites', null)),
+          icon: 'Star',
+          run: move('favorites', null),
         },
     {
+      kind: 'item',
+      id: 'move-to-folder',
       label: 'Move to Folder',
+      icon: 'FolderSimple',
       submenu: [
-        ...folders.map((folder): MenuItemConstructorOptions => ({
+        ...folders.map((folder): MenuItemDef => ({
+          kind: 'item',
+          id: `folder:${folder.id}`,
           label: folder.name,
+          icon: 'FolderSimple',
           enabled: folder.id !== tab.folderId,
-          click: move('pinned', folder.id, endOf(snapshot, tab.spaceId, 'pinned', folder.id)),
+          checked: folder.id === tab.folderId,
+          run: move('pinned', folder.id),
         })),
-        ...(folders.length > 0 ? [{ type: 'separator' } as const] : []),
-        { label: 'New Folder…', click: newFolder },
+        ...(folders.length > 0 ? [{ kind: 'separator' } as const] : []),
+        {
+          kind: 'item',
+          id: 'new-folder',
+          label: 'New Folder…',
+          icon: 'FolderSimplePlus',
+          run: newFolder,
+        },
       ],
     },
-    { label: 'Copy Link', click: () => clipboard.writeText(tab.url) },
-    { label: 'Duplicate', click: () => store.openTab(tab.spaceId, tab.url) },
-    { type: 'separator' },
+    {
+      kind: 'item',
+      id: 'copy-link',
+      label: 'Copy Link',
+      icon: 'LinkSimple',
+      run: () => clipboard.writeText(tab.url),
+    },
+    {
+      kind: 'item',
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'CopySimple',
+      run: () => {
+        if (store.snapshot().tabs.some((t) => t.id === tab.id)) store.openTab(tab.spaceId, tab.url)
+      },
+    },
+    { kind: 'separator' },
     kept
-      ? { label: 'Remove', click: () => store.removeTab(tab.id) }
-      : { label: 'Close', click: () => host.closeTab(tab.id) },
+      ? {
+          kind: 'item',
+          id: 'remove',
+          label: 'Remove',
+          icon: 'Trash',
+          run: () => store.removeTab(tab.id),
+        }
+      : { kind: 'item', id: 'close', label: 'Close', icon: 'X', run: () => host.closeTab(tab.id) },
   ]
 }
 
-/** Pops the tab's menu: pin, favourites, folder, copy, duplicate, then remove or close. */
-export function showTabMenu(host: SidebarMenuHost, tabId: string): void {
-  const tab = host.store.snapshot().tabs.find((t) => t.id === tabId)
-  if (!tab) throw new Error(`Unknown tab ${tabId}`)
-  popup(host, tabMenu(host, tab))
-}
-
-/** Pops the folder's menu: rename (edited in the sidebar) or delete with its tabs. */
-export function showFolderMenu(host: SidebarMenuHost, folderId: string): void {
-  const exists = (): boolean => host.store.snapshot().folders.some((f) => f.id === folderId)
-  if (!exists()) throw new Error(`Unknown folder ${folderId}`)
-  popup(host, [
+/**
+ * Rename (edited in the sidebar), move to the top level or into another folder (never into its own
+ * subtree), delete with its contents. Change Icon… comes with the folder icons.
+ */
+export function folderMenu(host: SidebarMenuHost, folderId: string): MenuItemDef[] {
+  const { store } = host
+  const snapshot = store.snapshot()
+  const folder = snapshot.folders.find((f) => f.id === folderId)
+  if (!folder) throw new BrowserError('not_found', `Unknown folder ${folderId}`)
+  const exists = (): boolean => store.snapshot().folders.some((f) => f.id === folderId)
+  const subtree = subtreeOf(snapshot, folderId)
+  const targets = snapshot.folders.filter((f) => f.spaceId === folder.spaceId && !subtree.has(f.id))
+  const moveTo = (parentId: string | null) => (): void =>
+    store.moveFolder(folderId, {
+      parentId,
+      index: endOf(store.snapshot(), folder.spaceId, 'pinned', parentId),
+    })
+  return [
     {
+      kind: 'item',
+      id: 'rename',
       label: 'Rename',
-      click: () => {
+      icon: 'PencilSimple',
+      run: () => {
         if (exists()) host.emitShortcut({ kind: 'rename-folder', folderId })
       },
     },
-    { label: 'Delete Folder', click: () => host.store.deleteFolder(folderId) },
-  ])
+    {
+      kind: 'item',
+      id: 'move-to-folder',
+      label: 'Move to Folder',
+      icon: 'FolderSimple',
+      submenu: [
+        {
+          kind: 'item',
+          id: 'top-level',
+          label: 'Top level',
+          icon: 'ArrowLineUp',
+          enabled: folder.parentId !== null,
+          checked: folder.parentId === null,
+          run: moveTo(null),
+        },
+        ...(targets.length > 0 ? [{ kind: 'separator' } as const] : []),
+        ...targets.map((target): MenuItemDef => ({
+          kind: 'item',
+          id: `folder:${target.id}`,
+          label: target.name,
+          icon: 'FolderSimple',
+          enabled: target.id !== folder.parentId,
+          checked: target.id === folder.parentId,
+          run: moveTo(target.id),
+        })),
+      ],
+    },
+    { kind: 'separator' },
+    {
+      kind: 'item',
+      id: 'delete',
+      label: 'Delete Folder',
+      icon: 'Trash',
+      run: () => store.deleteFolder(folderId),
+    },
+  ]
 }
