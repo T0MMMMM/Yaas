@@ -173,6 +173,20 @@ Extensions, Developers, About. The other items (capture, hide an element, transl
 picture, Boosts, and the Sync, AI, Snippets, Live Folders… categories) appear when their module or
 step lands. **Translate** joins the list of later modules.
 
+#### Added by the owner on 2026-11-20 (during plan 1)
+
+- **Unloaded tabs are shown at low opacity** in the sidebar (a restored tab whose page has not
+  been loaded yet) [owner]. → plan 1 (Task 7b).
+- **Tabs of the same site are grouped into a folder automatically** [owner]. When a group forms
+  (how many tabs, whether the user can turn it off or undo it) is [open] for plan 3. → plan 3.
+- **Icon-only sidebar**: when the sidebar is dragged narrower than a threshold it switches to a
+  single column showing only the sites' icons [owner]. → plan 3.
+- **The logo is customizable text of at most 2 characters, `:]` by default** [owner]. The
+  opening animation only swaps the logo's characters and its font, animated [owner]. → plan 6
+  (onboarding).
+- **The user can change the UI font in settings, and choosing it is an onboarding step**
+  [owner]. → plan 5 (settings) and plan 6 (onboarding).
+
 **What happens to the YAAS UI in step 1** [owner, 2026-11-20]: the YAAS session features (session
 view, Claude account import in the onboarding, usage meters) are **hidden until step 3**; their
 code stays. The sidebar, the onboarding and the settings become the browser's own, reusing their

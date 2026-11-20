@@ -29,12 +29,15 @@ written when the previous one is merged.
    YAAS UI hidden.
 2. **Extensions & site menu**: Chrome Web Store, the two spike fixes, Ghostery ad blocker, the
    transparent overlay view for UI floating over the page, the yab-shaped site menu.
-3. **Organisation**: pins, favourite tiles, folders, nested tabs, ⌘K tab finder, ⌘T field over the
-   page, ⌘Z, the full + menu.
+3. **Organisation**: pins, favourite tiles, folders, nested tabs, automatic folders for tabs of
+   the same site, icon-only sidebar when narrow, ⌘K tab finder, ⌘T field over the page, ⌘Z, the
+   full + menu.
 4. **Window features**: split view, downloads (sidebar footer button), several windows (⌘N),
    default-browser registration.
-5. **Settings**: yab-shaped settings window with the step 1 categories.
-6. **Onboarding import**: Chromium browsers (Chrome, Arc, Edge, Brave), then Safari and Firefox.
+5. **Settings**: yab-shaped settings window with the step 1 categories, including the UI font.
+6. **Onboarding**: import (Chromium browsers — Chrome, Arc, Edge, Brave — then Safari and
+   Firefox), the font step, the customizable 2-character logo (`:]` by default) and its opening
+   animation (characters and font swap).
 
 ## Global constraints
 
@@ -444,6 +447,28 @@ Layout and behaviour (decided):
   - Extend the Task 6 shortcut test: after `newTab`, the `Address` input is focused.
 - [ ] **Step 3:** Run — FAIL. **Step 4:** Implement. **Step 5:** `npm run check && npm run
   test:e2e` — PASS. **Step 6:** Commit `feat(renderer): browser sidebar, address bar and page slot`.
+
+### Task 7b: Unloaded tabs at low opacity
+
+Added by the owner during execution (spec, "Added by the owner on 2026-11-20").
+
+**Files:**
+- Modify: `src/renderer/src/features/workspace/workspace.ts` (+ test),
+  `src/renderer/src/features/sidebar/Sidebar.tsx` + css, `tests/e2e/browser.spec.ts`
+
+**Interfaces:**
+- Consumes: `BrowserState.runtime` — main only has a runtime entry for a tab whose view exists,
+  i.e. whose page has been loaded at least once in this run.
+- Produces: `TabView.loaded: boolean` (`true` when `state.runtime[tab.id]` exists).
+
+- [ ] **Step 1:** Unit test `browserView marks tabs without runtime as not loaded`.
+- [ ] **Step 2:** e2e `restored tabs stay dim until visited`: two tabs, relaunch → the inactive
+  `tab` has `data-loaded="false"` and the active one `"true"`; click the inactive one → `"true"`.
+- [ ] **Step 3:** Run — FAIL. **Step 4:** Implement: the tab row gets `data-loaded`, and CSS
+  lowers its opacity with a new token `--opacity-unloaded` (add it to `tokens.css` and
+  `docs/DESIGN.md`); hover and the active row stay at full opacity.
+- [ ] **Step 5:** `npm run check && npm run test:e2e` — PASS. Commit
+  `feat(sidebar): dim tabs that are not loaded yet`.
 
 ### Task 8: Hide the YAAS UI in onboarding and settings
 
