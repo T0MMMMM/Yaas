@@ -119,6 +119,7 @@ const spaceSessions = new SpaceSessions({
   ...(testExtension ? { testExtension } : {}),
   // Tests run on a throwaway data dir and never touch the network.
   autoUpdate: !userDataOverride,
+  autoAllowInstalls: Boolean(userDataOverride),
 })
 
 let adBlocker: AdBlocker | null = null

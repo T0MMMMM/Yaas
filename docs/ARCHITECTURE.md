@@ -438,8 +438,10 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Extensions.** Chrome extensions are per space (they follow the space's sign-ins, like Arc):
   every space session gets its own `ElectronChromeExtensions` (`electron-chrome-extensions`) and
   the Chrome Web Store (`electron-chrome-web-store`, "Add to Chrome" works), with extensions
-  stored under `<userData>/extensions/<spaceId>`. Web Store update checks are off when
-  `ACAB_USER_DATA` is set (tests). `TabViews` registers each tab (`addTab`), reports the shown one
+  stored under `<userData>/extensions/<spaceId>`. "Add to Chrome" asks first: a native dialog
+  lists what the extension can do (`core/browser/extensionPermissions.ts`, via the store's
+  `beforeInstall`), Cancel by default. Web Store update checks are off and installs are allowed
+  without the dialog when `ACAB_USER_DATA` is set (tests). `TabViews` registers each tab (`addTab`), reports the shown one
   (`selectTab`) and adds the extensions' `chrome.contextMenus` items to the page menu (own group
   before Inspect). Extensions reach tabs through an `ExtensionHost` in `main/index.ts`:
   `chrome.tabs.create` and `chrome.windows.create` open a tab in the extension's space (bringing

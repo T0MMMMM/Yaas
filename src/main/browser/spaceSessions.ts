@@ -1,9 +1,10 @@
 // One Electron session per space (`persist:space-<id>`): its cookies, permissions and Chrome
 // extensions. Each session is set up once, the first time a tab of that space needs it.
 import { join } from 'node:path'
-import { session, type BrowserWindow, type Session, type WebContents } from 'electron'
+import { dialog, session, type BrowserWindow, type Session, type WebContents } from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
+import { permissionSummary } from '@core/browser/extensionPermissions'
 import { isPermissionGranted } from '@core/browser/permissions'
 import { chromeUserAgent } from '@core/browser/userAgent'
 import { spacePartition } from '@shared/spaces'
@@ -27,6 +28,8 @@ export interface SpaceSessionsOptions {
   testExtension?: string
   /** Web Store update checks (off under test: they go to the network). Defaults to true. */
   autoUpdate?: boolean
+  /** Installs without asking (e2e): a native dialog would block the test. Defaults to false. */
+  autoAllowInstalls?: boolean
 }
 
 export class SpaceSessions {
@@ -120,6 +123,9 @@ export class SpaceSessions {
       // Every "window" is the browser window: closing one closes the tabs `createWindow` opened,
       // never the window itself (the library would `destroy()` it without this handler).
       removeWindow: () => {
+        // The library also calls this when the main window closes: nothing to do then.
+        const win = host.window()
+        if (!win || win.isDestroyed()) return
         const tabs = this.windowTabs.get(spaceId)
         this.windowTabs.delete(spaceId)
         for (const contents of tabs ?? []) if (!contents.isDestroyed()) host.closeTab(contents)
@@ -133,6 +139,25 @@ export class SpaceSessions {
         session: ses,
         extensionsPath: join(this.opts.userData, 'extensions', spaceId),
         autoUpdate: this.opts.autoUpdate ?? true,
+        beforeInstall: async ({ localizedName, manifest, browserWindow }) => {
+          if (this.opts.autoAllowInstalls) return { action: 'allow' }
+          const lines = permissionSummary(manifest)
+          const options = {
+            type: 'question' as const,
+            title: 'Add extension',
+            message: `Add "${localizedName}"?`,
+            detail: lines.length
+              ? `It can:\n${lines.map((line) => `- ${line}`).join('\n')}`
+              : 'It asks for no special permissions.',
+            buttons: ['Add extension', 'Cancel'],
+            defaultId: 1,
+            cancelId: 1,
+          }
+          const { response } = browserWindow
+            ? await dialog.showMessageBox(browserWindow, options)
+            : await dialog.showMessageBox(options)
+          return { action: response === 0 ? 'allow' : 'deny' }
+        },
       })
       if (this.opts.testExtension) await ses.extensions.loadExtension(this.opts.testExtension)
     } catch (error) {
