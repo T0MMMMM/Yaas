@@ -37,8 +37,10 @@
 1. ~~Brainstorming and design approval~~ — done 2026-11-20.
 2. ~~Plan 1 (daily-driver browser core)~~ — done: `docs/superpowers/plans/2026-11-20-acab-browser-core.md`.
 3. ~~Plan 2 (Extensions & site menu)~~ — done: `docs/superpowers/plans/2026-11-20-acab-extensions-site-menu.md`.
-4. Write and follow **plan 3** in `docs/superpowers/plans/` (superpowers:writing-plans), from the
-   design spec's roadmap.
+4. ~~Plan 3 (Organisation)~~ — done: `docs/superpowers/plans/2026-11-20-acab-organisation.md`.
+5. Write and follow **plan 4** (window features: split view, downloads, several windows, default
+   browser) in `docs/superpowers/plans/` (superpowers:writing-plans), from the design spec's
+   roadmap.
 
 ## Gotchas
 
