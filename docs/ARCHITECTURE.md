@@ -424,9 +424,15 @@ results come back to the lead as a short summary + branch name, never the full c
   renderer only sees it through `browser.state` and the `browser.changed` event (`BrowserState` =
   the snapshot plus every tab's `runtime`: loading, back/forward, `theme-color`, the view's
   `webContentsId`, `loaded` — live data, never persisted; a tab without a view gets an idle entry
-  with `loaded: false`, which the sidebar dims).
-- **Sections.** A space's tabs sit in `favorites` (tiles), `pinned` (top-level tabs and folders
-  share one ordering; a folder orders its own tabs, one level deep) and `today` (a tree: a tab
+  with `loaded: false`, which the sidebar dims). Besides order and nesting, a folder has an
+  `icon` (`hue:<deg>` or an emoji; null = a hue from its name), a space an `icon` (an emoji;
+  null = its colour dot) and `sectionCollapsed`, and a tab `lastActiveAt` (set by `activateTab`
+  and by `openTab` when it activates; Recent Tabs sorts by it) — migration 5.
+- **Sections.** A space's tabs sit in `favorites` (tiles), `pinned` (a tree of folders: a folder
+  is at the top level or in another folder, `parentId`; the tabs and child folders of one parent
+  share one ordering; `moveFolder` moves a folder with its subtree, never into itself or a
+  descendant — `invalid_move`; the sidebar indents a level per step up to `MAX_FOLDER_INDENT` = 4,
+  the model has no limit) and `today` (a tree: a tab
   opened from another is its child, `parentId`, drawn under it; closing a parent hands its
   children to its own parent). `visibleOrder` is the drawn order: the next active tab after a
   close and `Ctrl+Tab` follow it. Moving into today takes an index in drawn order; leaving today
@@ -436,11 +442,14 @@ results come back to the lead as a short summary + branch name, never the full c
   pinned tab: the entry stays and its view is destroyed. The model often doesn't change then (a
   non-active tab), so `TabViews.sync` can't see it: `BrowserStore.closeTab` returns `'unloaded'`
   and main calls `TabViews.unload` at every call site (`closeTab` in `main/index.ts`).
-  `browser.removeTab` deletes a tab whatever its section; deleting a folder deletes its tabs.
-- **Undo.** Deleted tabs (a folder's tabs as one entry) go on an in-memory stack of 20
-  (`core/browser/undoStack.ts`). `browser.reopenClosed` / `Mod+Shift+T` (menu accelerator, works
-  over pages) puts the last one back where it was, or at the end of the active space's today when
-  its space or folder is gone, and activates it. `Mod+Z` does the same from a keydown handler of
+  `browser.removeTab` deletes a tab whatever its section; deleting a folder deletes its child
+  folders and all their tabs.
+- **Undo.** Deleted tabs go on an in-memory stack of 20 (`core/browser/undoStack.ts`); an entry
+  is `{ folders, tabs }`: one tab, or a deleted folder's whole subtree (when it held tabs).
+  `browser.reopenClosed` / `Mod+Shift+T` (menu accelerator, works over pages) puts the last one
+  back where it was — folders first, with their ids, parents and positions, then their tabs — or
+  a tab at the end of the active space's today when its space or folder is gone, and activates
+  the first tab. `Mod+Z` does the same from a keydown handler of
   the UI (`app/Shell.tsx`), only when no input, text area or editable element has focus; in a page
   or a field it stays the text undo.
 - **Sidebar menus.** `browser.showTabMenu` / `browser.showFolderMenu` pop native menus at the
@@ -527,7 +536,8 @@ results come back to the lead as a short summary + branch name, never the full c
   (`webContents.close()`).
 - **Commands:** `browser.openTab` / `closeTab` / `removeTab` / `moveTab` / `activateTab` /
   `navigate` / `goBack` / `goForward` / `reload` / `createSpace` / `activateSpace` /
-  `createFolder` / `renameFolder` / `setFolderCollapsed` / `deleteFolder` / `reopenClosed` /
+  `createFolder` (optional `parentId`) / `moveFolder` / `renameFolder` / `setFolderCollapsed` /
+  `deleteFolder` / `reopenClosed` /
   `showTabMenu` / `showFolderMenu` / `setPageBounds` / `setPageVisible`.
   Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).
 - **Overlay.** `main/browser/overlayView.ts` is one transparent `WebContentsView` over the whole

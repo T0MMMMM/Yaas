@@ -86,7 +86,16 @@ const into = (
   zone,
 })
 
-/** Before or after a row (a folder's "after" is below its drawn tabs). */
+/** The bottom of a row as drawn: a folder's is below its last drawn row, at any depth. */
+function drawnBottom(rows: DropRow[], row: DropRow): number {
+  if (row.kind !== 'folder') return bottom(row)
+  const last = listRows(rows, 'pinned', row.id)
+    .filter((r) => r.height > 0)
+    .at(-1)
+  return last ? drawnBottom(rows, last) : bottom(row)
+}
+
+/** Before or after a row (a folder's "after" is below its drawn rows). */
 function beside(rows: DropRow[], row: DropRow, after: boolean): DropHit {
   const at = { section: row.section, folderId: row.folderId }
   if (row.snap) {
@@ -94,13 +103,7 @@ function beside(rows: DropRow[], row: DropRow, after: boolean): DropHit {
     return { target: { ...at, index: edge.index }, line: edge.y, zone: null }
   }
   const index = listRows(rows, row.section, row.folderId).indexOf(row) + (after ? 1 : 0)
-  let line = after ? bottom(row) : row.top
-  if (after && row.kind === 'folder') {
-    const last = listRows(rows, 'pinned', row.id)
-      .filter((r) => r.height > 0)
-      .at(-1)
-    if (last) line = bottom(last)
-  }
+  const line = after ? drawnBottom(rows, row) : row.top
   return { target: { ...at, index }, line, zone: null }
 }
 
@@ -276,20 +279,22 @@ export function dropRows(
   list('favorites', favourite)
   for (const t of sections.favorites) tab(t.id, 'favorites')
   list('pinned')
-  for (const node of sections.pinned) {
-    if (node.kind === 'tab') tab(node.tab.id, 'pinned')
-    else if (node.kind === 'folder') {
-      add(`folder:${node.folder.id}`, {
-        id: node.folder.id,
-        kind: 'folder',
-        section: 'pinned',
-        folderId: null,
-      })
-      for (const child of node.children) {
-        if (child.kind === 'tab') tab(child.tab.id, 'pinned', node.folder.id)
+  /** A pinned list's rows in drawn order, each folder followed by its own list. */
+  const pinnedRows = (nodes: SidebarNode[], folderId: string | null): void => {
+    for (const node of nodes) {
+      if (node.kind === 'tab') tab(node.tab.id, 'pinned', folderId)
+      else if (node.kind === 'folder') {
+        add(`folder:${node.folder.id}`, {
+          id: node.folder.id,
+          kind: 'folder',
+          section: 'pinned',
+          folderId,
+        })
+        pinnedRows(node.children, node.folder.id)
       }
     }
   }
+  pinnedRows(sections.pinned, null)
   list('today')
   rows.push(...todayRows(sections, skip, dragged ? autoFolderHost(dragged.url) : null, measure))
   return rows

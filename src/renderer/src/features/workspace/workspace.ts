@@ -45,7 +45,14 @@ export type SidebarNode =
       /** Indent under its parent tab: 0 at the top level, capped at MAX_DEPTH. */
       depth: number
     }
-  | { kind: 'folder'; folder: BrowserFolder; children: SidebarNode[] }
+  | {
+      kind: 'folder'
+      folder: BrowserFolder
+      /** Nesting under other folders: 0 at the top of pinned, capped at MAX_FOLDER_INDENT. */
+      depth: number
+      /** Its tabs and child folders, by their shared position. */
+      children: SidebarNode[]
+    }
   /** 3+ top-level today tabs of one host, drawn as a folder named after it. Never stored. */
   | { kind: 'auto-folder'; host: string; children: SidebarNode[] }
 
@@ -128,6 +135,9 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
 /** Deepest indent of a nested tab. */
 export const MAX_DEPTH = 3
 
+/** Deepest indent of a nested folder (the model has no limit). */
+export const MAX_FOLDER_INDENT = 4
+
 /** Top-level today tabs of one host from which they are drawn as an automatic folder. */
 export const AUTO_FOLDER_MIN = 3
 
@@ -195,26 +205,35 @@ function sectionsOf(
     .sort(byPosition)
     .map(view)
 
-  const pinned = tabs.filter((t) => t.section === 'pinned').sort(byPosition)
+  const pinned = tabs.filter((t) => t.section === 'pinned')
   const folderIds = new Set(folders.map((f) => f.id))
-  const pinnedItems: { position: number; node: SidebarNode }[] = [
-    ...folders.map((folder) => ({
-      position: folder.position,
-      node: {
-        kind: 'folder' as const,
-        folder,
-        children: pinned
-          .filter((t) => t.folderId === folder.id)
-          .map((t): SidebarNode => ({ kind: 'tab', tab: view(t), depth: 0 })),
-      },
-    })),
-    ...pinned
-      .filter((t) => t.folderId === null || !folderIds.has(t.folderId))
-      .map((t) => ({
-        position: t.position,
-        node: { kind: 'tab' as const, tab: view(t), depth: 0 },
-      })),
-  ]
+  // A tab or folder whose folder is unknown is drawn at the top level. Every folder has one
+  // parent, so the walk from the top never loops.
+  const folderOf = (id: string | null): string | null =>
+    id !== null && folderIds.has(id) ? id : null
+  /** A pinned list: its folders (each with its own list) and tabs by their shared position. */
+  const pinnedList = (parentId: string | null, level: number): SidebarNode[] =>
+    [
+      ...folders
+        .filter((f) => folderOf(f.parentId) === parentId)
+        .map((folder) => ({
+          position: folder.position,
+          node: (): SidebarNode => ({
+            kind: 'folder',
+            folder,
+            depth: Math.min(level, MAX_FOLDER_INDENT),
+            children: pinnedList(folder.id, level + 1),
+          }),
+        })),
+      ...pinned
+        .filter((t) => folderOf(t.folderId) === parentId)
+        .map((t) => ({
+          position: t.position,
+          node: (): SidebarNode => ({ kind: 'tab', tab: view(t), depth: 0 }),
+        })),
+    ]
+      .sort(byPosition)
+      .map((item) => item.node())
 
   const todayTabs = tabs.filter((t) => t.section === 'today')
   const trees = todayTrees(todayTabs, view)
@@ -227,7 +246,7 @@ function sectionsOf(
   )
   return {
     favorites,
-    pinned: pinnedItems.sort(byPosition).map((item) => item.node),
+    pinned: pinnedList(null, 0),
     today: opts.autoFolders ? withAutoFolders(trees) : trees.flat(),
     todayOrder: tabsOf(trees.flat()).map((t) => ({
       id: t.id,

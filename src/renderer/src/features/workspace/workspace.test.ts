@@ -11,6 +11,7 @@ import {
   todayCloseOrder,
   todaySubtree,
   usageView,
+  MAX_FOLDER_INDENT,
   type SidebarNode,
 } from './workspace'
 
@@ -102,12 +103,20 @@ const tab = (id: string, spaceId: string, position: number, url = `https://${id}
     section: 'today',
     folderId: null,
     parentId: null,
+    lastActiveAt: null,
   }) satisfies BrowserTab
 
 const browser: BrowserState = {
   spaces: [
-    { id: 's1', name: 'Personal', color: '#7C5CFF', position: 0 },
-    { id: 's2', name: 'Work', color: '#2BB673', position: 1 },
+    {
+      id: 's1',
+      name: 'Personal',
+      color: '#7C5CFF',
+      position: 0,
+      icon: null,
+      sectionCollapsed: false,
+    },
+    { id: 's2', name: 'Work', color: '#2BB673', position: 1, icon: null, sectionCollapsed: false },
   ],
   activeSpaceId: 's1',
   // By space then position, as main sends them.
@@ -241,12 +250,19 @@ const at = (
   url = `https://${id}.test/`,
 ): BrowserTab => ({ ...tab(id, 's1', position, url), ...extra })
 
-const folder = (id: string, position: number, collapsed = false): BrowserFolder => ({
+const folder = (
+  id: string,
+  position: number,
+  collapsed = false,
+  parentId: string | null = null,
+): BrowserFolder => ({
   id,
   spaceId: 's1',
   name: id,
   position,
   collapsed,
+  parentId,
+  icon: null,
 })
 
 const stateOf = (tabs: BrowserTab[], folders: BrowserFolder[] = []): BrowserState => ({
@@ -298,6 +314,41 @@ describe('sidebarSections', () => {
       on,
     )
     expect(sections.pinned.map(shape)).toEqual(['p1@0', { fo: ['in1@0', 'in2@0'] }, 'p2@0'])
+  })
+
+  it('nests a folder in a folder, with its depth', () => {
+    const sections = sidebarSections(
+      stateOf(
+        [
+          at('in1', 0, { section: 'pinned', folderId: 'outer' }),
+          at('deep', 0, { section: 'pinned', folderId: 'inner' }),
+          at('p1', 1, { section: 'pinned' }),
+        ],
+        [folder('outer', 0), folder('inner', 1, false, 'outer')],
+      ),
+      's1',
+      on,
+    )
+    expect(sections.pinned.map(shape)).toEqual([
+      { outer: ['in1@0', { inner: ['deep@0'] }] },
+      'p1@0',
+    ])
+    const outer = sections.pinned[0]
+    const inner = outer?.kind === 'folder' ? outer.children[1] : undefined
+    expect(outer).toMatchObject({ kind: 'folder', depth: 0 })
+    expect(inner).toMatchObject({ kind: 'folder', depth: 1 })
+  })
+
+  it(`indents nested folders at most ${MAX_FOLDER_INDENT} levels`, () => {
+    const chain = Array.from({ length: 7 }, (_, i) =>
+      folder(`f${i}`, 0, false, i === 0 ? null : `f${i - 1}`),
+    )
+    const sections = sidebarSections(stateOf([], chain), 's1', on)
+    const depths: number[] = []
+    for (let node = sections.pinned[0]; node?.kind === 'folder'; node = node.children[0]) {
+      depths.push(node.depth)
+    }
+    expect(depths).toEqual([0, 1, 2, 3, 4, 4, 4])
   })
 
   it('draws today depth-first under parents, indent capped at 3', () => {

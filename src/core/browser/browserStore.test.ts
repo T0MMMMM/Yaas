@@ -160,6 +160,7 @@ describe('BrowserStore organisation', () => {
         section: 'today',
         folderId: null,
         parentId: null,
+        lastActiveAt: null,
       },
     ])
     expect(snap.folders).toEqual([])
@@ -257,7 +258,8 @@ describe('BrowserStore organisation', () => {
     expect(store.snapshot().folders).toEqual([])
     store.reopenClosed()
     expect(urls(store, spaceId)).toEqual(['a', 'b'])
-    expect(store.snapshot().tabs.every((t) => t.section === 'today')).toBe(true)
+    expect(store.snapshot().folders).toMatchObject([{ id: folder.id, name: 'F' }])
+    expect(store.snapshot().tabs.every((t) => t.folderId === folder.id)).toBe(true)
   })
 
   it("reopens into the active space's today when the tab's folder is gone", () => {
@@ -334,5 +336,150 @@ describe('BrowserStore organisation', () => {
   it('reopenClosed on an empty stack returns null', () => {
     const { store } = setup()
     expect(store.reopenClosed()).toBeNull()
+  })
+})
+
+/** The pinned list of `parentId` (null: the top level): ids of tabs and folders by position. */
+const pinnedList = (store: BrowserStore, spaceId: string, parentId: string | null): string[] => {
+  const snap = store.snapshot()
+  return [
+    ...snap.tabs
+      .filter((t) => t.spaceId === spaceId && t.section === 'pinned' && t.folderId === parentId)
+      .map((t) => ({ id: t.id, position: t.position })),
+    ...snap.folders
+      .filter((f) => f.spaceId === spaceId && f.parentId === parentId)
+      .map((f) => ({ id: f.id, position: f.position })),
+  ]
+    .sort((a, b) => a.position - b.position)
+    .map((item) => item.id)
+}
+
+const listPositions = (store: BrowserStore, spaceId: string, parentId: string | null): number[] => {
+  const snap = store.snapshot()
+  return [
+    ...snap.tabs
+      .filter((t) => t.spaceId === spaceId && t.section === 'pinned' && t.folderId === parentId)
+      .map((t) => t.position),
+    ...snap.folders
+      .filter((f) => f.spaceId === spaceId && f.parentId === parentId)
+      .map((f) => f.position),
+  ].sort((a, b) => a - b)
+}
+
+describe('BrowserStore nested folders', () => {
+  it("creates a child folder at the end of its parent's list, tabs and folders counted together", () => {
+    const { store, spaceId } = setup()
+    const parent = store.createFolder(spaceId, 'P')
+    const a = store.openTab(spaceId, 'a')
+    store.moveTab(a.id, { section: 'pinned', folderId: parent.id, index: 0 })
+    const first = store.createFolder(spaceId, 'C1', parent.id)
+    const second = store.createFolder(spaceId, 'C2', parent.id)
+    expect(first).toMatchObject({ parentId: parent.id, position: 1, icon: null })
+    expect(second).toMatchObject({ parentId: parent.id, position: 2 })
+    expect(pinnedList(store, spaceId, parent.id)).toEqual([a.id, first.id, second.id])
+    expect(pinnedList(store, spaceId, null)).toEqual([parent.id])
+    expect(() => store.createFolder(spaceId, 'X', 'nope')).toThrow(
+      expect.objectContaining({ code: 'not_found' }),
+    )
+  })
+
+  it('moving a folder into a sibling folder renumbers both lists without gaps', () => {
+    const { store, spaceId } = setup()
+    const a = store.openTab(spaceId, 'a')
+    const one = store.createFolder(spaceId, 'One')
+    const two = store.createFolder(spaceId, 'Two')
+    store.moveTab(a.id, { section: 'pinned', index: 2 })
+    const b = store.openTab(spaceId, 'b')
+    store.moveTab(b.id, { section: 'pinned', folderId: two.id, index: 0 })
+    expect(pinnedList(store, spaceId, null)).toEqual([one.id, two.id, a.id])
+    store.moveFolder(one.id, { parentId: two.id, index: 0 })
+    expect(pinnedList(store, spaceId, null)).toEqual([two.id, a.id])
+    expect(listPositions(store, spaceId, null)).toEqual([0, 1])
+    expect(pinnedList(store, spaceId, two.id)).toEqual([one.id, b.id])
+    expect(listPositions(store, spaceId, two.id)).toEqual([0, 1])
+    // Back to the top level, clamped to its end.
+    store.moveFolder(one.id, { parentId: null, index: 9 })
+    expect(pinnedList(store, spaceId, null)).toEqual([two.id, a.id, one.id])
+    expect(listPositions(store, spaceId, two.id)).toEqual([0])
+    // Within one list.
+    store.moveFolder(one.id, { parentId: null, index: 0 })
+    expect(pinnedList(store, spaceId, null)).toEqual([one.id, two.id, a.id])
+    expect(listPositions(store, spaceId, null)).toEqual([0, 1, 2])
+    expect(store.visibleOrder(spaceId)).toEqual([b.id, a.id])
+  })
+
+  it('a folder cannot move into itself or into its own descendant', () => {
+    const { store, spaceId } = setup()
+    const outer = store.createFolder(spaceId, 'Outer')
+    const inner = store.createFolder(spaceId, 'Inner', outer.id)
+    const deepest = store.createFolder(spaceId, 'Deepest', inner.id)
+    for (const parentId of [outer.id, inner.id, deepest.id]) {
+      expect(() => store.moveFolder(outer.id, { parentId, index: 0 })).toThrow(
+        expect.objectContaining({ code: 'invalid_move' }),
+      )
+    }
+    expect(store.snapshot().folders.find((f) => f.id === outer.id)?.parentId).toBeNull()
+  })
+
+  it('moveTab files a tab into a nested folder', () => {
+    const { store, spaceId } = setup()
+    const outer = store.createFolder(spaceId, 'Outer')
+    const inner = store.createFolder(spaceId, 'Inner', outer.id)
+    const a = store.openTab(spaceId, 'a')
+    store.moveTab(a.id, { section: 'pinned', folderId: inner.id, index: 0 })
+    expect(store.snapshot().tabs).toMatchObject([{ id: a.id, folderId: inner.id, position: 0 }])
+    expect(store.visibleOrder(spaceId)).toEqual([a.id])
+  })
+
+  it('deleting a folder removes its subtree; one reopen brings all of it back in place', () => {
+    const { store, spaceId } = setup()
+    const before = store.createFolder(spaceId, 'Before')
+    const parent = store.createFolder(spaceId, 'Parent')
+    const after = store.createFolder(spaceId, 'After')
+    const t1 = store.openTab(spaceId, 'one')
+    const t2 = store.openTab(spaceId, 'two')
+    const t3 = store.openTab(spaceId, 'three')
+    store.moveTab(t1.id, { section: 'pinned', folderId: parent.id, index: 0 })
+    const child = store.createFolder(spaceId, 'Child', parent.id)
+    store.moveTab(t2.id, { section: 'pinned', folderId: parent.id, index: 2 })
+    store.moveTab(t3.id, { section: 'pinned', folderId: child.id, index: 0 })
+    store.setFolderCollapsed(child.id, true)
+    store.activateTab(t3.id)
+    const foldersBefore = store.snapshot().folders
+
+    store.deleteFolder(parent.id)
+    let snap = store.snapshot()
+    expect(snap.tabs).toEqual([])
+    expect(snap.folders.map((f) => f.id)).toEqual([before.id, after.id])
+    expect(listPositions(store, spaceId, null)).toEqual([0, 1])
+    expect(snap.activeTabIds[spaceId]).toBeNull()
+
+    store.reopenClosed()
+    snap = store.snapshot()
+    expect(snap.folders).toEqual(foldersBefore)
+    expect(pinnedList(store, spaceId, null)).toEqual([before.id, parent.id, after.id])
+    const idOf = (url: string) => snap.tabs.find((t) => t.url === url)?.id
+    expect(pinnedList(store, spaceId, parent.id)).toEqual([idOf('one'), child.id, idOf('two')])
+    expect(pinnedList(store, spaceId, child.id)).toEqual([idOf('three')])
+    expect(snap.tabs).toHaveLength(3)
+    expect(store.reopenClosed()).toBeNull()
+  })
+
+  it('activating a tab records when', () => {
+    const { store, spaceId } = setup()
+    const a = store.openTab(spaceId, 'a')
+    const b = store.openTab(spaceId, 'b', { activate: false })
+    expect(store.snapshot().tabs.find((t) => t.id === b.id)?.lastActiveAt).toBeNull()
+    expect(store.snapshot().tabs.find((t) => t.id === a.id)?.lastActiveAt).not.toBeNull()
+    store.activateTab(b.id)
+    const at = store.snapshot().tabs.find((t) => t.id === b.id)?.lastActiveAt
+    expect(Number.isNaN(Date.parse(at ?? ''))).toBe(false)
+  })
+
+  it('new spaces have no icon and an open section', () => {
+    const { store } = setup()
+    const space = store.createSpace('Work', '#fff')
+    expect(space).toMatchObject({ icon: null, sectionCollapsed: false })
+    expect(store.snapshot().spaces.at(-1)).toMatchObject({ icon: null, sectionCollapsed: false })
   })
 })

@@ -88,11 +88,21 @@ const tab = (id: string, position: number, extra: Partial<BrowserTab> = {}): Bro
   section: 'today',
   folderId: null,
   parentId: null,
+  lastActiveAt: null,
   ...extra,
 })
 
 const stateOf = (tabs: BrowserTab[], folders: BrowserFolder[] = []): BrowserState => ({
-  spaces: [{ id: 's1', name: 'Personal', color: '#7C5CFF', position: 0 }],
+  spaces: [
+    {
+      id: 's1',
+      name: 'Personal',
+      color: '#7C5CFF',
+      position: 0,
+      icon: null,
+      sectionCollapsed: false,
+    },
+  ],
   activeSpaceId: 's1',
   tabs,
   folders,
@@ -228,7 +238,17 @@ describe('dropRows', () => {
           tab('in2', 1, { section: 'pinned', folderId: 'fo' }),
           tab('p1', 1, { section: 'pinned' }),
         ],
-        [{ id: 'fo', spaceId: 's1', name: 'Reading', position: 0, collapsed: false }],
+        [
+          {
+            id: 'fo',
+            spaceId: 's1',
+            name: 'Reading',
+            position: 0,
+            collapsed: false,
+            parentId: null,
+            icon: null,
+          },
+        ],
       ),
       's1',
       { autoFolders: true },
@@ -273,12 +293,59 @@ describe('dropRows', () => {
           tab('in2', 1, { section: 'pinned', folderId: 'fo' }),
           tab('t1', 0),
         ],
-        [{ id: 'fo', spaceId: 's1', name: 'Reading', position: 0, collapsed: true }],
+        [
+          {
+            id: 'fo',
+            spaceId: 's1',
+            name: 'Reading',
+            position: 0,
+            collapsed: true,
+            parentId: null,
+            icon: null,
+          },
+        ],
       ),
       's1',
       { autoFolders: true },
     )
     const rows = dropRows(sections, 't1', stacked(['folder:fo', 'tab:t1']))
     expect(dropTarget(5, rows)).toEqual({ section: 'pinned', folderId: 'fo', index: 2 })
+  })
+
+  it('files a tab into a nested folder, and counts a child folder in its parent', () => {
+    const folder = (id: string, position: number, parentId: string | null) => ({
+      id,
+      spaceId: 's1',
+      name: id,
+      position,
+      collapsed: false,
+      parentId,
+      icon: null,
+    })
+    const sections = sidebarSections(
+      stateOf(
+        [
+          tab('in1', 0, { section: 'pinned', folderId: 'outer' }),
+          tab('deep', 0, { section: 'pinned', folderId: 'inner' }),
+          tab('t1', 0),
+        ],
+        [folder('outer', 0, null), folder('inner', 1, 'outer')],
+      ),
+      's1',
+      { autoFolders: true },
+    )
+    const drawn = ['folder:outer', 'tab:in1', 'folder:inner', 'tab:deep', 'tab:t1']
+    const rows = dropRows(sections, 't1', stacked(drawn))
+    // The middle of the inner folder's row: at its end.
+    expect(dropTarget(25, rows)).toEqual({ section: 'pinned', folderId: 'inner', index: 1 })
+    // The middle of the outer folder's row: after its tab and its child folder.
+    expect(dropTarget(5, rows)).toEqual({ section: 'pinned', folderId: 'outer', index: 2 })
+    // The upper quarter of the inner folder: before it, in the outer folder.
+    expect(dropTarget(21, rows)).toEqual({ section: 'pinned', folderId: 'outer', index: 1 })
+    // Below the inner folder's row: after it, the line under its last drawn tab.
+    expect(dropHit(28, rows)).toMatchObject({
+      target: { section: 'pinned', folderId: 'outer', index: 2 },
+      line: 40,
+    })
   })
 })

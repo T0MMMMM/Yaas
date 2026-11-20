@@ -327,8 +327,10 @@ registerCommands(
     'browser.removeTab': ({ tabId }) => browser.removeTab(tabId),
     'browser.moveTab': ({ tabId, section, folderId, index }) =>
       browser.moveTab(tabId, { section, index, ...(folderId === undefined ? {} : { folderId }) }),
-    'browser.createFolder': ({ spaceId, name }) =>
-      browser.createFolder(spaceId ?? browser.snapshot().activeSpaceId, name),
+    'browser.createFolder': ({ spaceId, name, parentId }) =>
+      browser.createFolder(spaceId ?? browser.snapshot().activeSpaceId, name, parentId ?? null),
+    'browser.moveFolder': ({ folderId, parentId, index }) =>
+      browser.moveFolder(folderId, { parentId, index }),
     'browser.renameFolder': ({ folderId, name }) => browser.renameFolder(folderId, name),
     'browser.setFolderCollapsed': ({ folderId, collapsed }) =>
       browser.setFolderCollapsed(folderId, collapsed),

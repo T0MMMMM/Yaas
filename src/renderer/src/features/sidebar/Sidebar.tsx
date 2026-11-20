@@ -4,12 +4,10 @@ import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
-import { usePresence } from '../../ui/usePresence'
 import { CompactContext } from './CompactContext'
 import { FavoriteTiles } from './FavoriteTiles'
-import { FolderRow } from './FolderRow'
-import { exitsWhenGone, nodeKey, ROW_EXIT_MS } from './rows'
-import { TabRow } from './TabRow'
+import { exitsWhenGone } from './rows'
+import { Rows } from './SidebarRows'
 import { tilt } from './tilt'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import { TooltipContext, useTooltip } from './useTooltip'
@@ -30,34 +28,6 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
   for (const tabId of todayCloseOrder(nodes, activeId)) {
     await window.bigBrowser.invoke('browser.closeTab', { tabId })
   }
-}
-
-interface RowsProps {
-  nodes: SidebarNode[]
-  activeId: string | null
-  /** Whether a row that left plays its exit (exitsWhenGone). */
-  exits: (node: SidebarNode) => boolean
-}
-
-function Rows({ nodes, activeId, exits }: RowsProps) {
-  const rows = usePresence(nodes, nodeKey, ROW_EXIT_MS, exits)
-  return rows.map(({ item: node, exiting }) => {
-    if (node.kind === 'tab') {
-      return (
-        <TabRow
-          key={nodeKey(node)}
-          tab={node.tab}
-          depth={node.depth}
-          active={node.tab.id === activeId}
-          exiting={exiting}
-        />
-      )
-    }
-    // A removed folder just leaves: only tab rows animate out.
-    return exiting ? null : (
-      <FolderRow key={nodeKey(node)} node={node} activeId={activeId} exits={exits} />
-    )
-  })
 }
 
 /**

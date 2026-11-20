@@ -16,8 +16,8 @@ export interface SidebarMenuHost {
   emitShortcut: (shortcut: Shortcut) => void
 }
 
-/** Index just past the last entry of a list (pinned's top level counts its folders). */
-function endOf(
+/** Index just past the last entry of a list (a pinned list counts its child folders). */
+export function endOf(
   snapshot: BrowserSnapshot,
   spaceId: string,
   section: TabSection,
@@ -27,8 +27,8 @@ function endOf(
     (t) => t.spaceId === spaceId && t.section === section && t.folderId === folderId,
   ).length
   const folders =
-    section === 'pinned' && folderId === null
-      ? snapshot.folders.filter((f) => f.spaceId === spaceId).length
+    section === 'pinned'
+      ? snapshot.folders.filter((f) => f.spaceId === spaceId && f.parentId === folderId).length
       : 0
   return tabs + folders
 }

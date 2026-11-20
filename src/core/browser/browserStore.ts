@@ -1,12 +1,15 @@
 // Browser model: spaces, tabs and folders, persisted in SQLite. Pure domain — main maps tabs to
-// views. A space's tabs sit in three sections: favorites, pinned (top-level tabs and folders share
-// one ordering, each folder orders its own tabs) and today (a tree: children follow their parent).
+// views. A space's tabs sit in three sections: favorites, pinned (a tree of folders: the tabs and
+// child folders of one parent — the top level or a folder — share one ordering) and today (a tree:
+// children follow their parent).
 import { randomUUID } from 'node:crypto'
 import type {
   BrowserFolder,
   BrowserSnapshot,
   BrowserSpace,
   BrowserTab,
+  ClosedEntry,
+  ClosedFolder,
   ClosedTab,
   TabSection,
 } from '@shared/model'
@@ -19,6 +22,8 @@ interface SpaceRow {
   color: string
   position: number
   active_tab_id: string | null
+  icon: string | null
+  section_collapsed: number
 }
 
 interface TabRow {
@@ -31,6 +36,7 @@ interface TabRow {
   section: TabSection
   folder_id: string | null
   parent_id: string | null
+  last_active_at: string | null
 }
 
 interface FolderRow {
@@ -39,9 +45,14 @@ interface FolderRow {
   name: string
   position: number
   collapsed: number
+  parent_id: string | null
+  icon: string | null
 }
 
-/** One ordered list of tabs: a section's top level (shared with folders in pinned), or a folder. */
+/**
+ * One ordered list: a section's top level, or a folder. In pinned, a list's tabs share their
+ * ordering with the folders whose parent it is.
+ */
 interface ListKey {
   spaceId: string
   section: TabSection
@@ -53,6 +64,8 @@ const toSpace = (r: SpaceRow): BrowserSpace => ({
   name: r.name,
   color: r.color,
   position: r.position,
+  icon: r.icon,
+  sectionCollapsed: r.section_collapsed !== 0,
 })
 
 const toTab = (r: TabRow): BrowserTab => ({
@@ -65,6 +78,7 @@ const toTab = (r: TabRow): BrowserTab => ({
   section: r.section,
   folderId: r.folder_id,
   parentId: r.parent_id,
+  lastActiveAt: r.last_active_at,
 })
 
 const toFolder = (r: FolderRow): BrowserFolder => ({
@@ -73,6 +87,8 @@ const toFolder = (r: FolderRow): BrowserFolder => ({
   name: r.name,
   position: r.position,
   collapsed: r.collapsed !== 0,
+  parentId: r.parent_id,
+  icon: r.icon,
 })
 
 const keyOf = (r: TabRow): ListKey => ({
@@ -89,6 +105,16 @@ const toClosed = (r: TabRow): ClosedTab => ({
   folderId: r.folder_id,
   parentId: r.parent_id,
   position: r.position,
+})
+
+const toClosedFolder = (r: FolderRow): ClosedFolder => ({
+  id: r.id,
+  spaceId: r.space_id,
+  name: r.name,
+  parentId: r.parent_id,
+  position: r.position,
+  collapsed: r.collapsed !== 0,
+  icon: r.icon,
 })
 
 /** Ids of `tabs` (by position) in depth-first parent/child order; orphans are roots. */
@@ -112,7 +138,7 @@ function treeOrder(tabs: TabRow[]): string[] {
 
 export class BrowserError extends Error {
   constructor(
-    readonly code: 'not_found',
+    readonly code: 'not_found' | 'invalid_move',
     message: string,
   ) {
     super(message)
@@ -129,8 +155,8 @@ const ACTIVE_SPACE_KEY = 'browser.activeSpace'
 
 export class BrowserStore {
   private readonly listeners = new Set<Listener>()
-  /** Closed tabs, in memory: a folder's tabs are one entry. */
-  private readonly closed = new UndoStack<ClosedTab[]>()
+  /** Closed tabs, in memory: a deleted folder's subtree is one entry. */
+  private readonly closed = new UndoStack<ClosedEntry>()
 
   constructor(
     private readonly db: Database,
@@ -155,7 +181,10 @@ export class BrowserStore {
       )
       .all() as unknown as TabRow[]
     const folderRows = this.db
-      .prepare('SELECT * FROM folders ORDER BY space_id, position')
+      .prepare(
+        `SELECT * FROM folders
+         ORDER BY space_id, parent_id IS NOT NULL, parent_id, position`,
+      )
       .all() as unknown as FolderRow[]
     const activeTabIds: Record<string, string | null> = {}
     for (const s of spaceRows) activeTabIds[s.id] = s.active_tab_id
@@ -208,15 +237,16 @@ export class BrowserStore {
     }
     const parentId = opener?.section === 'today' ? opener.id : null
     const id = randomUUID()
+    const now = new Date().toISOString()
     this.transaction(() => {
       this.shift(today, position, 1)
       this.db
         .prepare(
           `INSERT INTO tabs (id, space_id, url, title, favicon_url, position, created_at, section,
-             folder_id, parent_id)
-           VALUES (?, ?, ?, '', NULL, ?, ?, 'today', NULL, ?)`,
+             folder_id, parent_id, last_active_at)
+           VALUES (?, ?, ?, '', NULL, ?, ?, 'today', NULL, ?, ?)`,
         )
-        .run(id, spaceId, url, position, new Date().toISOString(), parentId)
+        .run(id, spaceId, url, position, now, parentId, activate ? now : null)
       if (activate) {
         this.db.prepare('UPDATE spaces SET active_tab_id = ? WHERE id = ?').run(id, spaceId)
       }
@@ -257,12 +287,13 @@ export class BrowserStore {
       this.shift(keyOf(tab), tab.position + 1, -1)
       this.setActiveTab(tab.space_id, next)
     })
-    this.closed.push([toClosed(tab)])
+    this.closed.push({ folders: [], tabs: [toClosed(tab)] })
     this.emit()
   }
 
   /**
-   * Moves a tab to `index` of a list (a folder only in pinned), keeping both lists contiguous.
+   * Moves a tab to `index` of a list (a folder, at any depth, only in pinned), keeping both lists
+   * contiguous.
    * Leaving today drops its parent and hands its children to that parent. Into today, see
    * moveIntoToday: `index` is in drawn order and the tab's subtree moves with it.
    */
@@ -274,9 +305,7 @@ export class BrowserStore {
       return
     }
     const folderId = to.section === 'pinned' ? (to.folderId ?? null) : null
-    if (folderId !== null && this.requireFolder(folderId).space_id !== tab.space_id) {
-      throw new BrowserError('not_found', `Unknown folder in this space: ${folderId}`)
-    }
+    if (folderId !== null) this.requireFolderIn(tab.space_id, folderId)
     const source = keyOf(tab)
     const target: ListKey = { spaceId: tab.space_id, section: to.section, folderId }
     const sameList = source.section === target.section && source.folderId === target.folderId
@@ -300,18 +329,54 @@ export class BrowserStore {
     this.emit()
   }
 
-  /** A new folder at the end of the space's pinned section. */
-  createFolder(spaceId: string, name: string): BrowserFolder {
+  /** A new folder at the end of its parent's list: the space's pinned top level, or `parentId`. */
+  createFolder(spaceId: string, name: string, parentId: string | null = null): BrowserFolder {
     this.requireSpace(spaceId)
-    const position = this.listLength({ spaceId, section: 'pinned', folderId: null })
+    if (parentId !== null) this.requireFolderIn(spaceId, parentId)
+    const position = this.listLength({ spaceId, section: 'pinned', folderId: parentId })
     const id = randomUUID()
     this.db
       .prepare(
-        'INSERT INTO folders (id, space_id, name, position, collapsed, created_at) VALUES (?, ?, ?, ?, 0, ?)',
+        `INSERT INTO folders (id, space_id, name, position, collapsed, created_at, parent_id, icon)
+         VALUES (?, ?, ?, ?, 0, ?, ?, NULL)`,
       )
-      .run(id, spaceId, name, position, new Date().toISOString())
+      .run(id, spaceId, name, position, new Date().toISOString(), parentId)
     this.emit()
-    return { id, spaceId, name, position, collapsed: false }
+    return toFolder(this.requireFolder(id))
+  }
+
+  /**
+   * Moves a folder, with its subtree, to `index` of pinned's top level (`parentId` null) or of
+   * another folder of its space, keeping both lists contiguous. A folder can't move into itself
+   * or one of its descendants (`invalid_move`).
+   */
+  moveFolder(id: string, to: { parentId: string | null; index: number }): void {
+    const folder = this.requireFolder(id)
+    if (to.parentId !== null) {
+      this.requireFolderIn(folder.space_id, to.parentId)
+      if (this.folderSubtree(folder).some((f) => f.id === to.parentId)) {
+        throw new BrowserError('invalid_move', `A folder can't move into itself: ${id}`)
+      }
+    }
+    const source: ListKey = {
+      spaceId: folder.space_id,
+      section: 'pinned',
+      folderId: folder.parent_id,
+    }
+    const target: ListKey = { spaceId: folder.space_id, section: 'pinned', folderId: to.parentId }
+    const sameList = folder.parent_id === to.parentId
+    this.transaction(() => {
+      // Out of every list while the others close up and make room.
+      this.db.prepare('UPDATE folders SET position = -1 WHERE id = ?').run(id)
+      this.shift(source, folder.position + 1, -1)
+      const length = this.listLength(target) - (sameList ? 1 : 0)
+      const index = Math.max(0, Math.min(to.index, length))
+      this.shift(target, index, 1)
+      this.db
+        .prepare('UPDATE folders SET parent_id = ?, position = ? WHERE id = ?')
+        .run(to.parentId, index, id)
+    })
+    this.emit()
   }
 
   renameFolder(id: string, name: string): void {
@@ -326,12 +391,19 @@ export class BrowserStore {
     this.emit()
   }
 
-  /** Deletes a folder and its tabs; the tabs are reopenable together. */
+  /**
+   * Deletes a folder with its child folders and all their tabs. When it held tabs, the whole
+   * subtree is one reopenable entry.
+   */
   deleteFolder(id: string): void {
     const folder = this.requireFolder(id)
-    const tabs = this.db
-      .prepare('SELECT * FROM tabs WHERE folder_id = ? ORDER BY position')
-      .all(id) as unknown as TabRow[]
+    const folders = this.folderSubtree(folder)
+    const folderIds = new Set(folders.map((f) => f.id))
+    const tabs = (
+      this.db
+        .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'pinned' ORDER BY position")
+        .all(folder.space_id) as unknown as TabRow[]
+    ).filter((t) => t.folder_id !== null && folderIds.has(t.folder_id))
     const removed = new Set(tabs.map((t) => t.id))
     this.transaction(() => {
       const space = this.requireSpace(folder.space_id)
@@ -340,29 +412,38 @@ export class BrowserStore {
         active !== null && removed.has(active)
           ? this.nextActive(folder.space_id, active, removed)
           : active
-      this.db.prepare('DELETE FROM tabs WHERE folder_id = ?').run(id)
-      this.db.prepare('DELETE FROM folders WHERE id = ?').run(id)
+      const deleteTab = this.db.prepare('DELETE FROM tabs WHERE id = ?')
+      for (const tab of tabs) deleteTab.run(tab.id)
+      // Children first, so no row is left pointing at a deleted parent.
+      const deleteFolder = this.db.prepare('DELETE FROM folders WHERE id = ?')
+      for (const f of [...folders].reverse()) deleteFolder.run(f.id)
       this.shift(
-        { spaceId: folder.space_id, section: 'pinned', folderId: null },
+        { spaceId: folder.space_id, section: 'pinned', folderId: folder.parent_id },
         folder.position + 1,
         -1,
       )
       this.setActiveTab(folder.space_id, next)
     })
-    if (tabs.length > 0) this.closed.push(tabs.map(toClosed))
+    if (tabs.length > 0) {
+      this.closed.push({ folders: folders.map(toClosedFolder), tabs: tabs.map(toClosed) })
+    }
     this.emit()
   }
 
   /**
-   * Reopens the last closed tab (or folder's tabs) where it was when its space and folder still
-   * exist, else at the end of the active space's today. Activates the (first) reopened tab.
+   * Reopens the last closed tab, or deleted folder with its subtree, where it was: a folder goes
+   * back with its id (at the top level when its parent is gone, not at all when its space is),
+   * then each tab goes back in place when its space and folder exist, else at the end of the
+   * active space's today. Activates the (first) reopened tab.
    */
   reopenClosed(): BrowserTab | null {
     const entry = this.closed.pop()
-    if (!entry || entry.length === 0) return null
+    if (!entry || entry.tabs.length === 0) return null
     let first: TabRow | undefined
     this.transaction(() => {
-      for (const closed of entry) {
+      // Parents before children, then tabs, each list in position order: all land where they were.
+      for (const closed of entry.folders) this.restoreFolder(closed)
+      for (const closed of [...entry.tabs].sort((a, b) => a.position - b.position)) {
         const tab = this.restore(closed)
         first ??= tab
       }
@@ -376,8 +457,8 @@ export class BrowserStore {
   }
 
   /**
-   * Tab ids of a space in drawn order: favourites, pinned (folders and top-level tabs by their
-   * shared position, each folder's tabs in order), then today depth-first by parent.
+   * Tab ids of a space in drawn order: favourites, pinned (each list's folders and tabs by their
+   * shared position, a folder's list in its place, depth-first), then today depth-first by parent.
    */
   visibleOrder(spaceId: string): string[] {
     const tabs = this.db
@@ -389,23 +470,31 @@ export class BrowserStore {
     const favorites = tabs.filter((t) => t.section === 'favorites').map((t) => t.id)
     const pinned = tabs.filter((t) => t.section === 'pinned')
     const folderIds = new Set(folders.map((f) => f.id))
-    const pinnedItems = [
-      ...folders.map((f) => ({
-        position: f.position,
-        ids: pinned.filter((t) => t.folder_id === f.id).map((t) => t.id),
-      })),
-      ...pinned
-        .filter((t) => t.folder_id === null || !folderIds.has(t.folder_id))
-        .map((t) => ({ position: t.position, ids: [t.id] })),
-    ].sort((a, b) => a.position - b.position)
+    // A row whose folder is unknown belongs to the top level.
+    const parentOf = (id: string | null): string | null =>
+      id !== null && folderIds.has(id) ? id : null
+    const pinnedList = (parentId: string | null): string[] =>
+      [
+        ...folders
+          .filter((f) => parentOf(f.parent_id) === parentId)
+          .map((f) => ({ position: f.position, ids: () => pinnedList(f.id) })),
+        ...pinned
+          .filter((t) => parentOf(t.folder_id) === parentId)
+          .map((t) => ({ position: t.position, ids: () => [t.id] })),
+      ]
+        .sort((a, b) => a.position - b.position)
+        .flatMap((item) => item.ids())
     const today = treeOrder(tabs.filter((t) => t.section === 'today'))
-    return [...favorites, ...pinnedItems.flatMap((item) => item.ids), ...today]
+    return [...favorites, ...pinnedList(null), ...today]
   }
 
   activateTab(id: string): void {
     const tab = this.requireTab(id)
     this.transaction(() => {
       this.db.prepare('UPDATE spaces SET active_tab_id = ? WHERE id = ?').run(id, tab.space_id)
+      this.db
+        .prepare('UPDATE tabs SET last_active_at = ? WHERE id = ?')
+        .run(new Date().toISOString(), id)
       this.setActiveSpace(tab.space_id)
     })
     this.emit()
@@ -441,7 +530,7 @@ export class BrowserStore {
         'INSERT INTO spaces (id, name, color, position, active_tab_id, created_at) VALUES (?, ?, ?, ?, NULL, ?)',
       )
       .run(id, name, color, position, new Date().toISOString())
-    return { id, name, color, position }
+    return { id, name, color, position, icon: null, sectionCollapsed: false }
   }
 
   private activeSpaceId(spaceRows: SpaceRow[]): string {
@@ -553,6 +642,50 @@ export class BrowserStore {
     )
   }
 
+  /** `folder` and its descendants, parents before children, each list in position order. */
+  private folderSubtree(folder: FolderRow): FolderRow[] {
+    const all = this.db
+      .prepare('SELECT * FROM folders WHERE space_id = ? ORDER BY position')
+      .all(folder.space_id) as unknown as FolderRow[]
+    const subtree = [folder]
+    const seen = new Set([folder.id])
+    for (let i = 0; i < subtree.length; i++) {
+      const parentId = subtree[i]?.id
+      for (const f of all) {
+        if (f.parent_id === parentId && !seen.has(f.id)) {
+          seen.add(f.id)
+          subtree.push(f)
+        }
+      }
+    }
+    return subtree
+  }
+
+  /** Puts a deleted folder back with its id (see reopenClosed); nothing when its space is gone. */
+  private restoreFolder(closed: ClosedFolder): void {
+    if (!this.findSpace(closed.spaceId) || this.findFolder(closed.id)) return
+    const parent = closed.parentId ? this.findFolder(closed.parentId) : undefined
+    const parentId = parent?.space_id === closed.spaceId ? parent.id : null
+    const key: ListKey = { spaceId: closed.spaceId, section: 'pinned', folderId: parentId }
+    const position = Math.min(closed.position, this.listLength(key))
+    this.shift(key, position, 1)
+    this.db
+      .prepare(
+        `INSERT INTO folders (id, space_id, name, position, collapsed, created_at, parent_id, icon)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      .run(
+        closed.id,
+        closed.spaceId,
+        closed.name,
+        position,
+        closed.collapsed ? 1 : 0,
+        new Date().toISOString(),
+        parentId,
+        closed.icon,
+      )
+  }
+
   /** Puts a closed tab back (see reopenClosed) and returns its new row. */
   private restore(closed: ClosedTab): TabRow {
     const spaceExists = this.findSpace(closed.spaceId) !== undefined
@@ -595,7 +728,7 @@ export class BrowserStore {
     return this.requireTab(id)
   }
 
-  /** Number of entries in a list; pinned's top level counts its folders too. */
+  /** Number of entries in a list; a pinned list counts its child folders too. */
   private listLength(key: ListKey): number {
     const tabs = (
       this.db
@@ -604,11 +737,11 @@ export class BrowserStore {
         )
         .get(key.spaceId, key.section, key.folderId) as { n: number }
     ).n
-    if (key.section !== 'pinned' || key.folderId !== null) return tabs
+    if (key.section !== 'pinned') return tabs
     const folders = (
-      this.db.prepare('SELECT COUNT(*) AS n FROM folders WHERE space_id = ?').get(key.spaceId) as {
-        n: number
-      }
+      this.db
+        .prepare('SELECT COUNT(*) AS n FROM folders WHERE space_id = ? AND parent_id IS ?')
+        .get(key.spaceId, key.folderId) as { n: number }
     ).n
     return tabs + folders
   }
@@ -621,10 +754,13 @@ export class BrowserStore {
          WHERE space_id = ? AND section = ? AND folder_id IS ? AND position >= ?`,
       )
       .run(delta, key.spaceId, key.section, key.folderId, from)
-    if (key.section === 'pinned' && key.folderId === null) {
+    if (key.section === 'pinned') {
       this.db
-        .prepare('UPDATE folders SET position = position + ? WHERE space_id = ? AND position >= ?')
-        .run(delta, key.spaceId, from)
+        .prepare(
+          `UPDATE folders SET position = position + ?
+           WHERE space_id = ? AND parent_id IS ? AND position >= ?`,
+        )
+        .run(delta, key.spaceId, key.folderId, from)
     }
   }
 
@@ -646,6 +782,15 @@ export class BrowserStore {
   private requireSpace(id: string): SpaceRow {
     const row = this.findSpace(id)
     if (!row) throw new BrowserError('not_found', `Unknown space: ${id}`)
+    return row
+  }
+
+  /** A folder of the space `spaceId` (`not_found` for one of another space). */
+  private requireFolderIn(spaceId: string, id: string): FolderRow {
+    const row = this.requireFolder(id)
+    if (row.space_id !== spaceId) {
+      throw new BrowserError('not_found', `Unknown folder in this space: ${id}`)
+    }
     return row
   }
 

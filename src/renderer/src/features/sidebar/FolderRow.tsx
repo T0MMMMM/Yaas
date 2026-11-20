@@ -1,13 +1,11 @@
 import { useContext, useMemo, useRef, useState } from 'react'
 import { Folder, FolderOpen } from '@phosphor-icons/react'
-import type { SidebarNode } from '../workspace/workspace'
+import { MAX_FOLDER_INDENT, type SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
-import { usePresence } from '../../ui/usePresence'
 import { FolderTrailContext } from './FolderTrailContext'
 import { folderHue } from './hash'
 import { showFolderMenu } from './menus'
-import { nodeKey, ROW_EXIT_MS } from './rows'
-import { TabRow } from './TabRow'
+import { Rows } from './SidebarRows'
 import { tilt } from './tilt'
 import { TabDragContext } from './useTabDrag'
 import styles from './FolderRow.module.css'
@@ -55,7 +53,8 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
 /**
  * A pinned folder (collapsed state in main, renamable, native menu on right-click) or an
  * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs dragged
- * onto a pinned folder's row are filed into it.
+ * onto a pinned folder's row are filed into it. A pinned folder's children (tabs and folders)
+ * are drawn by Rows one indent step further in, up to MAX_FOLDER_INDENT steps.
  */
 export function FolderRow({
   node,
@@ -80,7 +79,8 @@ export function FolderRow({
   const Icon = collapsed ? Folder : FolderOpen
   // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue.
   const hue = String(folderHue(name))
-  const children = usePresence(node.children, nodeKey, ROW_EXIT_MS, exits)
+  // Past the deepest indent, a folder's rows line up with it.
+  const indents = node.kind === 'auto-folder' || node.depth < MAX_FOLDER_INDENT
   const trail = useMemo(() => [...outerTrail, hue], [outerTrail, hue])
 
   const toggle = (): void => {
@@ -137,22 +137,11 @@ export function FolderRow({
         )}
       </div>
       {/* Always mounted so the fold animates; inert (and hidden from assistive tech) when closed. */}
-      {children.length > 0 && (
+      {node.children.length > 0 && (
         <div className={styles.fold} data-collapsed={collapsed} inert={collapsed}>
           <FolderTrailContext.Provider value={trail}>
-            <ul className={styles.children} aria-label={name}>
-              {children.map(
-                ({ item: child, exiting }) =>
-                  child.kind === 'tab' && (
-                    <TabRow
-                      key={nodeKey(child)}
-                      tab={child.tab}
-                      depth={child.depth}
-                      active={child.tab.id === activeId}
-                      exiting={exiting}
-                    />
-                  ),
-              )}
+            <ul className={styles.children} data-indent={indents} aria-label={name}>
+              <Rows nodes={node.children} activeId={activeId} exits={exits} />
             </ul>
           </FolderTrailContext.Provider>
         </div>

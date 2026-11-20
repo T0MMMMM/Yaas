@@ -86,6 +86,54 @@ test('pinned tabs and folders: pin, file into a folder, collapse, rename', async
   })
 })
 
+test('folders nest: a folder moved into another is drawn inside it, folded with it', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const tab = await openTab(page, site.url('/a'))
+    const [outer, inner] = await page.evaluate(async () => [
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Outer' }),
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Inner' }),
+    ])
+    if (!outer || !inner) throw new Error('folders not created')
+    await page.evaluate(
+      ({ tabId, folderId }) =>
+        window.bigBrowser.invoke('browser.moveTab', {
+          tabId,
+          section: 'pinned',
+          folderId,
+          index: 0,
+        }),
+      { tabId: tab.id, folderId: inner.id },
+    )
+    const pinned = page.getByTestId('pinned')
+    await expect(pinned.getByTestId('folder')).toHaveCount(2)
+
+    await page.evaluate(
+      ({ folderId, parentId }) =>
+        window.bigBrowser.invoke('browser.moveFolder', { folderId, parentId, index: 0 }),
+      { folderId: inner.id, parentId: outer.id },
+    )
+    const outerButton = pinned.getByRole('button', { name: 'Outer', exact: true })
+    const outerRow = pinned
+      .getByTestId('folder')
+      .filter({ has: page.getByRole('button', { name: 'Outer', exact: true }) })
+    // The inner folder (with its tab) is now one of the outer folder's children, one step in.
+    const innerButton = outerRow.getByRole('button', { name: 'Inner', exact: true })
+    await expect(innerButton).toBeVisible()
+    await expect(outerRow.getByTestId('folder').getByTestId('tab')).toHaveText(['Page A'])
+    const outerBox = await outerButton.boundingBox()
+    const innerBox = await innerButton.boundingBox()
+    expect(innerBox?.x ?? 0).toBeGreaterThan(outerBox?.x ?? 0)
+
+    // Folding the outer folder hides both: its rows stay mounted, out of the accessibility tree.
+    await outerButton.click()
+    await expect(outerButton).toHaveAttribute('aria-expanded', 'false')
+    await expect(outerRow.getByTestId('folder')).toHaveCount(1)
+    await expect(outerRow.getByTestId('tab')).toHaveCount(1)
+    await expect(outerRow.getByRole('button', { name: 'Inner', exact: true })).toHaveCount(0)
+    await expect(outerRow.getByRole('button', { name: 'Page A' })).toHaveCount(0)
+  })
+})
+
 test('three tabs of one site are drawn as an automatic folder, unless turned off', async () => {
   await withBrowser(async ({ app, page, site }) => {
     for (const path of ['/a', '/b', '/c']) await openTab(page, site.url(path))

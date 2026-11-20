@@ -47,6 +47,13 @@ const MIGRATIONS: string[] = [
    ALTER TABLE tabs ADD COLUMN section TEXT NOT NULL DEFAULT 'today';
    ALTER TABLE tabs ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL;
    ALTER TABLE tabs ADD COLUMN parent_id TEXT;`,
+  // 5 — nested folders, folder and space icons, the space section's fold, recent tabs
+  `ALTER TABLE folders ADD COLUMN parent_id TEXT REFERENCES folders(id) ON DELETE CASCADE;
+   ALTER TABLE folders ADD COLUMN icon TEXT;
+   ALTER TABLE spaces ADD COLUMN icon TEXT;
+   ALTER TABLE spaces ADD COLUMN section_collapsed INTEGER NOT NULL DEFAULT 0;
+   ALTER TABLE tabs ADD COLUMN last_active_at TEXT;
+   CREATE INDEX folders_parent ON folders(parent_id);`,
 ]
 
 export type Database = DatabaseSync

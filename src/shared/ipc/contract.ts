@@ -91,6 +91,8 @@ export const browserSpaceSchema = z.object({
   name: z.string(),
   color: hexColor,
   position: z.number().int(),
+  icon: z.string().nullable(),
+  sectionCollapsed: z.boolean(),
 }) satisfies z.ZodType<BrowserSpace>
 
 export const tabSectionSchema = z.enum(['favorites', 'pinned', 'today'])
@@ -105,6 +107,7 @@ export const browserTabSchema = z.object({
   section: tabSectionSchema,
   folderId: z.string().nullable(),
   parentId: z.string().nullable(),
+  lastActiveAt: z.string().nullable(),
 }) satisfies z.ZodType<BrowserTab>
 
 export const browserFolderSchema = z.object({
@@ -113,6 +116,8 @@ export const browserFolderSchema = z.object({
   name: z.string(),
   position: z.number().int(),
   collapsed: z.boolean(),
+  parentId: z.string().nullable(),
+  icon: z.string().nullable(),
 }) satisfies z.ZodType<BrowserFolder>
 
 /** Live state of a tab's web contents — never persisted. */
@@ -235,7 +240,7 @@ export const commands = {
   'browser.closeTab': { input: tabRef, output: z.void() },
   /** Deletes a tab whatever its section (reopenable). */
   'browser.removeTab': { input: tabRef, output: z.void() },
-  /** Moves a tab to `index` of a section (or of a pinned folder); today's index is in drawn order. */
+  /** Moves a tab to `index` of a section (or of any pinned folder); today's index is in drawn order. */
   'browser.moveTab': {
     input: z
       .object({
@@ -247,10 +252,22 @@ export const commands = {
       .strict(),
     output: z.void(),
   },
-  /** A new folder at the end of the space's pinned section (default: the active space). */
+  /**
+   * A new folder at the end of its parent's list: the space's pinned section, or the folder
+   * `parentId` (default: the active space's pinned section).
+   */
   'browser.createFolder': {
-    input: z.object({ spaceId: id.optional(), name: folderName }).strict(),
+    input: z
+      .object({ spaceId: id.optional(), name: folderName, parentId: id.nullable().optional() })
+      .strict(),
     output: browserFolderSchema,
+  },
+  /** Moves a folder (with its subtree) to `index` of pinned's top level or of another folder. */
+  'browser.moveFolder': {
+    input: z
+      .object({ folderId: id, parentId: id.nullable(), index: z.number().int().min(0) })
+      .strict(),
+    output: z.void(),
   },
   'browser.renameFolder': {
     input: z.object({ folderId: id, name: folderName }).strict(),
@@ -260,9 +277,9 @@ export const commands = {
     input: z.object({ folderId: id, collapsed: z.boolean() }).strict(),
     output: z.void(),
   },
-  /** Deletes a folder and its tabs (reopenable together). */
+  /** Deletes a folder with its child folders and tabs (reopenable together). */
   'browser.deleteFolder': { input: folderRef, output: z.void() },
-  /** Reopens the last closed tab, or the tabs of the last deleted folder. */
+  /** Reopens the last closed tab, or the last deleted folder with its subtree. */
   'browser.reopenClosed': { input: z.void(), output: z.void() },
   /** The tab's native context menu, at the pointer (pin, favourites, folder, copy, close). */
   'browser.showTabMenu': { input: tabRef, output: z.void() },
