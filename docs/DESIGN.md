@@ -104,8 +104,10 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   end of the favourites. A `--drop-line-w` `--accent` line marks the insertion point, a folder or
   list the drop goes into gets the `--accent-soft` fill, the dragged row is at
   `--opacity-dragged`. Empty favourites and pinned lists appear while dragging so a tab can be
-  dropped on them. Automatic folders are no drop target (their tabs are plain today tabs); a
-  today tab moves with its subtree. Esc cancels.
+  dropped on them. A today tab moves with its subtree; a drop on a nested tab lands after its
+  top-level tab's subtree (the line is drawn there). For a tab of another site, an automatic
+  folder is one block (before or after it); a tab of its own site joins it. A drop on the dragged
+  tab itself, or of a favourite on the favourites, is no move. Esc cancels.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 glass card (`ui/Popover.module.css`, composed by each popover's own CSS module).

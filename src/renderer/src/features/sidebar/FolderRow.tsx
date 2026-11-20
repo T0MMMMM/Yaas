@@ -76,11 +76,17 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
   }
 
   return (
-    <li className={styles.folder} data-testid={node.kind} data-collapsed={collapsed}>
+    <li
+      className={styles.folder}
+      data-testid={node.kind}
+      data-collapsed={collapsed}
+      // An automatic folder is measured as one block for a tab of another site (useTabDrag).
+      data-drop={auto ? `auto:${node.host}` : undefined}
+    >
       <div
         className={styles.header}
         style={tilt(key)}
-        // A tab dropped on a pinned folder files into it; automatic folders are no drop target.
+        // A tab dropped on a pinned folder files into it; an automatic folder's header does not.
         data-drop={auto ? undefined : `folder:${node.folder.id}`}
         data-drop-target={(!auto && zone === `folder:${node.folder.id}`) || undefined}
         onContextMenu={(e) => {

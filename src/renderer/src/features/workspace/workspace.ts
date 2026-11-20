@@ -125,7 +125,7 @@ const byPosition = (a: { position: number }, b: { position: number }): number =>
   a.position - b.position
 
 /** The host automatic folders group by: lower-cased, without `www.`; null for non-web pages. */
-function groupHost(url: string): string | null {
+export function autoFolderHost(url: string): string | null {
   return hostOf(url)?.replace(/^www\./, '') ?? null
 }
 
@@ -148,7 +148,7 @@ function todayTrees(tabs: BrowserTab[], view: (t: BrowserTab) => TabView): Sideb
 function withAutoFolders(trees: SidebarNode[][]): SidebarNode[] {
   const hostOfTree = (tree: SidebarNode[]): string | null => {
     const root = tree[0]
-    return root?.kind === 'tab' ? groupHost(root.tab.url) : null
+    return root?.kind === 'tab' ? autoFolderHost(root.tab.url) : null
   }
   const counts = new Map<string, number>()
   for (const tree of trees) {

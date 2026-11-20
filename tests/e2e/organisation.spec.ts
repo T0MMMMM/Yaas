@@ -174,6 +174,21 @@ test('dragging a tab pins it, files it into a folder and moves it back to today'
   })
 })
 
+test('a tab with a real favicon can be dragged by its icon', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/with-icon'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'With Icon'])
+    // The favicon is fetched by main and drawn as an inline image.
+    const icon = today.getByTestId('tab').nth(1).locator('img')
+    await expect(icon).toHaveAttribute('src', /^data:image\//)
+
+    await icon.dragTo(today.getByTestId('tab').first(), { targetPosition: { x: 40, y: 6 } })
+    await expect(today.getByTestId('tab')).toHaveText(['With Icon', 'Page A'])
+  })
+})
+
 test('while a tab is dragged, an empty favourites grid appears to drop it on', async () => {
   await withBrowser(async ({ page, site }) => {
     await openTab(page, site.url('/a'))
