@@ -32,6 +32,16 @@ describe('IPC contract', () => {
     expect(input.safeParse({ adBlock: { enabled: true } }).success).toBe(false)
   })
 
+  it('accepts only lower-cased hostnames as allowed hosts', () => {
+    const input = commands['settings.update'].input
+    const allowed = (host: string) =>
+      input.safeParse({ adBlock: { enabled: true, allowedHosts: [host] } }).success
+    expect(allowed('example.com')).toBe(true)
+    expect(allowed('127.0.0.1')).toBe(true)
+    for (const bad of ['', 'Example.com', 'a.com$x', 'a.com,b.com', 'a b.com', 'a.com|b.com'])
+      expect(allowed(bad)).toBe(false)
+  })
+
   it('rejects a negative page bound', () => {
     const input = commands['browser.setPageBounds'].input
     expect(input.safeParse({ x: 0, y: 0, width: 800, height: 600 }).success).toBe(true)

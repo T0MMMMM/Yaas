@@ -10,6 +10,9 @@ export const SIDEBAR_DEFAULT = 248
 
 const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'expected #RRGGBB')
 
+/** A lower-cased hostname: it ends up in a filter rule, so no `$ , | ~` or whitespace. */
+const hostnameSchema = z.string().regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/)
+
 export const settingsSchema = z.object({
   accent: hexColor,
   colorScheme: z.enum(['light', 'dark', 'system']),
@@ -34,7 +37,7 @@ export const settingsSchema = z.object({
   }),
   onboardingDone: z.boolean(),
   /** Built-in ad and tracker blocking; `allowedHosts` are the sites where it is turned off. */
-  adBlock: z.object({ enabled: z.boolean(), allowedHosts: z.array(z.string()) }),
+  adBlock: z.object({ enabled: z.boolean(), allowedHosts: z.array(hostnameSchema) }),
 })
 export type Settings = z.infer<typeof settingsSchema>
 
