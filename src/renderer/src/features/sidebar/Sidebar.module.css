@@ -27,8 +27,8 @@
 .iconButton {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: var(--control-size);
+  height: var(--control-size);
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
