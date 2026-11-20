@@ -1,9 +1,13 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, type WebContents } from 'electron'
 import { Accounts } from '@core/accounts/accounts'
+import { BrowserStore } from '@core/browser/browserStore'
 import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli'
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
+import type { BrowserState } from '@shared/ipc/contract'
+import { resolveInput } from '@shared/url'
+import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
 import { applyMaterial, createMainWindow, glassSupported, materialFor } from './windows/mainWindow'
 
@@ -25,7 +29,11 @@ const accounts = new Accounts({
   },
   defaultColor: () => settings.get().accent,
 })
+const browser = new BrowserStore(db, {
+  defaultSpace: { name: 'Personal', color: settings.get().accent },
+})
 let mainWindow: BrowserWindow | null = null
+let tabViews: TabViews | null = null
 
 const platform =
   process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows' : 'linux'
@@ -34,10 +42,29 @@ function isTrustedSender(sender: WebContents): boolean {
   return mainWindow !== null && sender === mainWindow.webContents
 }
 
+/** Pushes the browser model plus the tabs' runtime state to the UI. */
+function emitBrowserState(): void {
+  if (!mainWindow) return
+  emit(mainWindow.webContents, 'browser.changed', browserState())
+}
+
+function browserState(): BrowserState {
+  return { ...browser.snapshot(), runtime: tabViews?.runtime() ?? {} }
+}
+
+function views(): TabViews {
+  if (!tabViews) throw new Error('No browser window')
+  return tabViews
+}
+
 function openMainWindow(): void {
-  mainWindow = createMainWindow({ material: materialFor(settings.get().transparency) })
-  mainWindow.on('closed', () => {
+  const win = createMainWindow({ material: materialFor(settings.get().transparency) })
+  mainWindow = win
+  tabViews = new TabViews(win, browser, emitBrowserState)
+  tabViews.sync(browser.snapshot())
+  win.on('closed', () => {
     mainWindow = null
+    tabViews = null
   })
 }
 
@@ -52,6 +79,22 @@ registerCommands(
     },
     'accounts.list': () => accounts.list(),
     'accounts.importDefault': () => accounts.importDefault(),
+    'browser.state': () => browserState(),
+    'browser.openTab': ({ spaceId, input }) =>
+      browser.openTab(
+        spaceId ?? browser.snapshot().activeSpaceId,
+        input === undefined ? 'about:blank' : resolveInput(input),
+      ),
+    'browser.closeTab': ({ tabId }) => browser.closeTab(tabId),
+    'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),
+    'browser.navigate': ({ tabId, input }) => views().navigate(tabId, resolveInput(input)),
+    'browser.goBack': ({ tabId }) => views().goBack(tabId),
+    'browser.goForward': ({ tabId }) => views().goForward(tabId),
+    'browser.reload': ({ tabId }) => views().reload(tabId),
+    'browser.createSpace': ({ name, color }) => browser.createSpace(name, color),
+    'browser.activateSpace': ({ spaceId }) => browser.activateSpace(spaceId),
+    'browser.setPageBounds': (bounds) => views().setBounds(bounds),
+    'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
   },
   isTrustedSender,
 )
@@ -67,6 +110,11 @@ settings.subscribe((next) => {
     applyMaterial(mainWindow, material)
   }
   emit(mainWindow.webContents, 'settings.changed', next)
+})
+
+browser.subscribe((snapshot) => {
+  tabViews?.sync(snapshot)
+  emitBrowserState()
 })
 
 accounts.subscribe((list) => {

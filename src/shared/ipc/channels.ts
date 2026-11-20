@@ -8,9 +8,26 @@ export const COMMAND_CHANNELS = [
   'claude.detect',
   'accounts.list',
   'accounts.importDefault',
+  'browser.state',
+  'browser.openTab',
+  'browser.closeTab',
+  'browser.activateTab',
+  'browser.navigate',
+  'browser.goBack',
+  'browser.goForward',
+  'browser.reload',
+  'browser.createSpace',
+  'browser.activateSpace',
+  'browser.setPageBounds',
+  'browser.setPageVisible',
 ] as const
 
-export const EVENT_CHANNELS = ['settings.changed', 'accounts.changed'] as const
+export const EVENT_CHANNELS = [
+  'settings.changed',
+  'accounts.changed',
+  'browser.changed',
+  'browser.shortcut',
+] as const
 
 export type CommandChannel = (typeof COMMAND_CHANNELS)[number]
 export type EventChannel = (typeof EVENT_CHANNELS)[number]

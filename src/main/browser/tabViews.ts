@@ -1,0 +1,194 @@
+// One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
+// mirrors it: creates views lazily, shows the active one, and reports what the pages do.
+import { session, WebContentsView, type BrowserWindow, type Session } from 'electron'
+import { chromeUserAgent } from '@core/browser/userAgent'
+import type { BrowserStore } from '@core/browser/browserStore'
+import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
+import type { BrowserSnapshot } from '@shared/model'
+
+/** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
+export const PAGE_RADIUS = 9
+
+interface TabView {
+  view: WebContentsView
+  spaceId: string
+}
+
+const isWebUrl = (url: string): boolean => {
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+export class TabViews {
+  private readonly views = new Map<string, TabView>()
+  private readonly state = new Map<string, TabRuntime>()
+  private readonly sessions = new Set<string>()
+  private bounds: PageBounds = { x: 0, y: 0, width: 0, height: 0 }
+  private visible = true
+  private shownTabId: string | null = null
+
+  constructor(
+    private readonly win: BrowserWindow,
+    private readonly store: BrowserStore,
+    private readonly onRuntime: () => void,
+  ) {
+    // A view's web contents outlive its window unless closed: their renderers would hold up quit.
+    win.on('closed', () => {
+      for (const { view } of this.views.values()) view.webContents.close()
+      this.views.clear()
+      this.state.clear()
+    })
+  }
+
+  /** Mirrors the model: drops views of closed tabs, creates and shows the active tab's view. */
+  sync(snapshot: BrowserSnapshot): void {
+    const tabs = new Map(snapshot.tabs.map((t) => [t.id, t]))
+    for (const [tabId, entry] of this.views) {
+      const tab = tabs.get(tabId)
+      if (tab) entry.spaceId = tab.spaceId
+      else this.destroy(tabId)
+    }
+
+    const activeId = snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
+    const active = activeId ? tabs.get(activeId) : undefined
+    if (active && !this.views.has(active.id)) this.create(active.id, active.spaceId, active.url)
+    this.shownTabId = active?.id ?? null
+    this.layout()
+  }
+
+  setBounds(bounds: PageBounds): void {
+    this.bounds = bounds
+    this.layout()
+  }
+
+  setVisible(visible: boolean): void {
+    this.visible = visible
+    this.layout()
+  }
+
+  navigate(tabId: string, url: string): void {
+    const entry = this.views.get(tabId)
+    // A tab without a view yet loads its stored URL when it is first shown.
+    if (!entry) this.store.updateTab(tabId, { url })
+    else void entry.view.webContents.loadURL(url).catch(() => undefined)
+  }
+
+  goBack(tabId: string): void {
+    const history = this.views.get(tabId)?.view.webContents.navigationHistory
+    if (history?.canGoBack()) history.goBack()
+  }
+
+  goForward(tabId: string): void {
+    const history = this.views.get(tabId)?.view.webContents.navigationHistory
+    if (history?.canGoForward()) history.goForward()
+  }
+
+  reload(tabId: string): void {
+    this.views.get(tabId)?.view.webContents.reload()
+  }
+
+  /** Runtime state of every tab that has a view, keyed by tab id (plain, serializable). */
+  runtime(): Record<string, TabRuntime> {
+    return Object.fromEntries([...this.state].map(([id, r]) => [id, { ...r }]))
+  }
+
+  private layout(): void {
+    for (const [tabId, { view }] of this.views) {
+      const shown = this.visible && tabId === this.shownTabId
+      if (shown) view.setBounds(this.bounds)
+      view.setVisible(shown)
+    }
+  }
+
+  private sessionFor(spaceId: string): Session {
+    const partition = `persist:space-${spaceId}`
+    const ses = session.fromPartition(partition)
+    if (!this.sessions.has(partition)) {
+      ses.setUserAgent(chromeUserAgent(ses.getUserAgent()))
+      this.sessions.add(partition)
+    }
+    return ses
+  }
+
+  private create(tabId: string, spaceId: string, url: string): void {
+    const view = new WebContentsView({
+      webPreferences: {
+        session: this.sessionFor(spaceId),
+        sandbox: true,
+        contextIsolation: true,
+        nodeIntegration: false,
+      },
+    })
+    view.setBorderRadius(PAGE_RADIUS)
+    view.setVisible(false)
+    this.views.set(tabId, { view, spaceId })
+    this.state.set(tabId, {
+      loading: false,
+      canGoBack: false,
+      canGoForward: false,
+      themeColor: null,
+    })
+    this.win.contentView.addChildView(view)
+    this.wire(tabId, view)
+    void view.webContents.loadURL(url).catch(() => undefined)
+  }
+
+  private destroy(tabId: string): void {
+    const entry = this.views.get(tabId)
+    if (!entry) return
+    this.views.delete(tabId)
+    this.state.delete(tabId)
+    this.win.contentView.removeChildView(entry.view)
+    entry.view.webContents.close()
+  }
+
+  private wire(tabId: string, view: WebContentsView): void {
+    const contents = view.webContents
+    // Events can still arrive while a closed tab's view is torn down.
+    const update = (patch: Parameters<BrowserStore['updateTab']>[1]): void => {
+      if (this.views.has(tabId)) this.store.updateTab(tabId, patch)
+    }
+    const setRuntime = (patch: Partial<TabRuntime>): void => {
+      const current = this.state.get(tabId)
+      if (!current) return
+      this.state.set(tabId, { ...current, ...patch })
+      this.onRuntime()
+    }
+    const updateHistory = (): void =>
+      setRuntime({
+        canGoBack: contents.navigationHistory.canGoBack(),
+        canGoForward: contents.navigationHistory.canGoForward(),
+      })
+
+    contents.on('did-navigate', (_event, url) => {
+      update({ url })
+      updateHistory()
+    })
+    contents.on('did-navigate-in-page', (_event, url, isMainFrame) => {
+      if (!isMainFrame) return
+      update({ url })
+      updateHistory()
+    })
+    contents.on('page-title-updated', (_event, title) => update({ title }))
+    contents.on('page-favicon-updated', (_event, favicons) =>
+      update({ faviconUrl: favicons[0] ?? null }),
+    )
+    contents.on('did-start-loading', () => setRuntime({ loading: true }))
+    contents.on('did-stop-loading', () => setRuntime({ loading: false }))
+    contents.on('did-change-theme-color', (_event, color) => setRuntime({ themeColor: color }))
+
+    // Popups and target=_blank become tabs in the same space, never windows.
+    contents.setWindowOpenHandler(({ url }) => {
+      const entry = this.views.get(tabId)
+      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url)
+      return { action: 'deny' }
+    })
+    contents.on('will-navigate', (event, url) => {
+      if (!isWebUrl(url)) event.preventDefault()
+    })
+  }
+}

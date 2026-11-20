@@ -1,14 +1,12 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { _electron as electron, expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { launchApp } from './helpers'
 
 test('first launch shows onboarding, then the sidebar', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
-  const app = await electron.launch({
-    args: [join(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, ACAB_USER_DATA: userData },
-  })
+  const app = await launchApp(userData)
 
   try {
     const page = await app.firstWindow()
@@ -67,11 +65,7 @@ test('first launch shows onboarding, then the sidebar', async () => {
 
 test('settings survive a relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
-  const launch = () =>
-    electron.launch({
-      args: [join(__dirname, '../../out/main/index.js')],
-      env: { ...process.env, ACAB_USER_DATA: userData },
-    })
+  const launch = () => launchApp(userData)
 
   try {
     const first = await launch()

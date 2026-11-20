@@ -66,6 +66,7 @@ src/
   main/                    # Electron shell only
     index.ts               # app lifecycle, single-instance lock
     windows/               # BrowserWindow creation, vibrancy/mica, traffic lights
+    browser/               # TabViews: one WebContentsView per tab (§11)
     ipc/                   # handlers: zod-validate → call core → return; event fan-out
     os/                    # notifications, dock/taskbar badge, menus, shortcuts
     secrets.ts             # safeStorage wrapper (Windows token fallback, S#8)
@@ -401,3 +402,26 @@ results come back to the lead as a short summary + branch name, never the full c
 | IPC | Vitest | Every command schema rejects bad payloads |
 | E2E | Playwright `_electron` | App launched with `YAAS_PROVIDER=fake`, temp userData |
 | Real-account spikes | scripts | Opt-in, never in CI |
+
+## 11. Browser
+
+- **Model in core.** `core/browser/browserStore.ts` owns spaces and tabs (SQLite, `spaces` /
+  `tabs` tables) and knows nothing of Electron. Main mirrors it; the renderer only sees it through
+  `browser.state` and the `browser.changed` event (`BrowserState` = the snapshot plus each tab's
+  `runtime`: loading, back/forward, `theme-color` — live data, never persisted).
+- **One view per tab.** `main/browser/tabViews.ts` gives every tab its own `WebContentsView`,
+  added to the window's `contentView` above the UI. Only the active tab of the active space is
+  visible. Views are `sandbox` + `contextIsolation`, no `nodeIntegration`, **no preload**; the
+  user agent is plain Chrome (`core/browser/userAgent.ts` drops the `Electron/` and `ACAB/`
+  tokens). Popups and `target=_blank` become tabs in the same space (`deny` + `openTab`), never
+  windows; `will-navigate` to a non-http(s) scheme is blocked.
+- **Partitions.** Each space browses in its own persistent session,
+  `persist:space-<spaceId>`: cookies and storage never leak between spaces.
+- **Bounds from the renderer.** The UI lays out the page area and sends it with
+  `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
+  has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
+- **Lazy loading.** A view is created the first time its tab is active, so restored tabs don't
+  load until visited; closing a tab destroys its view (`webContents.close()`).
+- **Commands:** `browser.openTab` / `closeTab` / `activateTab` / `navigate` / `goBack` /
+  `goForward` / `reload` / `createSpace` / `activateSpace` / `setPageBounds` / `setPageVisible`.
+  Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).

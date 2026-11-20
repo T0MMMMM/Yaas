@@ -20,4 +20,22 @@ describe('IPC contract', () => {
     expect(input.safeParse({ sidebarWidth: 120 }).success).toBe(false)
     expect(input.safeParse({ nodeIntegration: true }).success).toBe(false)
   })
+
+  it('rejects a negative page bound', () => {
+    const input = commands['browser.setPageBounds'].input
+    expect(input.safeParse({ x: 0, y: 0, width: 800, height: 600 }).success).toBe(true)
+    expect(input.safeParse({ x: -1, y: 0, width: 800, height: 600 }).success).toBe(false)
+  })
+
+  it('rejects an unknown field on browser.openTab', () => {
+    const input = commands['browser.openTab'].input
+    expect(input.safeParse({ input: 'example.com' }).success).toBe(true)
+    expect(input.safeParse({ input: 'example.com', partition: 'x' }).success).toBe(false)
+  })
+
+  it('rejects a bad space color', () => {
+    const input = commands['browser.createSpace'].input
+    expect(input.safeParse({ name: 'Work', color: '#2BB673' }).success).toBe(true)
+    expect(input.safeParse({ name: 'Work', color: 'green' }).success).toBe(false)
+  })
 })

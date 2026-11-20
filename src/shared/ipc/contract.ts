@@ -1,7 +1,7 @@
 // THE IPC contract. Every command and event crossing the preload bridge is declared here.
 // Main validates every input with these schemas; the renderer gets the types for free.
 import { z } from 'zod'
-import type { Account } from '../model'
+import type { Account, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
 import type { CommandChannel, EventChannel } from './channels'
 
 export const SIDEBAR_MIN = 200
@@ -63,6 +63,65 @@ export const cliInfoSchema = z.object({
 })
 export type CliInfo = z.infer<typeof cliInfoSchema>
 
+export const browserSpaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  color: hexColor,
+  position: z.number().int(),
+}) satisfies z.ZodType<BrowserSpace>
+
+export const browserTabSchema = z.object({
+  id: z.string(),
+  spaceId: z.string(),
+  url: z.string(),
+  title: z.string(),
+  faviconUrl: z.string().nullable(),
+  position: z.number().int(),
+}) satisfies z.ZodType<BrowserTab>
+
+/** Live state of a tab's web contents — never persisted. */
+export interface TabRuntime {
+  loading: boolean
+  canGoBack: boolean
+  canGoForward: boolean
+  /** The page's `theme-color`, or null when it has none. */
+  themeColor: string | null
+}
+
+export const tabRuntimeSchema = z.object({
+  loading: z.boolean(),
+  canGoBack: z.boolean(),
+  canGoForward: z.boolean(),
+  themeColor: z.string().nullable(),
+}) satisfies z.ZodType<TabRuntime>
+
+/** The browser model plus the runtime state of each tab that has a view, keyed by tab id. */
+export type BrowserState = BrowserSnapshot & { runtime: Record<string, TabRuntime> }
+
+export const browserStateSchema = z.object({
+  spaces: z.array(browserSpaceSchema),
+  activeSpaceId: z.string(),
+  tabs: z.array(browserTabSchema),
+  activeTabIds: z.record(z.string(), z.string().nullable()),
+  runtime: z.record(z.string(), tabRuntimeSchema),
+}) satisfies z.ZodType<BrowserState>
+
+/** Where the page sits in the window, in DIP. Sent by the renderer. */
+export interface PageBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+const bound = z.number().int().min(0)
+export const pageBoundsSchema = z
+  .object({ x: bound, y: bound, width: bound, height: bound })
+  .strict() satisfies z.ZodType<PageBounds>
+
+const id = z.string().min(1)
+const tabRef = z.object({ tabId: id }).strict()
+
 export const commands = {
   'app.info': { input: z.void(), output: appInfoSchema },
   'settings.get': { input: z.void(), output: settingsSchema },
@@ -71,11 +130,39 @@ export const commands = {
   'accounts.list': { input: z.void(), output: z.array(accountSchema) },
   /** Imports the account already signed in to ~/.claude (ADR-0002). Idempotent. */
   'accounts.importDefault': { input: z.void(), output: accountSchema },
+  'browser.state': { input: z.void(), output: browserStateSchema },
+  /** Opens a tab in the given space (default: the active one); `input` goes through resolveInput. */
+  'browser.openTab': {
+    input: z.object({ spaceId: id.optional(), input: z.string().optional() }).strict(),
+    output: browserTabSchema,
+  },
+  'browser.closeTab': { input: tabRef, output: z.void() },
+  'browser.activateTab': { input: tabRef, output: z.void() },
+  'browser.navigate': {
+    input: z.object({ tabId: id, input: z.string() }).strict(),
+    output: z.void(),
+  },
+  'browser.goBack': { input: tabRef, output: z.void() },
+  'browser.goForward': { input: tabRef, output: z.void() },
+  'browser.reload': { input: tabRef, output: z.void() },
+  'browser.createSpace': {
+    input: z.object({ name: z.string().min(1).max(40), color: hexColor }).strict(),
+    output: browserSpaceSchema,
+  },
+  'browser.activateSpace': { input: z.object({ spaceId: id }).strict(), output: z.void() },
+  'browser.setPageBounds': { input: pageBoundsSchema, output: z.void() },
+  'browser.setPageVisible': {
+    input: z.object({ visible: z.boolean() }).strict(),
+    output: z.void(),
+  },
 } as const satisfies Record<CommandChannel, { input: z.ZodType; output: z.ZodType }>
 
 export const events = {
   'settings.changed': settingsSchema,
   'accounts.changed': z.array(accountSchema),
+  'browser.changed': browserStateSchema,
+  /** A shortcut pressed while a page has focus, forwarded to the UI. */
+  'browser.shortcut': z.enum(['focus-address', 'settings']),
 } as const satisfies Record<EventChannel, z.ZodType>
 
 export type Commands = typeof commands
