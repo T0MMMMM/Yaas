@@ -381,6 +381,20 @@ test('magnetic buttons follow the setting', async () => {
   })
 })
 
+test('magnetic buttons stay still under reduced motion', async () => {
+  await withBrowser(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const dot = page.getByRole('tablist', { name: 'Spaces' }).getByRole('tab').first()
+    const box = await dot.boundingBox()
+    if (!box) throw new Error('space dot has no box')
+    await page.mouse.move(0, 0)
+    await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2 + 3)
+    await page.waitForTimeout(200)
+    expect(await dot.evaluate((el) => (el as HTMLElement).style.translate)).toBe('')
+    expect(await dot.evaluate((el) => (el as HTMLElement).style.scale)).toBe('')
+  })
+})
+
 test('tabs survive a relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const site = await startSite()
