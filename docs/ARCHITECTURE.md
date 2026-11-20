@@ -400,7 +400,7 @@ results come back to the lead as a short summary + branch name, never the full c
 | Core unit | Vitest | Against `FakeProvider` — 0 tokens |
 | Contract | Vitest | Real transcript fixtures (anonymised) → reader/sanitizer; CLI event fixtures → normalizer |
 | IPC | Vitest | Every command schema rejects bad payloads |
-| E2E | Playwright `_electron` | App launched with `YAAS_PROVIDER=fake`, temp userData |
+| E2E | Playwright `_electron` | App launched with a temp userData (`ACAB_USER_DATA`), no real account |
 | Real-account spikes | scripts | Opt-in, never in CI |
 
 ## 11. Browser
@@ -417,6 +417,11 @@ results come back to the lead as a short summary + branch name, never the full c
   windows; `will-navigate` to a non-http(s) scheme is blocked.
 - **Partitions.** Each space browses in its own persistent session,
   `persist:space-<spaceId>`: cookies and storage never leak between spaces.
+- **Permissions.** Every space session denies page permissions except
+  `clipboard-sanitized-write`, `fullscreen` and `pointerLock` (`core/browser/permissions.ts`):
+  no camera, microphone, location, notifications or `openExternal` until a per-site prompt exists.
+- **Memory.** A view lives until its tab closes, even hidden (other space, inactive tab): memory
+  grows with visited tabs. Eviction of idle views is for a later plan.
 - **Bounds from the renderer.** The UI lays out the page area and sends it with
   `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.

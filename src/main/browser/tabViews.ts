@@ -1,6 +1,7 @@
 // One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
 // mirrors it: creates views lazily, shows the active one, and reports what the pages do.
 import { session, WebContentsView, type BrowserWindow, type Session } from 'electron'
+import { isPermissionGranted } from '@core/browser/permissions'
 import { chromeUserAgent } from '@core/browser/userAgent'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
@@ -109,6 +110,10 @@ export class TabViews {
     const ses = session.fromPartition(partition)
     if (!this.sessions.has(partition)) {
       ses.setUserAgent(chromeUserAgent(ses.getUserAgent()))
+      ses.setPermissionRequestHandler((_contents, permission, callback) =>
+        callback(isPermissionGranted(permission)),
+      )
+      ses.setPermissionCheckHandler((_contents, permission) => isPermissionGranted(permission))
       this.sessions.add(partition)
     }
     return ses
