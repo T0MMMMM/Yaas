@@ -51,6 +51,36 @@ const extensionNames = (app: ElectronApplication, spaceId: string) =>
     spaceId,
   )
 
+const windowCount = (app: ElectronApplication) =>
+  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)
+
+/**
+ * Loads the fixture's `page.html?<query>` in a bare web contents of the space session: an
+ * extension page that is not a tab (like a popup). Loaded from main because tabs never navigate to
+ * chrome-extension:// themselves. The view is kept on `globalThis.acabExtensionPage`.
+ */
+async function openExtensionPage(
+  app: ElectronApplication,
+  spaceId: string,
+  query: string,
+): Promise<void> {
+  await expect.poll(() => extensionNames(app, spaceId)).toContain(EXTENSION_NAME)
+  await app.evaluate(
+    ({ session, WebContentsView }, { partition, name, query }) => {
+      const ses = session.fromPartition(partition)
+      const extension = ses.extensions.getAllExtensions().find((e) => e.name === name)
+      if (!extension) throw new Error('Test extension not loaded')
+      const view = new WebContentsView({
+        webPreferences: { session: ses, sandbox: true, contextIsolation: true },
+      })
+      // Held so the unattached view is not garbage-collected (which closes its page).
+      Object.assign(globalThis, { acabExtensionPage: view })
+      void view.webContents.loadURL(`chrome-extension://${extension.id}/page.html?${query}`)
+    },
+    { partition: `persist:space-${spaceId}`, name: EXTENSION_NAME, query },
+  )
+}
+
 test('the test extension loads in the active space', async () => {
   await withExtension(async ({ app, spaceId }) => {
     await expect.poll(() => extensionNames(app, spaceId)).toContain(EXTENSION_NAME)
@@ -59,28 +89,36 @@ test('the test extension loads in the active space', async () => {
 
 test('window.open from an extension page opens a tab', async () => {
   await withExtension(async ({ app, page, site, spaceId }) => {
-    await expect.poll(() => extensionNames(app, spaceId)).toContain(EXTENSION_NAME)
     const target = site.url('/b')
-    // An extension page that is not a tab (like a popup): a bare web contents in the space session.
-    // Loaded from main because tabs never navigate to chrome-extension:// themselves.
-    await app.evaluate(
-      ({ session, WebContentsView }, { partition, name, open }) => {
-        const ses = session.fromPartition(partition)
-        const extension = ses.extensions.getAllExtensions().find((e) => e.name === name)
-        if (!extension) throw new Error('Test extension not loaded')
-        const view = new WebContentsView({
-          webPreferences: { session: ses, sandbox: true, contextIsolation: true },
-        })
-        const url = `chrome-extension://${extension.id}/page.html?open=${encodeURIComponent(open)}`
-        void view.webContents.loadURL(url)
-      },
-      { partition: `persist:space-${spaceId}`, name: EXTENSION_NAME, open: target },
-    )
+    await openExtensionPage(app, spaceId, `open=${encodeURIComponent(target)}`)
 
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
     const { tabs } = await page.evaluate(() => window.acab.invoke('browser.state'))
     expect(tabs.find((t) => t.url === target)?.spaceId).toBe(spaceId)
-    expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)).toBe(1)
+    expect(await windowCount(app)).toBe(1)
+  })
+})
+
+test('chrome.windows.remove closes the created tab, never the browser window', async () => {
+  await withExtension(async ({ app, page, site, spaceId }) => {
+    await openExtensionPage(app, spaceId, `create=${encodeURIComponent(site.url('/b'))}`)
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+
+    await expect
+      .poll(() =>
+        app.evaluate(() =>
+          (
+            globalThis as unknown as {
+              acabExtensionPage: {
+                webContents: { executeJavaScript: (code: string) => Promise<string> }
+              }
+            }
+          ).acabExtensionPage.webContents.executeJavaScript('removeCreated()'),
+        ),
+      )
+      .toBe('removed')
+    await expect(page.getByTestId('tab')).toHaveText(['Page A'])
+    expect(await windowCount(app)).toBe(1)
   })
 })
 

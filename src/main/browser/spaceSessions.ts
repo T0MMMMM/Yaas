@@ -30,6 +30,8 @@ export interface SpaceSessionsOptions {
 export class SpaceSessions {
   private readonly extensions = new Map<string, ElectronChromeExtensions>()
   private readonly spaces = new Map<Session, string>()
+  /** Per space, the tabs opened by `chrome.windows.create` (what `windows.remove` closes). */
+  private readonly windowTabs = new Map<string, Set<WebContents>>()
 
   constructor(private readonly opts: SpaceSessionsOptions) {}
 
@@ -84,11 +86,20 @@ export class SpaceSessions {
       },
       selectTab: (contents) => host.selectTab(contents),
       removeTab: (contents) => host.closeTab(contents),
-      // Like Chrome's popup windows, but as a tab of the one browser window (spike fix 2).
+      // Like Chrome's popup windows, but as tabs of the one browser window (spike fix 2).
       createWindow: async (details) => {
-        const url = Array.isArray(details.url) ? details.url[0] : details.url
-        if (url) await host.openTab(spaceId, url)
+        const urls = details.url === undefined ? [] : [details.url].flat()
+        const tabs = this.windowTabs.get(spaceId) ?? new Set<WebContents>()
+        this.windowTabs.set(spaceId, tabs)
+        for (const url of urls) tabs.add(await host.openTab(spaceId, url))
         return requireWindow()
+      },
+      // Every "window" is the browser window: closing one closes the tabs `createWindow` opened,
+      // never the window itself (the library would `destroy()` it without this handler).
+      removeWindow: () => {
+        const tabs = this.windowTabs.get(spaceId)
+        this.windowTabs.delete(spaceId)
+        for (const contents of tabs ?? []) if (!contents.isDestroyed()) host.closeTab(contents)
       },
     })
   }
