@@ -66,7 +66,7 @@ src/
   main/                    # Electron shell only
     index.ts               # app lifecycle, single-instance lock
     windows/               # BrowserWindow creation, vibrancy/mica, traffic lights
-    browser/               # TabViews: one WebContentsView per tab (§11)
+    browser/               # TabViews: one WebContentsView per tab; OverlayView (§11)
     ipc/                   # handlers: zod-validate → call core → return; event fan-out
     os/                    # notifications, dock/taskbar badge, menus, shortcuts
     secrets.ts             # safeStorage wrapper (Windows token fallback, S#8)
@@ -430,3 +430,15 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Commands:** `browser.openTab` / `closeTab` / `activateTab` / `navigate` / `goBack` /
   `goForward` / `reload` / `createSpace` / `activateSpace` / `setPageBounds` / `setPageVisible`.
   Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).
+- **Overlay.** `main/browser/overlayView.ts` is one transparent `WebContentsView` over the whole
+  window (content size, kept in sync on resize), always above the tab views (raised again each
+  time a tab view is added), so UI popovers can float over the page. It loads the same renderer
+  under `#overlay` with the app preload; `App` then renders only `Overlay` on a transparent body.
+  It is **hidden** until `overlay.open({ kind, anchor })` (anchor = the button's rect, window DIP),
+  then shown, focused (Escape reaches it) and sent `overlay.opened`; Escape, a click on its empty
+  area or a chosen item call `overlay.close`, which hides it, hands the keyboard back to the UI and
+  sends `overlay.closed` to the UI (the button resets). It is a **trusted sender** exactly like the
+  UI window (nothing else is) and also receives `settings.changed` and `browser.changed`. Actions
+  that belong to the UI go through main: `ui.openSettings` / `ui.focusAddress` emit
+  `browser.shortcut` to the UI. Kinds: `new-menu` (the + menu, opens upward) and `site-menu`
+  (the address bar's menu, opens downward).

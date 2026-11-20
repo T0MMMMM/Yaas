@@ -64,6 +64,8 @@ export class TabViews {
     private readonly win: BrowserWindow,
     private readonly store: BrowserStore,
     private readonly onRuntime: () => void,
+    /** Called after a view joins the window, so the overlay can go back on top. */
+    private readonly onViewAdded: () => void = () => undefined,
   ) {
     // A view's web contents outlive its window unless closed: their renderers would hold up quit.
     win.on('closed', () => {
@@ -166,6 +168,7 @@ export class TabViews {
       themeColor: null,
     })
     this.win.contentView.addChildView(view)
+    this.onViewAdded()
     this.wire(tabId, view)
     void view.webContents.loadURL(url).catch(() => undefined)
   }

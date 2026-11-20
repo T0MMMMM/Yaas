@@ -1,5 +1,17 @@
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { BrowserWindow, shell } from 'electron'
+
+/** The app preload: exposes `window.acab` to the UI and the overlay, nothing else. */
+export const PRELOAD_PATH = join(__dirname, '../preload/index.js')
+
+/** Where the renderer loads from: the dev server, or the built file. */
+export function rendererUrl(): string {
+  return (
+    process.env['ELECTRON_RENDERER_URL'] ??
+    pathToFileURL(join(__dirname, '../renderer/index.html')).href
+  )
+}
 
 export const TITLEBAR_HEIGHT = 44
 
@@ -57,7 +69,7 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
       backgroundMaterial: glass ? ('acrylic' as const) : ('none' as const),
     }),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: PRELOAD_PATH,
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -77,9 +89,7 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
     if (url !== win.webContents.getURL()) event.preventDefault()
   })
 
-  const devUrl = process.env['ELECTRON_RENDERER_URL']
-  if (devUrl) void win.loadURL(devUrl)
-  else void win.loadFile(join(__dirname, '../renderer/index.html'))
+  void win.loadURL(rendererUrl())
 
   return win
 }

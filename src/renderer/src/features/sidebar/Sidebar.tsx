@@ -1,10 +1,8 @@
-import { useState, type CSSProperties } from 'react'
-import { GearSix, Globe, MagnifyingGlass, Plus, SquaresFour, X } from '@phosphor-icons/react'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { Globe, MagnifyingGlass, Plus, X } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import type { TabView } from '../workspace/workspace'
-import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
-import { Menu, type MenuItem } from '../../ui/Menu'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { hashUnit } from './hash'
 import styles from './Sidebar.module.css'
@@ -26,6 +24,20 @@ async function newTab(): Promise<void> {
   useUi.getState().focusAddress()
 }
 
+/** Opens the + menu in the overlay view, above the button (it floats over the page). */
+function openNewMenu(button: HTMLElement): void {
+  const box = button.getBoundingClientRect()
+  void window.acab.invoke('overlay.open', {
+    kind: 'new-menu',
+    anchor: {
+      x: Math.max(0, Math.round(box.left)),
+      y: Math.max(0, Math.round(box.top)),
+      width: Math.round(box.width),
+      height: Math.round(box.height),
+    },
+  })
+}
+
 /** Only inline images: a remote favicon would load in the UI's own session, outside the space. */
 function Favicon({ tab }: { tab: TabView }) {
   if (tab.faviconUrl?.startsWith('data:')) {
@@ -37,29 +49,11 @@ function Favicon({ tab }: { tab: TabView }) {
 /** Arc-style vertical sidebar: the active space's tabs and the spaces. No data logic here. */
 export function Sidebar() {
   const workspace = useWorkspace()
-  const openSettings = useUi((s) => s.openSettings)
-  const accent = useSettings((s) => s.settings?.accent)
   const magnet = useMagnetic<HTMLButtonElement>(0.4)
-  /** The + button while its menu is open. */
-  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
+  /** Whether the + menu is open in the overlay. */
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  const menuItems: MenuItem[] = [
-    { id: 'new-tab', label: 'New tab', icon: Plus, shortcut: '⌘T', onSelect: () => void newTab() },
-    {
-      id: 'new-space',
-      label: 'New space',
-      icon: SquaresFour,
-      onSelect: () => {
-        if (!workspace || !accent) return
-        void window.acab.invoke('browser.createSpace', {
-          name: `Space ${workspace.spaces.length + 1}`,
-          color: accent,
-        })
-      },
-    },
-    'separator',
-    { id: 'settings', label: 'Settings', icon: GearSix, shortcut: '⌘,', onSelect: openSettings },
-  ]
+  useEffect(() => window.acab.on('overlay.closed', () => setMenuOpen(false)), [])
 
   return (
     <nav className={styles.sidebar} aria-label="Spaces and tabs" data-testid="sidebar">
@@ -135,18 +129,17 @@ export function Sidebar() {
           className={`${styles.iconButton} no-drag`}
           aria-label="New tab, space or settings"
           aria-haspopup="menu"
-          aria-expanded={menuAnchor !== null}
+          aria-expanded={menuOpen}
           title="New…"
-          onClick={(e) => setMenuAnchor(menuAnchor ? null : e.currentTarget)}
+          onClick={(e) => {
+            setMenuOpen(true)
+            openNewMenu(e.currentTarget)
+          }}
           {...magnet}
         >
           <Plus size={18} weight="regular" />
         </button>
       </div>
-
-      {menuAnchor && (
-        <Menu anchor={menuAnchor} items={menuItems} onClose={() => setMenuAnchor(null)} />
-      )}
     </nav>
   )
 }

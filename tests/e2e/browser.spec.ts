@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { startSite } from './fixtures/site'
-import { finishOnboarding, launchApp, uiPage } from './helpers'
+import { finishOnboarding, launchApp, overlayPage, uiPage } from './helpers'
 
 type Site = Awaited<ReturnType<typeof startSite>>
 
@@ -20,8 +20,8 @@ async function withBrowser(
   const site = await startSite()
   const app = await launchApp(userData)
   try {
-    // Grab the UI page before any tab exists: tab views are web contents too.
-    const page = await app.firstWindow()
+    // The overlay and tab views are web contents too: pick the UI by its bridge.
+    const page = await uiPage(app)
     await finishOnboarding(page)
     await run({ app, page, site, userData })
   } finally {
@@ -150,7 +150,7 @@ test('settings hide the page', async () => {
     await expect.poll(() => shownView(app)).toBeTruthy()
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
-    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await (await overlayPage(app)).getByRole('menuitem', { name: 'Settings' }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
     await expect.poll(() => shownView(app)).toBeUndefined()
 
@@ -160,40 +160,32 @@ test('settings hide the page', async () => {
   })
 })
 
-test('the + menu stays inside the sidebar in liquid glass', async () => {
-  await withBrowser(async ({ page }) => {
+test('the + menu opens over the page in liquid glass', async () => {
+  await withBrowser(async ({ app, page }) => {
     await page.evaluate(() => window.acab.invoke('settings.update', { transparency: 1 }))
     // Liquid glass only exists where the platform supports it (macOS, Windows 11).
     const glassSupported = await page.evaluate(
       async () => (await window.acab.invoke('app.info')).glassSupported,
     )
+    const overlay = await overlayPage(app)
     if (glassSupported) {
-      await expect(page.locator('html')).toHaveAttribute('data-glass', 'liquid')
+      await expect(overlay.locator('html')).toHaveAttribute('data-glass', 'liquid')
     }
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
-    const menu = page.getByTestId('menu')
-    await expect(menu).toBeVisible()
-    const box = await menu.boundingBox()
-    const sidebar = await page.getByTestId('sidebar').boundingBox()
-    if (!box || !sidebar) throw new Error('menu or sidebar not found')
-    expect(box.x).toBeGreaterThanOrEqual(sidebar.x)
-    expect(box.x + box.width).toBeLessThanOrEqual(sidebar.x + sidebar.width)
-    expect(box.y).toBeGreaterThanOrEqual(sidebar.y)
-    expect(box.y + box.height).toBeLessThanOrEqual(sidebar.y + sidebar.height)
-
-    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await expect(overlay.getByTestId('menu')).toBeVisible()
+    await overlay.getByRole('menuitem', { name: 'Settings' }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
   })
 })
 
 test('spaces keep their own tabs', async () => {
-  await withBrowser(async ({ page, site }) => {
+  await withBrowser(async ({ app, page, site }) => {
     await openTab(page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
-    await page.getByRole('menuitem', { name: 'New space' }).click()
+    await (await overlayPage(app)).getByRole('menuitem', { name: 'New space' }).click()
     const spaces = page.getByRole('tablist', { name: 'Spaces' }).getByRole('tab')
     await expect(spaces).toHaveCount(2)
     await expect(spaces.nth(1)).toHaveAttribute('aria-label', 'Space 2')
@@ -213,7 +205,7 @@ test('tabs survive a relaunch', async () => {
   const site = await startSite()
   try {
     const first = await launchApp(userData)
-    const page = await first.firstWindow()
+    const page = await uiPage(first)
     await finishOnboarding(page)
     await openTab(page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
@@ -244,7 +236,7 @@ test('restored tabs stay dim until visited', async () => {
   const site = await startSite()
   try {
     const first = await launchApp(userData)
-    const page = await first.firstWindow()
+    const page = await uiPage(first)
     await finishOnboarding(page)
     await openTab(page, site.url('/a'))
     await openTab(page, site.url('/b'))

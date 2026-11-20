@@ -20,6 +20,10 @@ export const COMMAND_CHANNELS = [
   'browser.activateSpace',
   'browser.setPageBounds',
   'browser.setPageVisible',
+  'overlay.open',
+  'overlay.close',
+  'ui.openSettings',
+  'ui.focusAddress',
 ] as const
 
 export const EVENT_CHANNELS = [
@@ -27,6 +31,8 @@ export const EVENT_CHANNELS = [
   'accounts.changed',
   'browser.changed',
   'browser.shortcut',
+  'overlay.opened',
+  'overlay.closed',
 ] as const
 
 export type CommandChannel = (typeof COMMAND_CHANNELS)[number]

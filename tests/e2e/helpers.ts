@@ -26,7 +26,9 @@ export async function finishOnboarding(page: Page): Promise<void> {
  * `firstWindow()` can resolve to it instead, so pick the page that exposes the `acab` bridge.
  */
 export async function uiPage(app: ElectronApplication): Promise<Page> {
-  const isUi = (page: Page) => page.evaluate(() => 'acab' in window).catch(() => false)
+  // The overlay view loads the same renderer (and bridge) under `#overlay`: skip it.
+  const isUi = (page: Page) =>
+    !page.url().endsWith('#overlay') && page.evaluate(() => 'acab' in window).catch(() => false)
   let found: Page | undefined
   // Poll rather than wait for the 'window' event: one fired between the scan and the wait is lost.
   await expect
@@ -41,5 +43,18 @@ export async function uiPage(app: ElectronApplication): Promise<Page> {
     })
     .toBe(true)
   if (!found) throw new Error('ACAB UI page not found')
+  return found
+}
+
+/** The overlay view's page: the renderer loaded under `#overlay`, floating over the page. */
+export async function overlayPage(app: ElectronApplication): Promise<Page> {
+  let found: Page | undefined
+  await expect
+    .poll(() => {
+      found = app.windows().find((page) => page.url().endsWith('#overlay'))
+      return found !== undefined
+    })
+    .toBe(true)
+  if (!found) throw new Error('Overlay page not found')
   return found
 }

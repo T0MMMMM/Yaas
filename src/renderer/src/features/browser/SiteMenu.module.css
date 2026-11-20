@@ -1,0 +1,19 @@
+/* Same card as ui/Menu, opening downwards from the address bar. */
+.card {
+  position: fixed;
+  min-width: calc(var(--control-size) * 8);
+  min-height: calc(var(--control-size) * 3);
+  margin-top: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-sheen), var(--bg-raised);
+  box-shadow:
+    inset 0 1px 0 var(--glass-edge),
+    var(--shadow-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+}
+
+:root[data-glass='liquid'] .card {
+  border-color: var(--glass-edge);
+  background: var(--glass-sheen), var(--glass-panel);
+}

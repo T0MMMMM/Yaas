@@ -1,51 +1,37 @@
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
+import type { PageBounds } from '@shared/ipc/contract'
+import { useDismiss } from './useDismiss'
 import styles from './Menu.module.css'
 
 export type MenuItem =
   { id: string; label: string; icon: Icon; shortcut?: string; onSelect(): void } | 'separator'
 
 interface MenuProps {
-  /** The button the menu opens from. It opens upward and never extends past its right edge. */
-  anchor: HTMLElement | null
+  /** Rect of the button the menu opens from, in viewport coordinates. */
+  anchor: PageBounds
+  /** Opens above the anchor or below it; either way it starts at the anchor's left edge. */
+  placement: 'above' | 'below'
   items: MenuItem[]
   onClose(): void
 }
 
-/** Gap between the anchor and the menu, and the menu's margin to the window's left edge. */
+/** Gap between the anchor and the menu, and the menu's margin to the window's edges. */
 const GAP = 6
 
 /**
  * A yab-shaped popover (spec, "Menus and settings"): a rounded glass card with rows of icon,
  * label and shortcut. Closes on Escape, a click outside or a choice.
  */
-export function Menu({ anchor, items, onClose }: MenuProps) {
+export function Menu({ anchor, placement, items, onClose }: MenuProps) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
   }, [])
 
-  useEffect(() => {
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key !== 'Escape') return
-      // Escape closes the menu only, not the view behind it.
-      e.stopPropagation()
-      onClose()
-    }
-    const onDown = (e: MouseEvent) => {
-      const target = e.target as Node
-      if (ref.current?.contains(target) || anchor?.contains(target)) return
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    window.addEventListener('mousedown', onDown, true)
-    return () => {
-      window.removeEventListener('keydown', onKey, true)
-      window.removeEventListener('mousedown', onDown, true)
-    }
-  }, [anchor, onClose])
+  useDismiss(ref, onClose)
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
@@ -56,16 +42,16 @@ export function Menu({ anchor, items, onClose }: MenuProps) {
     rows[(index + step + rows.length) % rows.length]?.focus()
   }
 
-  if (!anchor) return null
   // Geometry comes from the anchor at runtime, in viewport coordinates: the menu is portalled to
   // <body> because an ancestor with backdrop-filter (liquid glass) would otherwise become the
-  // containing block of a fixed element. A page view is drawn above the UI, so the menu must stay
-  // inside the sidebar: it ends at the anchor's right edge.
-  const box = anchor.getBoundingClientRect()
+  // containing block of a fixed element. It runs in the overlay view, above the page, so it may
+  // extend over the page; it only keeps clear of the window's right edge.
   const place: CSSProperties = {
-    bottom: window.innerHeight - box.top + GAP,
-    right: window.innerWidth - box.right,
-    maxWidth: Math.max(0, box.right - GAP),
+    left: anchor.x,
+    maxWidth: Math.max(0, window.innerWidth - anchor.x - GAP),
+    ...(placement === 'above'
+      ? { bottom: window.innerHeight - anchor.y + GAP }
+      : { top: anchor.y + anchor.height + GAP }),
   }
 
   return createPortal(
@@ -73,6 +59,7 @@ export function Menu({ anchor, items, onClose }: MenuProps) {
       ref={ref}
       className={`${styles.menu} no-drag`}
       style={place}
+      data-placement={placement}
       role="menu"
       onKeyDown={onKeyDown}
       data-testid="menu"

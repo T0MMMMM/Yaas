@@ -36,6 +36,15 @@ describe('IPC contract', () => {
     expect(input.safeParse({ input: 'example.com', partition: 'x' }).success).toBe(false)
   })
 
+  it('accepts only a known overlay kind with an anchor on overlay.open', () => {
+    const input = commands['overlay.open'].input
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(input.safeParse({ kind: 'site-menu', anchor }).success).toBe(true)
+    expect(input.safeParse({ kind: 'new-menu', anchor }).success).toBe(true)
+    expect(input.safeParse({ kind: 'popup', anchor }).success).toBe(false)
+    expect(input.safeParse({ kind: 'site-menu', anchor, url: 'x' }).success).toBe(false)
+  })
+
   it('rejects a bad space color', () => {
     const input = commands['browser.createSpace'].input
     expect(input.safeParse({ name: 'Work', color: '#2BB673' }).success).toBe(true)

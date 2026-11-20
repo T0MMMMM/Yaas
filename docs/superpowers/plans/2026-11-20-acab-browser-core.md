@@ -419,7 +419,7 @@ Layout and behaviour (decided):
   with "New tab", "New space", "Settings". "New space" creates `Space N` (N = count + 1) with the
   accent colour. Settings button leaves the footer (now in the + menu and ⌘,).
 - `Menu` (`ui/Menu.tsx`): yab-shaped popover — rounded glass card, rows of icon + label +
-  optional shortcut, separators; opens upward from its anchor, stays inside the sidebar width;
+  optional shortcut, separators; opens upward from its anchor (plan 2 moves it to the overlay view, over the page);
   closes on Escape, outside click or choice. Props:
   `{ anchor: HTMLElement | null; items: MenuItem[]; onClose(): void }`,
   `MenuItem = { id: string; label: string; icon: Icon; shortcut?: string; onSelect(): void } | 'separator'`.

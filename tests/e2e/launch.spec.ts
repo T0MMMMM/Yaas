@@ -2,13 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, uiPage } from './helpers'
+import { launchApp, overlayPage, uiPage } from './helpers'
 
 test('first launch shows onboarding, then the browser', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const app = await launchApp(userData)
 
   try {
+    // The UI window exists before the overlay view: it is the first page, and the intro is short.
     const page = await app.firstWindow()
     await expect(page.getByTestId('onboarding')).toHaveAttribute('data-stage', 'intro')
 
@@ -27,7 +28,7 @@ test('first launch shows onboarding, then the browser', async () => {
 
     // Settings open from the + menu and close with Escape.
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
-    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await (await overlayPage(app)).getByRole('menuitem', { name: 'Settings' }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
     // Only the browser sections show: no accounts, sessions, handoff or crew.
     await expect(
@@ -97,7 +98,7 @@ test('appearance settings toggle askew cards and attach the address bar', async 
     await expect.poll(() => root('contextbar')).toBe('card')
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
-    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await (await overlayPage(app)).getByRole('menuitem', { name: 'Settings' }).click()
     await page
       .getByRole('navigation', { name: 'Settings sections' })
       .getByRole('button', { name: 'Appearance' })

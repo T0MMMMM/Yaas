@@ -123,6 +123,16 @@ export const pageBoundsSchema = z
   .object({ x: bound, y: bound, width: bound, height: bound })
   .strict() satisfies z.ZodType<PageBounds>
 
+/** What the overlay view shows: the + menu, or the site menu of the address bar. */
+export const overlayKindSchema = z.enum(['new-menu', 'site-menu'])
+export type OverlayKind = z.infer<typeof overlayKindSchema>
+
+/** An overlay popover and the rect (window DIP) of the button it opens from. */
+export const overlayRequestSchema = z
+  .object({ kind: overlayKindSchema, anchor: pageBoundsSchema })
+  .strict()
+export type OverlayRequest = z.infer<typeof overlayRequestSchema>
+
 const id = z.string().min(1)
 const tabRef = z.object({ tabId: id }).strict()
 
@@ -159,6 +169,13 @@ export const commands = {
     input: z.object({ visible: z.boolean() }).strict(),
     output: z.void(),
   },
+  /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
+  'overlay.open': { input: overlayRequestSchema, output: z.void() },
+  'overlay.close': { input: z.void(), output: z.void() },
+  /** Asks the UI to open its settings (from the overlay): emits `browser.shortcut` 'settings'. */
+  'ui.openSettings': { input: z.void(), output: z.void() },
+  /** Asks the UI to edit the address (from the overlay): emits `browser.shortcut` 'focus-address'. */
+  'ui.focusAddress': { input: z.void(), output: z.void() },
 } as const satisfies Record<CommandChannel, { input: z.ZodType; output: z.ZodType }>
 
 export const events = {
@@ -167,6 +184,10 @@ export const events = {
   'browser.changed': browserStateSchema,
   /** A shortcut pressed while a page has focus, forwarded to the UI. */
   'browser.shortcut': z.enum(['focus-address', 'settings']),
+  /** To the overlay only: which popover to show, and where. */
+  'overlay.opened': overlayRequestSchema,
+  /** To the UI only: the overlay closed, so the button that opened it resets. */
+  'overlay.closed': z.void(),
 } as const satisfies Record<EventChannel, z.ZodType>
 
 export type Commands = typeof commands

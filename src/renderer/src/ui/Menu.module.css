@@ -15,8 +15,12 @@
     inset 0 1px 0 var(--glass-edge),
     var(--shadow-raised);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  transform-origin: bottom right;
+  transform-origin: bottom left;
   animation: open var(--dur-base) var(--ease-bounce);
+}
+
+.menu[data-placement='below'] {
+  transform-origin: top left;
 }
 
 :root[data-glass='liquid'] .menu {

@@ -7,10 +7,18 @@ import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
 import type { BrowserState } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
+import { OverlayView } from './browser/overlayView'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
-import { applyMaterial, createMainWindow, glassSupported, materialFor } from './windows/mainWindow'
+import {
+  applyMaterial,
+  createMainWindow,
+  glassSupported,
+  materialFor,
+  PRELOAD_PATH,
+  rendererUrl,
+} from './windows/mainWindow'
 
 // Tests and parallel dev profiles can point ACAB at a throwaway data dir.
 const userDataOverride = process.env['ACAB_USER_DATA']
@@ -35,18 +43,30 @@ const browser = new BrowserStore(db, {
 })
 let mainWindow: BrowserWindow | null = null
 let tabViews: TabViews | null = null
+let overlay: OverlayView | null = null
 
 const platform =
   process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows' : 'linux'
 
-function isTrustedSender(sender: WebContents): boolean {
-  return mainWindow !== null && sender === mainWindow.webContents
+/** The UI window and the overlay view: the only renderers that run the app's code. */
+function trustedContents(): WebContents[] {
+  if (!mainWindow) return []
+  return overlay ? [mainWindow.webContents, overlay.webContents] : [mainWindow.webContents]
 }
 
-/** Pushes the browser model plus the tabs' runtime state to the UI. */
+function isTrustedSender(sender: WebContents): boolean {
+  return trustedContents().includes(sender)
+}
+
+/** Pushes the browser model plus the tabs' runtime state to the UI and the overlay. */
 function emitBrowserState(): void {
-  if (!mainWindow) return
-  emit(mainWindow.webContents, 'browser.changed', browserState())
+  const state = browserState()
+  for (const contents of trustedContents()) emit(contents, 'browser.changed', state)
+}
+
+function overlayView(): OverlayView {
+  if (!overlay) throw new Error('No browser window')
+  return overlay
 }
 
 function browserState(): BrowserState {
@@ -105,11 +125,17 @@ function setupMenu(): void {
 function openMainWindow(): void {
   const win = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow = win
-  tabViews = new TabViews(win, browser, emitBrowserState)
+  // Created before any tab view, then raised over each new one.
+  const overlayView = new OverlayView(win, PRELOAD_PATH, rendererUrl(), () => {
+    emit(win.webContents, 'overlay.closed', undefined)
+  })
+  overlay = overlayView
+  tabViews = new TabViews(win, browser, emitBrowserState, () => overlayView.raise())
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
     mainWindow = null
     tabViews = null
+    overlay = null
   })
 }
 
@@ -140,6 +166,10 @@ registerCommands(
     'browser.activateSpace': ({ spaceId }) => browser.activateSpace(spaceId),
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
+    'overlay.open': ({ kind, anchor }) => overlayView().open(kind, anchor),
+    'overlay.close': () => overlayView().close(),
+    'ui.openSettings': () => emitShortcut('settings'),
+    'ui.focusAddress': () => emitShortcut('focus-address'),
   },
   isTrustedSender,
 )
@@ -154,7 +184,7 @@ settings.subscribe((next) => {
     appliedMaterial = material
     applyMaterial(mainWindow, material)
   }
-  emit(mainWindow.webContents, 'settings.changed', next)
+  for (const contents of trustedContents()) emit(contents, 'settings.changed', next)
 })
 
 browser.subscribe((snapshot) => {

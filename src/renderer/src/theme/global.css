@@ -22,6 +22,11 @@ body {
   overflow: hidden;
 }
 
+/* The overlay view (#overlay) floats over the page: only its popovers paint. */
+:root[data-surface='overlay'] body {
+  background: transparent;
+}
+
 button {
   font: inherit;
   color: inherit;
