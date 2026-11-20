@@ -289,8 +289,8 @@ export const commands = {
   /** Opens or closes the developer tools of the tab's page. */
   'browser.toggleDevTools': { input: tabRef, output: z.void() },
   /**
-   * Shows or hides the window's traffic lights (macOS; no-op elsewhere): shown while the top margin
-   * is open. While shown, main reports the pointer leaving the top band with `window.topHover`.
+   * The window's top margin opened or closed: shows or hides the traffic lights (macOS; no-op
+   * elsewhere), and while open main reports the pointer leaving the top band (`window.topHover`).
    */
   'window.setControlsVisible': {
     input: z.object({ visible: z.boolean() }).strict(),
@@ -338,8 +338,9 @@ export const events = {
   /** To the UI: the window was maximized (`true`) or restored, so the drawn button follows. */
   'window.maximized': z.boolean(),
   /**
-   * To the UI (macOS, while the traffic lights show): whether the pointer is still in the window's
-   * top band. Over the traffic lights the page gets no pointer events, so main watches instead.
+   * To the UI, while the window's top margin is open: whether the pointer is still in the window's
+   * top band. The open margin is a drag region (and holds the macOS traffic lights), where the
+   * page gets no pointer events, so main watches instead.
    */
   'window.topHover': z.boolean(),
 } as const satisfies Record<EventChannel, z.ZodType>

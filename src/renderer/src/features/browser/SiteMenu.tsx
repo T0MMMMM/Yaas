@@ -74,6 +74,7 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
       ref={ref}
       className={`${styles.card} ${popover.alignRight} no-drag`}
       style={place}
+      data-placement="below"
       data-state={closing ? 'closing' : 'open'}
       // While it animates out it takes no focus, keys or clicks.
       inert={closing}

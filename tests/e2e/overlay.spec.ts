@@ -39,11 +39,16 @@ test('the + menu floats over the page', async () => {
     const settings = overlay.getByRole('menuitem', { name: 'Settings' })
     await expect(settings).toBeVisible()
 
-    // The overlay is drawn above the page view: the menu can extend past the sidebar.
-    const menu = await overlay.getByTestId('menu').boundingBox()
+    // The overlay is drawn above the page view: the menu can extend past the sidebar (once it has
+    // grown out of its button).
     const sidebar = await page.getByTestId('sidebar').boundingBox()
-    if (!menu || !sidebar) throw new Error('menu or sidebar not found')
-    expect(menu.x + menu.width).toBeGreaterThan(sidebar.x + sidebar.width)
+    if (!sidebar) throw new Error('sidebar not found')
+    await expect
+      .poll(async () => {
+        const menu = await overlay.getByTestId('menu').boundingBox()
+        return menu ? menu.x + menu.width : 0
+      })
+      .toBeGreaterThan(sidebar.x + sidebar.width)
 
     await settings.click()
     await expect(page.getByTestId('settings')).toBeVisible()

@@ -9,10 +9,6 @@
   padding: var(--space-1);
 }
 
-.menu[data-placement='below'] {
-  transform-origin: top left;
-}
-
 .item {
   display: flex;
   align-items: center;

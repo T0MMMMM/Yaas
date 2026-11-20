@@ -13,9 +13,10 @@ interface WindowControlsProps {
 /**
  * The window's top margin, across the whole window. The window buttons are hidden; resting the
  * pointer on the margin opens it (it grows, the buttons come) and it closes a moment after the
- * pointer leaves. On Windows the buttons are drawn here; on macOS the traffic lights are shown in
- * it, and since the page gets no pointer events over them, main reports when the pointer leaves
- * the top band (`window.topHover`).
+ * pointer leaves. Once open it drags the window. On Windows the buttons are drawn here; on macOS
+ * the traffic lights are shown in it. A drag region (and the traffic lights) gets no pointer
+ * events, so once it is open main reports when the pointer leaves the top band
+ * (`window.topHover`).
  */
 export function WindowControls({ platform, floating = false }: WindowControlsProps) {
   const [state, dispatch] = useReducer(controlsReducer, 'hidden')
@@ -29,17 +30,14 @@ export function WindowControls({ platform, floating = false }: WindowControlsPro
     return window.bigBrowser.on('window.maximized', setMaximized)
   }, [mac])
 
+  // Shows the traffic lights (macOS) and starts main watching the pointer while open.
   useEffect(() => {
-    if (!mac) return
     void window.bigBrowser.invoke('window.setControlsVisible', { visible: open })
-  }, [mac, open])
+  }, [open])
 
   useEffect(
-    () =>
-      mac
-        ? window.bigBrowser.on('window.topHover', (inside) => dispatch(inside ? 'enter' : 'leave'))
-        : undefined,
-    [mac],
+    () => window.bigBrowser.on('window.topHover', (inside) => dispatch(inside ? 'enter' : 'leave')),
+    [],
   )
 
   useEffect(() => {
@@ -56,9 +54,9 @@ export function WindowControls({ platform, floating = false }: WindowControlsPro
       data-floating={floating || undefined}
       data-testid="window-controls"
       onPointerEnter={() => dispatch('enter')}
-      // On macOS, once the lights show, main decides when the pointer has left (see above).
+      // Once open, main decides when the pointer has left (see above).
       onPointerLeave={() => {
-        if (!mac || state === 'revealing') dispatch('leave')
+        if (state === 'revealing') dispatch('leave')
       }}
     >
       {!mac && (

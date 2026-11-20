@@ -655,7 +655,7 @@ test('a huge page title keeps its tooltip small', async () => {
     const tooltip = overlay.getByTestId('tooltip')
     await row.hover()
     await expect(tooltip).toContainText('Huge title')
-    // Three lines of title and two of detail at most, far from the window's height.
+    // Two lines of title and one of detail at most, far from the window's height.
     const box = await tooltip.boundingBox()
     if (!box) throw new Error('tooltip has no box')
     expect(box.height).toBeLessThan(150)

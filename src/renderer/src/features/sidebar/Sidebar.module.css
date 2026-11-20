@@ -4,13 +4,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: 0 var(--space-1) var(--frame-gap) var(--frame-gap);
+  padding: 0 6px 6px;
   min-height: 0;
 }
 
 .titlebar {
-  /* A drag handle level with the address bar (the window buttons live in the top margin). */
-  height: var(--addressbar-h);
+  /* A drag handle: the rows start where they did before the window's top margin sat above. */
+  height: calc(40px - var(--frame-gap));
   flex: none;
 }
 
@@ -52,9 +52,6 @@
    turns into a ×. `!important` overrides the magnetic lean (inline styles, ui/useMagnetic). */
 .iconButton[aria-expanded='true'] {
   background: var(--bg-menu);
-  /* Square where the neck widens into it (the menu opens above). */
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
   color: var(--text);
   transform: none;
   translate: none !important;
@@ -331,7 +328,7 @@ kbd {
 
 /* Favicons in one centred column; titles, shortcuts and counts are gone (tooltips remain). */
 .sidebar[data-compact='true'] {
-  padding: 0 var(--space-1) var(--frame-gap);
+  padding: 0 var(--space-1) 6px;
 }
 
 .sidebar[data-compact='true'] .newTab {

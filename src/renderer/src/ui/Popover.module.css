@@ -9,11 +9,12 @@
   border-radius: var(--radius-lg);
   background: var(--bg-menu);
   box-shadow: var(--shadow-menu);
-  transform-origin: bottom left;
-  animation: open var(--dur-base) var(--ease-bounce);
+  transform-origin: top center;
+  /* The shape grows out of where it opens from (the funnel's tip for an anchored card). */
+  animation: open var(--dur-spring) var(--ease-bounce);
 }
 
-/* The exit: the open keyframes played backwards, while the overlay waits to hide. */
+/* The exit: the shape shrinks back into where it came from, while the overlay waits to hide. */
 .card[data-state='closing'] {
   pointer-events: none;
   animation: close var(--dur-fast) var(--ease) forwards;
@@ -24,7 +25,7 @@
    inside the card's edge, so the neck clears the rounded corner (ui/connector.ts). Bounded to the
    window's edge. */
 .card {
-  --neck-half: calc(var(--connector-w) / 2 + var(--connector-flare));
+  --neck-half: calc(var(--connector-w) / 2);
 }
 
 .alignLeft {
@@ -32,6 +33,13 @@
     0px,
     calc(var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
   );
+  /* Grows from the funnel, which sits that far inside the card's left edge. */
+  --grow-x: calc(var(--radius-lg) + var(--neck-half) + var(--card-border));
+  transform-origin: var(--grow-x) bottom;
+}
+
+.alignLeft[data-placement='below'] {
+  transform-origin: var(--grow-x) top;
 }
 
 .alignRight {
@@ -39,29 +47,38 @@
     0px,
     calc(100vw - var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
   );
+  --grow-x: calc(100% - var(--radius-lg) - var(--neck-half) - var(--card-border));
+  transform-origin: var(--grow-x) top;
+}
+
+.alignRight[data-placement='above'] {
+  transform-origin: var(--grow-x) bottom;
 }
 
 @keyframes open {
   from {
     opacity: 0;
-    transform: translateY(var(--space-1)) scale(0.96);
+    transform: scale(0.1);
+  }
+  40% {
+    opacity: 1;
   }
 }
 
 @keyframes close {
   to {
     opacity: 0;
-    transform: translateY(var(--space-1)) scale(0.96);
+    transform: scale(0.1);
   }
 }
 
-/* The neck joining a card to the button it opens from (ui/PopoverNeck): the card's fill, its edges
-   curving out of the card's border into a stem that meets the button. It covers that stretch of
-   the card's border. Its left is set at runtime (ui/connector.ts); its height is the gap plus the
-   card's border. */
+/* The funnel joining a card to the button it opens from (ui/PopoverNeck): the card's fill, a
+   triangle with round corners leaving the card's border and resting its tip on the button. It
+   covers that stretch of the card's border. Its left is set at runtime (ui/connector.ts); its
+   height is the gap plus the card's border. */
 .connector {
   position: absolute;
-  width: calc(var(--connector-w) + 2 * var(--connector-flare));
+  width: var(--connector-w);
 }
 
 .connector svg {

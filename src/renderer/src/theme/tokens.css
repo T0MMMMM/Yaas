@@ -45,7 +45,7 @@
   --sidebar-w: 248px;
   --titlebar-h: 44px;
   --addressbar-h: 38px;
-  --frame-gap: 10px; /* around and between the frame's panels (sidebar, address bar, card) */
+  --frame-gap: 5px; /* between the frame's floating panels (address bar, card) */
   --row-h: 38px; /* sidebar rows */
   --row-gap: 1px; /* between sidebar rows (lists, the New tab row) */
   --control-size: 30px; /* icon buttons, menu rows, space dots' hit box */
@@ -58,8 +58,7 @@
   --window-controls-h: 32px; /* the window's top margin once open, holding the window buttons (WINDOW_CONTROLS_H) */
   --window-control-w: 44px; /* Windows: one window button (minimize, maximize, close) */
   --tile-min-w: 64px; /* narrowest favourite tile before the grid drops a column */
-  --connector-w: 14px; /* a popover's neck, joining the card to its button */
-  --connector-flare: 8px; /* how far the neck widens, each side, as it flows into the card */
+  --connector-w: 28px; /* a popover's funnel, at its widest (where it leaves the card) */
   --tooltip-max-w: 280px; /* a sidebar tooltip's widest card */
   --title-fade: 24px; /* the tab title's fade-out at the row end */
   --title-fade-hover: 44px; /* the same, widened when the row's buttons show */

@@ -268,13 +268,14 @@ const TOP_BAND_POLL_MS = 100
 let topBandWatch: ReturnType<typeof setInterval> | null = null
 
 /**
- * macOS, while the traffic lights show: the page gets no pointer events over them, so main
- * watches the pointer and tells the UI when it leaves (or comes back to) the window's top band.
+ * While the window's top margin is open: it is a drag region (and on macOS the traffic lights sit
+ * over it), where the page gets no pointer events, so main watches the pointer and tells the UI
+ * when it leaves (or comes back to) the window's top band.
  */
 function watchTopBand(win: BrowserWindow, visible: boolean): void {
   if (topBandWatch !== null) clearInterval(topBandWatch)
   topBandWatch = null
-  if (!visible || process.platform !== 'darwin') return
+  if (!visible || (process.platform !== 'darwin' && process.platform !== 'win32')) return
   let inside = true
   topBandWatch = setInterval(() => {
     if (win.isDestroyed()) return

@@ -48,12 +48,12 @@ Left: session title (editable inline) and environment path. Right, each stat as 
 Both meters can move to the bottom of the sidebar instead (Settings → Appearance → Meters).
 Wherever they are, the meters follow the same rule as the session title: **shown only while a
 session is open**. Without a session and with meters in the
-context bar, the content card takes the full height. On Windows the right edge leaves room for the
-caption buttons.
+context bar, the content card takes the full height. The page card has no border: it sits on the
+frame by its fill and rounded corners alone. The window buttons wait in the top margin (§4).
 
 **Sidebar (top → bottom)**
-- Title row: traffic lights (macOS, `titleBarStyle: 'hiddenInset'`); drag region. The sidebar is
-  always visible (no auto-hide mode).
+- Title row: a drag region (the window buttons wait in the window's top margin above it, §4). The
+  sidebar is always visible (no auto-hide mode).
 - Search / palette trigger: a soft borderless field.
 - **Pinned section**: pinned environments (with their sessions) and pinned sessions, in the user's
   order. No pin icon — being above the separator *is* the pinned state.
@@ -125,16 +125,16 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-menu`,
 `--border-menu`, `--shadow-menu`, rows hovered with `--bg-menu-hover`). A connector joins the card
-to its button: an hourglass neck in the card's fill, the gap (`POPOVER_GAP` 10) tall, whose edges
-leave the card's border tangent to it, narrow into a `--connector-w` stem and widen again into the
-button (by `--connector-flare` on each side), so card, neck and button read as one poured shape
-(`ui/PopoverNeck`, an SVG; only the card's half is outlined; it runs 1 px onto the button). It
+to its button: a funnel in the card's fill and border, the gap (`POPOVER_GAP` 10) tall — a
+triangle pointing at the button with every corner very round: its `--connector-w` wide side
+leaves the card's border tangent to it, its sides run straight in and meet in a broad round tip
+resting on the button (`ui/PopoverNeck`, an SVG; it runs 1 px onto the button). It
 is centred on the button but kept clear of the card's rounded corners (`ui/connector.ts`; the card
 is placed so the button's centre lies that far inside its edge, `.alignLeft`/`.alignRight` in
 `Popover.module.css`); the button takes the
-`--bg-menu` fill while open, at rest (no hover tilt or magnetic lean), its corners square on the
-neck's side. Closing plays the open
-animation backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
+`--bg-menu` fill while open, at rest (no hover tilt or magnetic lean). Opening, the card's shape
+grows out of the funnel's tip from a tenth of its size (`--dur-spring`, `--ease-bounce`; the
+centred cards from their top centre); closing plays it backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
 a chosen item's action runs first, never after the animation. The + menu has a
 filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
 at once), New space, Settings.
@@ -145,8 +145,9 @@ the row, on the popovers' opaque card (`--bg-menu`, `--border-menu`, `--shadow-m
 `--radius-lg`, at most `--tooltip-max-w` wide; no blur): the row's favicon in a small `--bg-tile`
 tile (a globe without an inline one), then the title (semibold, two lines at most) over the host
 in `--text-muted`. Once shown, hovering another row springs the same card there (`top`,
-`--dur-base`, `--ease-bounce`) with no new delay. It pops in from the sidebar's side (a small
-slide and scale, `--ease-bounce`) and fades out (`--dur-fast`); leaving the sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a button, a gap), fades it out (the overlay's strip hides 150 ms later), moving
+`--dur-base`, `--ease-bounce`) with no new delay. Its shape grows out of the sidebar's edge by
+its row (from 15 % of its size, `--dur-spring`, `--ease-bounce`) and shrinks back as it fades out
+(`--dur-fast`); leaving the sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a button, a gap), fades it out (the overlay's strip hides 150 ms later), moving
 onto it hides it at once so the page gets the click, and a press or a drag start clears it. A menu
 always wins: opening one drops the tooltip, and none shows while a menu is open. Folder rows and
 buttons keep their native `title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
@@ -279,7 +280,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 10 (around and between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (popover neck's stem) · `--connector-flare` 8 (how far the neck widens into the card, each side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
@@ -307,12 +308,12 @@ margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
   top right and slide in; Close turns `--danger` on hover. Snap layouts on the maximize button
   are lost (the buttons are not native).
 - **macOS**: the traffic lights are hidden (`window.setControlsVisible`) and shown in the open
-  margin (`trafficLightPosition` 14, 9). The page gets no pointer events over them, so while
-  they show main watches the pointer every 100 ms and reports leaving the top band
-  (`window.topHover`).
-- The margin is not a drag region (Windows sends no pointer events over one); the window drags
-  from the sidebar's top (level with the address bar) and the address bar. During the onboarding
-  the margin floats over the screen.
+  margin (`trafficLightPosition` 14, 9).
+- Closed, the margin is not a drag region (Windows sends no pointer events over one, and the hover
+  is what opens it). Open, it drags the window (its buttons do not); since the page then gets no
+  pointer events there, main watches the pointer every 100 ms and reports leaving the top band
+  (`window.topHover`), on both platforms. The sidebar's top and the address bar drag the window
+  too. During the onboarding the margin floats over the screen.
 
 ## 5. Grain
 
