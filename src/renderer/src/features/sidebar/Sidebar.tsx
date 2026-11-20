@@ -26,8 +26,8 @@ async function newTab(): Promise<void> {
 }
 
 /** Opens the + menu in the overlay view, above the button (it floats over the page). */
-function openNewMenu(button: HTMLElement): void {
-  void window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
+function openNewMenu(button: HTMLElement): Promise<void> {
+  return window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
 /** Only inline images: a remote favicon would load in the UI's own session, outside the space. */
@@ -125,7 +125,8 @@ export function Sidebar() {
           title="New…"
           onClick={(e) => {
             setMenuOpen(true)
-            openNewMenu(e.currentTarget)
+            // If the overlay cannot open, nothing will ever send `overlay.closed`.
+            openNewMenu(e.currentTarget).catch(() => setMenuOpen(false))
           }}
           {...magnet}
         >

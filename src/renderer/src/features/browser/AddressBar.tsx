@@ -152,10 +152,9 @@ export function AddressBar() {
           onClick={(e) => {
             setSiteMenuOpen(true)
             // The menu floats over the page in the overlay view, under the button.
-            void window.acab.invoke('overlay.open', {
-              kind: 'site-menu',
-              anchor: anchorOf(e.currentTarget),
-            })
+            window.acab
+              .invoke('overlay.open', { kind: 'site-menu', anchor: anchorOf(e.currentTarget) })
+              .catch(() => setSiteMenuOpen(false))
           }}
         >
           <SlidersHorizontal size={15} weight="bold" />
