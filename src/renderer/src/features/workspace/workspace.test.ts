@@ -123,7 +123,17 @@ describe('browserView', () => {
       canGoBack: true,
       canGoForward: false,
       themeColor: '#123456',
+      loaded: true,
     })
+  })
+
+  it('browserView marks tabs without runtime as not loaded', () => {
+    const view = browserView(browser)
+    expect(view.tabs.map((t) => [t.id, t.loaded])).toEqual([
+      ['a', false],
+      ['b', true],
+      ['c', false],
+    ])
   })
 
   it('browserView falls back to empty runtime for an unloaded tab', () => {

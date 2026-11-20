@@ -174,6 +174,17 @@ kbd {
   transform: rotate(var(--tilt-selected));
 }
 
+.row[data-loaded='false'] {
+  opacity: var(--opacity-unloaded);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.row[data-loaded='false'][data-active='true'],
+.item:hover .row[data-loaded='false'],
+.row[data-loaded='false']:focus-visible {
+  opacity: 1;
+}
+
 .row[data-active='true'] .rowTitle {
   font-weight: 600;
 }

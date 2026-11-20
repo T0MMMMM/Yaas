@@ -63,6 +63,8 @@
   --dur-spring: 260ms; /* magnetic spring-back */
   --dur-spin: 900ms; /* one turn of the loading spinner */
 
+  --opacity-unloaded: 0.5; /* sidebar tabs whose page is not loaded yet */
+
   /* the "askew card" motion: selected and hovered items tilt slightly */
   --tilt-selected: -0.8deg;
   --tilt-hover: -0.4deg;

@@ -80,6 +80,7 @@ export function Sidebar() {
                 <button
                   className={styles.row}
                   data-active={active}
+                  data-loaded={tab.loaded}
                   aria-current={active ? 'page' : undefined}
                   title={tab.url}
                   onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}

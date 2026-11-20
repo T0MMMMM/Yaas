@@ -239,6 +239,37 @@ test('tabs survive a relaunch', async () => {
   }
 })
 
+test('restored tabs stay dim until visited', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const site = await startSite()
+  try {
+    const first = await launchApp(userData)
+    const page = await first.firstWindow()
+    await finishOnboarding(page)
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+    await first.close()
+
+    const second = await launchApp(userData)
+    try {
+      const again = await second.firstWindow()
+      const tabs = again.getByTestId('tab')
+      await expect(tabs).toHaveText(['Page A', 'Page B'])
+      await expect(tabs.nth(0).getByRole('button').first()).toHaveAttribute('data-loaded', 'false')
+      await expect(tabs.nth(1).getByRole('button').first()).toHaveAttribute('data-loaded', 'true')
+
+      await tabs.nth(0).getByRole('button').first().click()
+      await expect(tabs.nth(0).getByRole('button').first()).toHaveAttribute('data-loaded', 'true')
+    } finally {
+      await second.close()
+    }
+  } finally {
+    await site.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})
+
 test('shortcuts work while a page has focus', async () => {
   await withBrowser(async ({ app, page, site }) => {
     const clickMenu = (id: string) =>

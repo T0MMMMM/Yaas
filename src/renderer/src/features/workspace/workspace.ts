@@ -27,6 +27,8 @@ export interface TabView {
   canGoBack: boolean
   canGoForward: boolean
   themeColor: string | null
+  /** Main has a view for it: its page was loaded at least once in this run. */
+  loaded: boolean
 }
 
 export interface BrowserView {
@@ -52,6 +54,7 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
     host,
     rest,
     ...(runtime ?? IDLE),
+    loaded: runtime !== undefined,
   }
 }
 
