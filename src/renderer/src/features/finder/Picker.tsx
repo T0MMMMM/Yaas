@@ -47,7 +47,8 @@ export function Picker({
   const index = Math.min(selected, rows.length - 1)
 
   const run = (row: PickerRow | undefined) => {
-    if (!row) return
+    // A closing card runs nothing more (a quick second Enter would run the row twice).
+    if (!row || closing) return
     // The action first: the exit animation only delays hiding the card.
     onRun(row)
     onClose()
@@ -60,6 +61,8 @@ export function Picker({
       ref={ref}
       className={`${styles.card} no-drag`}
       data-state={closing ? 'closing' : 'open'}
+      // While it animates out it takes no focus, keys or clicks.
+      inert={closing}
       data-testid={testId}
     >
       <input

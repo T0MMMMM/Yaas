@@ -170,3 +170,36 @@ test('⌘L while the command field is open closes it and edits the address', asy
     await expect(page.getByLabel('Address')).toBeFocused()
   })
 })
+
+test('a second Enter while the + menu closes does not run its item again', async () => {
+  await withTabs(async ({ page, overlay }) => {
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    const filter = overlay.getByLabel('Filter')
+    await expect(filter).toBeFocused()
+    await filter.pressSequentially('space')
+    await expect(overlay.getByRole('menuitem')).toHaveText(['New space'])
+    // Both within the card's exit animation.
+    await overlay.keyboard.press('Enter')
+    await overlay.keyboard.press('Enter')
+
+    await expect(overlay.getByTestId('menu')).toHaveCount(0)
+    await page.waitForTimeout(300)
+    await expect(page.getByRole('tablist', { name: 'Spaces' }).getByRole('tab')).toHaveCount(2)
+  })
+})
+
+test('a second Enter while the command field closes does not open a second tab', async () => {
+  await withTabs(async ({ app, page, overlay, site }) => {
+    await clickMenu(app, 'newTab')
+    const field = overlay.getByLabel('Search or enter address')
+    await expect(field).toBeFocused()
+    await field.fill(site.url('/c'))
+    await expect(overlay.getByRole('option').first()).toHaveText(`Go to ${site.url('/c')}`)
+    await overlay.keyboard.press('Enter')
+    await overlay.keyboard.press('Enter')
+
+    await expect(overlay.getByTestId('command-field')).toHaveCount(0)
+    await page.waitForTimeout(300)
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+  })
+})

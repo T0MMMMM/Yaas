@@ -58,6 +58,7 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
 
   /** Runs a command on the tab and closes the menu: it opens something else (a menu, a window). */
   const act = (command: 'browser.share' | 'browser.toggleDevTools') => () => {
+    if (closing) return
     if (tab) void window.acab.invoke(command, { tabId: tab.id })
     onClose()
   }
@@ -73,6 +74,8 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
       className={`${styles.card} ${popover.alignRight} no-drag`}
       style={place}
       data-state={closing ? 'closing' : 'open'}
+      // While it animates out it takes no focus, keys or clicks.
+      inert={closing}
       role="dialog"
       aria-label="Site menu"
       data-testid="site-menu"

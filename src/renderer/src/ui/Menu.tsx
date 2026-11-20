@@ -55,8 +55,10 @@ export function Menu({
   useDismiss(ref, onClose)
   const connector = useConnector(anchor)
 
-  // The action first: the exit animation only delays hiding the menu.
+  // The action first: the exit animation only delays hiding the menu. A closing menu takes no
+  // more choices (a quick second Enter would run the item twice).
   const choose = (item: Exclude<MenuItem, 'separator'>) => {
+    if (closing) return
     item.onSelect()
     onClose()
   }
@@ -89,6 +91,8 @@ export function Menu({
       style={place}
       data-placement={placement}
       data-state={closing ? 'closing' : 'open'}
+      // While it animates out it takes no focus, keys or clicks.
+      inert={closing}
       role="menu"
       onKeyDown={onKeyDown}
       data-testid="menu"
