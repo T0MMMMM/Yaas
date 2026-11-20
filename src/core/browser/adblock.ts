@@ -39,6 +39,14 @@ export function diffAllowed(
   return { added: added.flatMap(exceptionFilters), removed: removed.flatMap(exceptionFilters) }
 }
 
+/** How long the cached filter lists are used before a launch downloads them again. */
+export const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000
+
+/** Whether a cache written at `mtimeMs` is too old to use without trying a fresh download. */
+export function isCacheStale(mtimeMs: number, nowMs: number): boolean {
+  return nowMs - mtimeMs > CACHE_MAX_AGE_MS
+}
+
 /** Runs `load`; a failure (offline, corrupt cache) is logged and gives null: no blocking. */
 export async function loadEngine<T>(
   load: () => Promise<T>,

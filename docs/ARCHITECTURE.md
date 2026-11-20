@@ -441,10 +441,16 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Ad blocker.** Built in and on by default (spec §8): Ghostery's engine
   (`@ghostery/adblocker-electron`, `main/browser/adBlocker.ts`) blocks ads and trackers in every
   space session. It loads once at startup without holding up the window
-  (`fromPrebuiltAdsAndTracking`, cached at `<userData>/adblock-engine.bin`); `SpaceSessions`
-  enables it on the sessions set up before it arrives and on every later one. If it fails
-  (offline, first launch) it logs and the app browses without it (`loadEngine` in
-  `core/browser/adblock.ts`). Settings: `adBlock: { enabled, allowedHosts }`. The per-site toggle
+  (`fromPrebuiltAdsAndTracking`, serialized to `<userData>/adblock-engine.bin`). The cache is used
+  while under 7 days old (`isCacheStale` in `core/browser/adblock.ts`); an older one makes the
+  launch download the lists again, falling back to the old cache when offline. A cache that can't
+  be written is logged, the fresh engine is kept. Lists refresh only at launch. `SpaceSessions`
+  enables it on the sessions set up before it arrives and on every later one; a blocker error is
+  logged and never stops a space being set up. If loading fails (offline on first launch) it logs
+  and the app browses without it (`loadEngine`). Ghostery registers two global `ipcMain`
+  handlers per enabled session (a second registration throws), so `AdBlocker` drops them before
+  each enable and restores them on disable while another session still blocks; the two-space e2e
+  covers it. Settings: `adBlock: { enabled, allowedHosts }`. The per-site toggle
   adds exception filters to the engine in place (`updateFromDiff`): `@@*$domain=<host>` (every
   request made by the host's pages) and `@@||<host>^$elemhide` (their element hiding) — Ghostery's
   `$document` only matches the page request itself. Ghostery matches the page by the request's

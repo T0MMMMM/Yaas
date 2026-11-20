@@ -1,5 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
-import { diffAllowed, diffHosts, exceptionFilters, hostOf, loadEngine } from './adblock'
+import {
+  CACHE_MAX_AGE_MS,
+  diffAllowed,
+  diffHosts,
+  exceptionFilters,
+  hostOf,
+  isCacheStale,
+  loadEngine,
+} from './adblock'
 
 describe('exceptionFilters', () => {
   it('allows the requests and the element hiding of the pages of a host', () => {
@@ -42,6 +50,20 @@ describe('diffAllowed', () => {
 
   it('is empty when nothing changed', () => {
     expect(diffAllowed(['a.com'], ['a.com'])).toEqual({ added: [], removed: [] })
+  })
+})
+
+describe('isCacheStale', () => {
+  const now = Date.parse('2026-11-20T12:00:00Z')
+
+  it('keeps a cache up to 7 days old', () => {
+    expect(isCacheStale(now - CACHE_MAX_AGE_MS, now)).toBe(false)
+    expect(isCacheStale(now - 60_000, now)).toBe(false)
+  })
+
+  it('refreshes a cache older than 7 days', () => {
+    expect(CACHE_MAX_AGE_MS).toBe(7 * 24 * 60 * 60 * 1000)
+    expect(isCacheStale(now - CACHE_MAX_AGE_MS - 1, now)).toBe(true)
   })
 })
 
