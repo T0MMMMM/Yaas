@@ -453,6 +453,9 @@ test('tooltips slide from row to row', async () => {
   await withBrowser(async ({ app, page, site }) => {
     await openTab(page, site.url('/b'))
     await openTab(page, site.url('/a'))
+    await page.evaluate(() => window.acab.invoke('browser.createFolder', { name: 'Reading' }))
+    const folderRow = page.getByTestId('pinned').getByRole('button', { name: 'Reading' })
+    await expect(folderRow).toBeVisible()
     const today = page.getByTestId('today')
     const rowA = today.getByRole('button', { name: 'Page A', exact: true })
     const rowB = today.getByRole('button', { name: 'Page B', exact: true })
@@ -490,6 +493,17 @@ test('tooltips slide from row to row', async () => {
     expect(
       await overlay.evaluate(() => (window as unknown as { tooltipGaps: number }).tooltipGaps),
     ).toBe(0)
+
+    // Off the tab rows (a folder row keeps its native title), the tooltip goes, and a row left
+    // before the delay never shows one.
+    await folderRow.hover()
+    await expect(tooltip).toHaveCount(0)
+    await rowA.hover()
+    await folderRow.hover()
+    await page.waitForTimeout(700)
+    await expect(tooltip).toHaveCount(0)
+    await rowB.hover()
+    await expect(tooltip).toContainText('Page B')
 
     // The pointer leaves the sidebar onto the page, over the strip: the tooltip hides at once, and
     // the click reaches the page.

@@ -184,7 +184,11 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
     const row = page.getByTestId('tab').getByRole('button').first()
     await expect(row).toHaveAttribute('aria-label', /.+/)
     await row.hover()
-    await expect((await overlayPage(app)).getByTestId('tooltip')).toBeVisible()
+    const tooltip = (await overlayPage(app)).getByTestId('tooltip')
+    await expect(tooltip).toBeVisible()
+    // Off the sidebar it goes; showing or hiding the overlay mid-drag would disturb the drag below.
+    await page.mouse.move(400, 400)
+    await expect(tooltip).toHaveCount(0)
     await expect(page.getByTestId('tab').locator('span')).toBeHidden()
     // The page card still follows the sidebar.
     const slot = async () => {

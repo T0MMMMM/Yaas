@@ -85,6 +85,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             data-testid="sidebar"
             data-compact={compact}
             data-dragging={dragging || undefined}
+            onPointerOver={tooltip.over}
             onPointerLeave={tooltip.leave}
             onPointerDownCapture={tooltip.press}
           >

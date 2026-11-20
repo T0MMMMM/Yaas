@@ -2,6 +2,12 @@ import type { Tooltip } from '@shared/ipc/contract'
 
 /** How long the pointer rests on a row before its tooltip shows. */
 export const TOOLTIP_DELAY_MS = 500
+/**
+ * How long the pointer may rest on a part of the sidebar without a tooltip (a folder row, a button,
+ * a gap between rows) before the tooltip goes: short enough to feel immediate, long enough for a
+ * move across a gap to the next row to keep sliding.
+ */
+export const TOOLTIP_GRACE_MS = 80
 
 /** The sidebar's tooltip: the one shown in the overlay, and the one waiting for the delay. */
 export interface TooltipState {
