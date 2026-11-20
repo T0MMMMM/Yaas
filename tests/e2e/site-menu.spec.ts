@@ -63,6 +63,27 @@ test('extension actions are listed', async () => {
   })
 })
 
+test("an extension action opens its popup in the space's session", async () => {
+  await withSiteMenu(async ({ app, page, overlay }) => {
+    await overlay.locator('[title="ACAB Test Action"]').click()
+    const { activeSpaceId } = await page.evaluate(() => window.acab.invoke('browser.state'))
+    // Not checked for visibility: under Playwright's launch the library never gets
+    // `preferred-size-changed`, so the popup stays hidden (it shows in a normal run).
+    await expect
+      .poll(() =>
+        app.evaluate(({ BrowserWindow, session }, partition) => {
+          const ses = session.fromPartition(partition)
+          return BrowserWindow.getAllWindows().some(
+            (w) =>
+              /^chrome-extension:\/\/[a-p]{32}\/popup\.html$/.test(w.webContents.getURL()) &&
+              w.webContents.session === ses,
+          )
+        }, `persist:space-${activeSpaceId}`),
+      )
+      .toBe(true)
+  })
+})
+
 test('developer tools open for the tab', async () => {
   await withSiteMenu(async ({ app, page, overlay }) => {
     await overlay.getByRole('button', { name: 'Developer tools' }).click()

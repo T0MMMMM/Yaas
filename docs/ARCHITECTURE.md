@@ -327,6 +327,19 @@ The preload exposes only `invoke(channel, payload)` and `on(event, cb)`, with th
 as `keyof typeof commands`; main rejects unknown channels and invalid payloads. Streaming deltas are
 **batched per ~16 ms** before crossing IPC to avoid flooding the renderer.
 
+**The one exception: `window.browserAction` in the overlay.** The site menu lists the tab's
+extension actions with `<browser-action-list>` from `electron-chrome-extensions`, which only works
+with the library's own bridge. So the preload calls `injectBrowserAction()` (bundled into the
+preload) **only when the page is the overlay** (`location.hash === '#overlay'`); the UI window
+never gets it. It defines the `<browser-action-list>` / `<browser-action>` elements and exposes
+`window.browserAction`: `getState(partition)`, `activate(partition, details)` (click: run the
+action or open its popup; right-click: its context menu), `addObserver` / `removeObserver` and
+update listeners. It goes through the library's `crx-msg-remote` channel, not through
+`window.acab`, and gives no raw `ipcRenderer`. Note the library's `browserAction.getState` /
+`activate` handlers accept **any sender** (`allowRemote: true`) for any partition: the exposure is
+the library's, registered on `ipcMain` as soon as a space session exists, and the overlay only
+uses it to read and activate actions.
+
 ## 7. Key flows
 
 ### 7.1 Send a message (with a permission request)
