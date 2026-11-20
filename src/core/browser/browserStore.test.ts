@@ -127,6 +127,13 @@ const positions = (
   return [...tabs, ...folders].sort((a, b) => a - b)
 }
 
+/** Today's tab ids by stored position (snapshot order). */
+const todayByPosition = (store: BrowserStore, spaceId: string): string[] =>
+  store
+    .snapshot()
+    .tabs.filter((t) => t.spaceId === spaceId && t.section === 'today')
+    .map((t) => t.id)
+
 describe('BrowserStore organisation', () => {
   it('migrates a plan-1 database with its tabs in today', () => {
     const db = new DatabaseSync(':memory:')
@@ -271,6 +278,57 @@ describe('BrowserStore organisation', () => {
       position: 1,
     })
     expect(store.snapshot().activeTabIds[other.id]).toBe(reopened?.id)
+  })
+
+  it('a plain new tab opened from a child goes after the whole top-level subtree', () => {
+    const { store, spaceId } = setup()
+    const x = store.openTab(spaceId, 'x')
+    const z = store.openTab(spaceId, 'z')
+    const a = store.openTab(spaceId, 'a', { parentId: x.id })
+    const b = store.openTab(spaceId, 'b', { parentId: x.id })
+    store.activateTab(a.id)
+    const n = store.openTab(spaceId, 'n')
+    expect(n.parentId).toBeNull()
+    expect(store.visibleOrder(spaceId)).toEqual(todayByPosition(store, spaceId))
+    expect(store.visibleOrder(spaceId)).toEqual([x.id, a.id, b.id, n.id, z.id])
+  })
+
+  it('moving a parent within today moves its whole subtree', () => {
+    const { store, spaceId } = setup()
+    const x = store.openTab(spaceId, 'x')
+    const z = store.openTab(spaceId, 'z')
+    const w = store.openTab(spaceId, 'w')
+    const a = store.openTab(spaceId, 'a', { parentId: x.id })
+    store.moveTab(x.id, { section: 'today', index: 1 })
+    expect(store.visibleOrder(spaceId)).toEqual(todayByPosition(store, spaceId))
+    expect(store.visibleOrder(spaceId)).toEqual([z.id, x.id, a.id, w.id])
+    expect(store.snapshot().tabs.find((t) => t.id === a.id)?.parentId).toBe(x.id)
+  })
+
+  it('moving a child within today un-nests it', () => {
+    const { store, spaceId } = setup()
+    const x = store.openTab(spaceId, 'x')
+    const z = store.openTab(spaceId, 'z')
+    const a = store.openTab(spaceId, 'a', { parentId: x.id })
+    const b = store.openTab(spaceId, 'b', { parentId: x.id })
+    store.moveTab(b.id, { section: 'today', index: 0 })
+    expect(store.visibleOrder(spaceId)).toEqual(todayByPosition(store, spaceId))
+    expect(store.visibleOrder(spaceId)).toEqual([b.id, x.id, a.id, z.id])
+    expect(store.snapshot().tabs.find((t) => t.id === b.id)?.parentId).toBeNull()
+  })
+
+  it('a tab dropped inside a subtree in today goes after that subtree', () => {
+    const { store, spaceId } = setup()
+    const x = store.openTab(spaceId, 'x')
+    const z = store.openTab(spaceId, 'z')
+    const a = store.openTab(spaceId, 'a', { parentId: x.id })
+    const b = store.openTab(spaceId, 'b', { parentId: x.id })
+    const p = store.openTab(spaceId, 'p')
+    store.moveTab(p.id, { section: 'pinned', index: 0 })
+    store.moveTab(z.id, { section: 'today', index: 1 })
+    store.moveTab(p.id, { section: 'today', index: 2 })
+    expect(store.visibleOrder(spaceId)).toEqual(todayByPosition(store, spaceId))
+    expect(store.visibleOrder(spaceId)).toEqual([x.id, a.id, b.id, p.id, z.id])
   })
 
   it('reopenClosed on an empty stack returns null', () => {

@@ -183,8 +183,9 @@ export class BrowserStore {
 
   /**
    * Opens a today tab. With a today `parentId` it goes after the parent's last descendant; a
-   * child of a pinned or favourite tab goes to the top of today. Otherwise it goes after the
-   * active today tab's descendants, or at the end of today.
+   * child of a pinned or favourite tab goes to the top of today. Otherwise it is a top-level tab
+   * right after the subtree of the active today tab's top-level ancestor, or at the end of today.
+   * Today's positions always follow its drawn (depth-first) order.
    */
   openTab(
     spaceId: string,
@@ -201,7 +202,7 @@ export class BrowserStore {
     if (opener) {
       position = opener.section === 'today' ? this.lastDescendantPosition(opener) + 1 : 0
     } else if (active?.section === 'today') {
-      position = this.lastDescendantPosition(active) + 1
+      position = this.lastDescendantPosition(this.topLevelAncestor(active)) + 1
     } else {
       position = this.listLength(today)
     }
@@ -262,10 +263,16 @@ export class BrowserStore {
 
   /**
    * Moves a tab to `index` of a list (a folder only in pinned), keeping both lists contiguous.
-   * Leaving today drops its parent and hands its children to that parent.
+   * Leaving today drops its parent and hands its children to that parent. Into today, see
+   * moveIntoToday: `index` is in drawn order and the tab's subtree moves with it.
    */
   moveTab(id: string, to: { section: TabSection; folderId?: string | null; index: number }): void {
     const tab = this.requireTab(id)
+    if (to.section === 'today') {
+      this.transaction(() => this.moveIntoToday(tab, to.index))
+      this.emit()
+      return
+    }
     const folderId = to.section === 'pinned' ? (to.folderId ?? null) : null
     if (folderId !== null && this.requireFolder(folderId).space_id !== tab.space_id) {
       throw new BrowserError('not_found', `Unknown folder in this space: ${folderId}`)
@@ -273,7 +280,7 @@ export class BrowserStore {
     const source = keyOf(tab)
     const target: ListKey = { spaceId: tab.space_id, section: to.section, folderId }
     const sameList = source.section === target.section && source.folderId === target.folderId
-    const leavesToday = tab.section === 'today' && to.section !== 'today'
+    const leavesToday = tab.section === 'today'
     this.transaction(() => {
       // Out of every list while the others close up and make room.
       this.db.prepare('UPDATE tabs SET position = -1 WHERE id = ?').run(id)
@@ -469,24 +476,81 @@ export class BrowserStore {
     return after ?? before ?? null
   }
 
-  /** Position of the last tab of `tab`'s today subtree (`tab`'s own when it has no children). */
-  private lastDescendantPosition(tab: TabRow): number {
-    const today = this.db
-      .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'today'")
-      .all(tab.space_id) as unknown as TabRow[]
+  /** A space's today tabs, by position. */
+  private todayRows(spaceId: string): TabRow[] {
+    return this.db
+      .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'today' ORDER BY position")
+      .all(spaceId) as unknown as TabRow[]
+  }
+
+  /** Ids of `tab` and its descendants among `today`. */
+  private subtreeIds(tab: TabRow, today: TabRow[]): Set<string> {
     const subtree = new Set([tab.id])
-    let last = tab.position
     for (let grew = true; grew;) {
       grew = false
       for (const t of today) {
         if (t.parent_id !== null && subtree.has(t.parent_id) && !subtree.has(t.id)) {
           subtree.add(t.id)
-          last = Math.max(last, t.position)
           grew = true
         }
       }
     }
-    return last
+    return subtree
+  }
+
+  /** Position of the last tab of `tab`'s today subtree (`tab`'s own when it has no children). */
+  private lastDescendantPosition(tab: TabRow): number {
+    const today = this.todayRows(tab.space_id)
+    const subtree = this.subtreeIds(tab, today)
+    return Math.max(...today.filter((t) => subtree.has(t.id)).map((t) => t.position), tab.position)
+  }
+
+  /** The today tab at the root of `tab`'s branch (`tab` itself when it is top-level). */
+  private topLevelAncestor(tab: TabRow): TabRow {
+    const byId = new Map(this.todayRows(tab.space_id).map((t) => [t.id, t]))
+    const seen = new Set([tab.id])
+    let root = tab
+    for (;;) {
+      const parent = root.parent_id === null ? undefined : byId.get(root.parent_id)
+      if (!parent || seen.has(parent.id)) return root
+      seen.add(parent.id)
+      root = parent
+    }
+  }
+
+  /**
+   * Moves `tab` and its today subtree to `index` of today's drawn order, counted without the
+   * moved tabs. The tab becomes top-level (a child is un-nested); dropped inside another tab's
+   * subtree, it goes after that subtree. Today is then renumbered in drawn order. Run inside a
+   * transaction.
+   */
+  private moveIntoToday(tab: TabRow, index: number): void {
+    const fromToday = tab.section === 'today'
+    if (!fromToday) {
+      this.db.prepare('UPDATE tabs SET position = -1 WHERE id = ?').run(tab.id)
+      this.shift(keyOf(tab), tab.position + 1, -1)
+    }
+    const today = this.todayRows(tab.space_id)
+    const block = fromToday ? this.subtreeIds(tab, today) : new Set([tab.id])
+    const order = treeOrder(today)
+    const moved = fromToday ? order.filter((id) => block.has(id)) : [tab.id]
+    const rest = today.filter((t) => !block.has(t.id))
+    const restIds = new Set(rest.map((t) => t.id))
+    const restOrder = order.filter((id) => restIds.has(id))
+    const byId = new Map(rest.map((t) => [t.id, t]))
+    const isRoot = (id: string): boolean => {
+      const parent = byId.get(id)?.parent_id ?? null
+      return parent === null || !restIds.has(parent)
+    }
+    let at = Math.max(0, Math.min(index, restOrder.length))
+    while (at < restOrder.length && !isRoot(restOrder[at] ?? '')) at++
+    this.db
+      .prepare("UPDATE tabs SET section = 'today', folder_id = NULL, parent_id = NULL WHERE id = ?")
+      .run(tab.id)
+    const update = this.db.prepare('UPDATE tabs SET position = ? WHERE id = ?')
+    ;[...restOrder.slice(0, at), ...moved, ...restOrder.slice(at)].forEach((id, position) =>
+      update.run(position, id),
+    )
   }
 
   /** Puts a closed tab back (see reopenClosed) and returns its new row. */
