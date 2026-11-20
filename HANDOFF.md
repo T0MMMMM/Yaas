@@ -38,11 +38,24 @@
 2. ~~Plan 1 (daily-driver browser core)~~ — done: `docs/superpowers/plans/2026-11-20-acab-browser-core.md`.
 3. ~~Plan 2 (Extensions & site menu)~~ — done: `docs/superpowers/plans/2026-11-20-acab-extensions-site-menu.md`.
 4. ~~Plan 3 (Organisation)~~ — done: `docs/superpowers/plans/2026-11-20-acab-organisation.md`.
-5. Write and follow **plan 4** (window features: split view, downloads, several windows, default
+5. ~~Plan 3b-A (sidebar look and motion)~~ — done: `docs/superpowers/plans/2026-11-20-acab-sidebar-finish-look.md`.
+6. Write and follow **plan 3b-B** (`2026-11-20-acab-sidebar-finish-structure.md`; spec
+   `docs/superpowers/specs/2026-11-20-acab-sidebar-finish-design.md`, goals 1 and 3–10, 26, 28).
+   The space section's expand/collapse height animation (goal 24) belongs here, with the space
+   section itself (goal 7).
+7. Then write and follow **plan 4** (window features: split view, downloads, several windows, default
    browser) in `docs/superpowers/plans/` (superpowers:writing-plans), from the design spec's
    roadmap.
 
+## To check by hand
+
+- Hover a tab, move straight right onto the page and click a link at once: the first click must
+  land (the tooltip overlay hides on entry). Playwright cannot drive real cross-view input. Check
+  on macOS and Windows.
+
 ## Gotchas
+
+- On Windows, `cli.test.ts` "findCli prefers PATH" fails; it is pre-existing and unrelated to 3b-A.
 
 - The owner speaks **French**; docs, code and commits stay in English (`CLAUDE.md`).
 - Electron 45 downloads its binary on first run, not in `postinstall`. After `npm ci`, run

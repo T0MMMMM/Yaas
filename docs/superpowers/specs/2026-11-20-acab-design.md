@@ -88,6 +88,10 @@ The repo is renamed to ACAB in step 1; the YAAS docs stay as the reference for s
 
 ### 5.1 Step 1 — daily-driver browser
 
+Plans for this step: 1 browser core, 2 extensions and site menu, 3 organisation, **3b sidebar
+finish** (3b-A look and motion: done; 3b-B structure; spec
+`2026-11-20-acab-sidebar-finish-design.md`), 4 window features, then 5 settings and 6 onboarding.
+
 Goal: the owner can leave Arc the next day without missing anything. Day-one list [Claude's
 proposal, accepted by the owner 2026-11-20]:
 - vertical tabs in the sidebar, in the repo's visual style, with nested tabs under a parent and
@@ -147,8 +151,9 @@ proposal, accepted by the owner 2026-11-20]:
 The **shape** of yab's menus and settings is the model for all of ACAB's menus: popovers made of
 grouped cards, icon-button rows, section titles with a right-hand action, rows with an icon, a
 title and a status line, segmented controls, dropdowns and toggles. They are drawn **in the
-`style/visual-pass` look** (Satoshi, glass, grain, drawn controls) [Claude's reading — the owner
-asked to keep that visual design].
+`style/visual-pass` look** (system font, grain, drawn controls) [Claude's reading — the owner
+asked to keep that visual design]. **Menus and popovers are opaque** (white / grey, `--bg-menu`),
+not glass (decided in plan 3b-A; see `docs/DESIGN.md` §3.1).
 
 - **Site menu** (button in the address bar):
   - a row of quick actions — share, capture, hide an element, translate;
