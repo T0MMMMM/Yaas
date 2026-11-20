@@ -25,6 +25,7 @@ import {
   PRELOAD_PATH,
   rendererUrl,
   setWindowControlsVisible,
+  toggleMaximize,
 } from './windows/mainWindow'
 
 /** The `browser.*` mirror registered on every space session (spike fix 1). */
@@ -256,6 +257,8 @@ function openMainWindow(): void {
     emit(overlayView.webContents, 'overlay.closed', undefined)
   })
   overlay = overlayView
+  win.on('maximize', () => emit(win.webContents, 'window.maximized', true))
+  win.on('unmaximize', () => emit(win.webContents, 'window.maximized', false))
   tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, () => overlayView.raise())
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
@@ -314,6 +317,12 @@ registerCommands(
     'window.setControlsVisible': ({ visible }) => {
       if (mainWindow) setWindowControlsVisible(mainWindow, visible)
     },
+    'window.minimize': () => mainWindow?.minimize(),
+    'window.toggleMaximize': () => {
+      if (mainWindow) toggleMaximize(mainWindow)
+    },
+    'window.close': () => mainWindow?.close(),
+    'window.isMaximized': () => mainWindow?.isMaximized() ?? false,
     'overlay.open': (request) => overlayView().open(request),
     'overlay.close': () => overlayView().close(),
     // From the overlay itself, the pointer is on the strip: hide it at once so the page gets the click.

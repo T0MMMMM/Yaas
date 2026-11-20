@@ -515,6 +515,9 @@ results come back to the lead as a short summary + branch name, never the full c
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): the UI hides them in icon-only mode.
+  Windows has no native caption buttons (no `titleBarOverlay`): the UI draws minimize / maximize /
+  close and calls `window.minimize`, `window.toggleMaximize`, `window.close`; it reads
+  `window.isMaximized` once and follows the `window.maximized` event (maximize / restore icon).
 - **Lazy loading.** A view is created the first time its tab is active, so restored and
   unloaded tabs don't load until visited; closing or unloading a tab destroys its view
   (`webContents.close()`).

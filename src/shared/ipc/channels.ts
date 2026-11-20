@@ -33,6 +33,10 @@ export const COMMAND_CHANNELS = [
   'browser.toggleDevTools',
   'browser.openWebStore',
   'window.setControlsVisible',
+  'window.minimize',
+  'window.toggleMaximize',
+  'window.close',
+  'window.isMaximized',
   'overlay.open',
   'overlay.close',
   'overlay.tooltip',
@@ -49,6 +53,7 @@ export const EVENT_CHANNELS = [
   'overlay.opened',
   'overlay.tooltip',
   'overlay.closed',
+  'window.maximized',
 ] as const
 
 export type CommandChannel = (typeof COMMAND_CHANNELS)[number]

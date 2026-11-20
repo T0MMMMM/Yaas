@@ -7,6 +7,7 @@ import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
 import { useSidebarResize } from './useSidebarResize'
+import { WindowControls } from './WindowControls'
 import styles from './Shell.module.css'
 
 /** Whether ⌘Z in `el` is a text undo: an input, a text area or editable content. */
@@ -22,6 +23,7 @@ export function Shell() {
   const resize = useSidebarResize()
   // Only macOS has traffic lights to bring back; elsewhere the corner keeps dragging the window.
   const mac = useSettings((s) => s.info?.platform === 'mac')
+  const windows = useSettings((s) => s.info?.platform === 'windows')
 
   useEffect(() => initBrowser(), [initBrowser])
 
@@ -91,6 +93,7 @@ export function Shell() {
       </div>
 
       <div className={styles.column}>
+        {windows && <WindowControls />}
         <div className={styles.page}>
           <AddressBar />
           <main className={styles.card}>

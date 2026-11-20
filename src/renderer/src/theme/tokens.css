@@ -55,7 +55,8 @@
   --favicon-size: 18px; /* tab favicons */
   --tile-h: 44px; /* favourite tiles */
   --tile-icon-size: 22px; /* the favicon of a favourite tile */
-  --titlebar-overlay-w: 0px; /* Windows caption buttons */
+  --window-controls-h: 32px; /* Windows: the top margin once open, holding the window buttons */
+  --window-control-w: 44px; /* Windows: one window button (minimize, maximize, close) */
   --tile-min-w: 64px; /* narrowest favourite tile before the grid drops a column */
   --connector-w: 14px; /* a popover's neck, joining the card to its button */
   --title-fade: 24px; /* the tab title's fade-out at the row end */
@@ -186,10 +187,6 @@
   --surface-alpha: 0.7;
   --glass-edge: rgb(255 255 255 / 0.18);
   --glass-panel: color-mix(in srgb, var(--neutral-surface) 70%, transparent);
-}
-
-:root[data-platform='windows'] {
-  --titlebar-overlay-w: 140px;
 }
 
 @media (prefers-reduced-transparency: reduce) {

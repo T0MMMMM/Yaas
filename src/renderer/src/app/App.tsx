@@ -6,6 +6,7 @@ import { applyTheme, onSystemSchemeChange } from '../theme/applyTheme'
 import { Onboarding } from '../features/onboarding/Onboarding'
 import { Overlay } from './Overlay'
 import { Shell } from './Shell'
+import { WindowControls } from './WindowControls'
 
 /** The overlay view loads this same renderer under `#overlay` (main/browser/overlayView.ts). */
 const isOverlay = location.hash === '#overlay'
@@ -36,7 +37,14 @@ export function App() {
 
   return (
     <IconContext.Provider value={{ weight: 'duotone', size: 16 }}>
-      {settings.onboardingDone ? <Shell /> : <Onboarding />}
+      {settings.onboardingDone ? (
+        <Shell />
+      ) : (
+        <>
+          <Onboarding />
+          {info?.platform === 'windows' && <WindowControls floating />}
+        </>
+      )}
     </IconContext.Provider>
   )
 }

@@ -81,6 +81,11 @@
   padding: var(--frame-gap) var(--frame-gap) var(--frame-gap) 0;
 }
 
+/* Windows: the top margin is the window controls' strip (WindowControls), which grows. */
+:root[data-platform='windows'] .column {
+  padding-top: 0;
+}
+
 .contextbar {
   position: relative;
   height: 38px;
@@ -89,15 +94,6 @@
   align-items: center;
   gap: var(--space-4);
   padding: 0 14px;
-  padding-right: calc(14px + var(--titlebar-overlay-w));
-}
-
-/* Windows: reserve exactly the caption buttons' width (what the overlay leaves of the window). */
-:root[data-platform='windows'] .contextbar {
-  padding-right: calc(
-    14px + 100vw - env(titlebar-area-x, 0px) -
-      env(titlebar-area-width, calc(100vw - var(--titlebar-overlay-w)))
-  );
 }
 
 /* A plain gray hairline, edge to edge. */

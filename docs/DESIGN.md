@@ -89,8 +89,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   is 48) and sets `data-compact="true"` on it. Stored widths are normalised by `snapWidth`. The
   macOS traffic lights are hidden (`window.setControlsVisible`) and come back while the pointer is
   on the top-left corner (`--controls-zone-w` × `--titlebar-h`); a tab filed in a folder shows one
-  `--folder-bar-w` bar per folder, in the folder's hue, on its left. On Windows the address and
-  context bars reserve the caption buttons' width from `env(titlebar-area-*)`.
+  `--folder-bar-w` bar per folder, in the folder's hue, on its left.
   Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
   (tabs stay listed under them, unindented), spaces stack as dots, New tab is an icon.
   The overlay's tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
@@ -274,7 +273,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (popover neck) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--controls-zone-w` 80 (icon-only: hover zone for the traffic lights) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (popover neck) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--controls-zone-w` 80 (icon-only: hover zone for the traffic lights) · `--window-controls-h` 32 (Windows: the top margin once open) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
@@ -287,10 +286,20 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Window | `transparent: true` (always; set at creation) | normal | normal |
 | Frosted (0 < t < 0.9) | `vibrancy: 'under-window'` | `backgroundMaterial: 'acrylic'` | none: transparency forced to 0 |
 | Clear / liquid (t ≥ 0.9) | no vibrancy: the transparent window shows the desktop as is | acrylic (no clear mode) | — |
-| Title bar | `titleBarStyle: 'hiddenInset'`, traffic lights in the sidebar | `titleBarStyle: 'hidden'` + `titleBarOverlay` | same as Win 11 |
+| Title bar | `titleBarStyle: 'hiddenInset'`, traffic lights in the sidebar | `titleBarStyle: 'hidden'`, no native caption buttons: the UI draws them in the top margin (below) | same as Win 11 |
 | Switching | `applyMaterial()` only when the material changes (opaque / frosted / clear), never on every slider tick | same | — |
 
 How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
+
+**Windows window buttons.** No native caption buttons: the window's top margin (above the
+address bar, `--frame-gap` high) hides minimize, maximize / restore and close. When the pointer
+rests on it for 300 ms (`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-base`),
+pushing the address bar and the page down, and the buttons slide in at the top right; it closes
+500 ms (`HIDE_DELAY_MS`) after the pointer leaves. Passing over the margin opens nothing. The
+margin is not a drag region (Windows sends no pointer events over one); the window drags from
+the sidebar's top and the address bar. Close turns `--danger` on hover. During the onboarding
+the margin floats over the screen. Snap layouts on the maximize button are lost (the buttons are
+not native).
 
 ## 5. Grain
 
@@ -334,7 +343,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Askew cards | On · Off | ✅ |
 | | Magnetic buttons (lean toward the pointer, scale 1.08) | **On** · Off | ✅ |
 | | Automatic folders (3+ today tabs of one site grouped) | **On** · Off | ✅ |
-| | Address bar | Own card · Attached to the page (separator line) | ✅ |
+| | Address bar | Own card · **Attached to the page** (separator line) | ✅ |
 | | Interface density | Comfortable · Compact | v1 |
 | | Transcript font size | 12 · 13 · 14 · 15 | v1 |
 | **Accounts** | List: emoji, name, color, plan, sign-in status; add / sign out / remove | — | MVP |

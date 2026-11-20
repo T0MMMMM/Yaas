@@ -286,6 +286,12 @@ export const commands = {
     input: z.object({ visible: z.boolean() }).strict(),
     output: z.void(),
   },
+  /** The window buttons the UI draws on Windows (no native caption buttons there). */
+  'window.minimize': { input: z.void(), output: z.void() },
+  /** Maximizes the window, or restores it when it is maximized. */
+  'window.toggleMaximize': { input: z.void(), output: z.void() },
+  'window.close': { input: z.void(), output: z.void() },
+  'window.isMaximized': { input: z.void(), output: z.boolean() },
   /** Opens the Chrome Web Store as a tab of the active space. */
   'browser.openWebStore': { input: z.void(), output: z.void() },
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
@@ -319,6 +325,8 @@ export const events = {
    * overlay drops its popover (main can close it, e.g. for ⌘L, without the overlay asking).
    */
   'overlay.closed': z.void(),
+  /** To the UI: the window was maximized (`true`) or restored, so the drawn button follows. */
+  'window.maximized': z.boolean(),
 } as const satisfies Record<EventChannel, z.ZodType>
 
 export type Commands = typeof commands

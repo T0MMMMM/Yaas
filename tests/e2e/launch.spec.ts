@@ -85,7 +85,7 @@ test('settings survive a relaunch', async () => {
   }
 })
 
-test('appearance settings toggle askew cards and attach the address bar', async () => {
+test('the address bar is attached by default and can get its own card', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const app = await launchApp(userData)
   try {
@@ -94,7 +94,7 @@ test('appearance settings toggle askew cards and attach the address bar', async 
     const root = (name: string) =>
       page.evaluate((key) => document.documentElement.dataset[key], name)
     await expect.poll(() => root('askew')).toBe('on')
-    await expect.poll(() => root('contextbar')).toBe('card')
+    await expect.poll(() => root('contextbar')).toBe('attached')
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
     await (await overlayPage(app)).getByRole('menuitem', { name: 'Settings' }).click()
@@ -103,10 +103,10 @@ test('appearance settings toggle askew cards and attach the address bar', async 
       .getByRole('button', { name: 'Appearance' })
       .click()
     await page.getByRole('switch', { name: 'Askew cards' }).click()
-    await page.getByRole('radio', { name: 'Attached' }).click()
+    await page.getByRole('radio', { name: 'Own card' }).click()
 
     await expect.poll(() => root('askew')).toBe('off')
-    await expect.poll(() => root('contextbar')).toBe('attached')
+    await expect.poll(() => root('contextbar')).toBe('card')
   } finally {
     await app.close()
     rmSync(userData, { recursive: true, force: true })

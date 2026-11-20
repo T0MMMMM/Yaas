@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Settings = {
   askewCards: true,
   magneticButtons: true,
   autoFolders: true,
-  contextBarStyle: 'card',
+  contextBarStyle: 'attached',
   sidebarWidth: 248,
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,

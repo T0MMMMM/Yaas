@@ -1,0 +1,74 @@
+/* The window's top margin (Windows). Closed it is the frame gap; open it is tall enough for the
+   window buttons, and the content below moves down with it. Not a drag region: Windows sends no
+   pointer events over one, and the hover is what opens it. */
+.strip {
+  position: relative;
+  flex: none;
+  height: var(--frame-gap);
+  /* The buttons never spill over the address bar below. */
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+  transition: height var(--dur-base) var(--ease);
+}
+
+.strip[data-open='true'] {
+  height: var(--window-controls-h);
+}
+
+/* The onboarding has no page under it: the margin floats over the screen instead. */
+.strip[data-floating] {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.buttons {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: flex;
+  height: var(--window-controls-h);
+  opacity: 0;
+  translate: 0 calc(var(--space-2) * -1);
+  /* Hidden once faded out, so closed buttons are not there at all. */
+  visibility: hidden;
+  transition:
+    opacity var(--dur-base) var(--ease),
+    translate var(--dur-base) var(--ease),
+    visibility 0s linear var(--dur-base);
+}
+
+.strip[data-open='true'] .buttons {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: var(--window-control-w);
+  height: 100%;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
+}
+
+.button:hover,
+.button:focus-visible {
+  background: var(--bg-menu-hover);
+  color: var(--text);
+}
+
+.close:hover,
+.close:focus-visible {
+  background: var(--danger);
+  color: var(--on-accent);
+}

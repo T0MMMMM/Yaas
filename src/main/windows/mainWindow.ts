@@ -13,8 +13,6 @@ export function rendererUrl(): string {
   )
 }
 
-export const TITLEBAR_HEIGHT = 44
-
 const isMac = process.platform === 'darwin'
 const isWindows = process.platform === 'win32'
 
@@ -63,9 +61,9 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
       vibrancy: material === 'frosted' ? ('under-window' as const) : undefined,
       visualEffectState: 'followWindow' as const,
     }),
+    // Windows: no native caption buttons; the UI draws its own, revealed from the top edge.
     ...(isWindows && {
       titleBarStyle: 'hidden' as const,
-      titleBarOverlay: { color: '#00000000', symbolColor: '#a0a0a8', height: TITLEBAR_HEIGHT },
       backgroundMaterial: glass ? ('acrylic' as const) : ('none' as const),
     }),
     webPreferences: {
@@ -101,6 +99,12 @@ export function setWindowControlsVisible(
   platform: NodeJS.Platform = process.platform,
 ): void {
   if (platform === 'darwin') win.setWindowButtonVisibility(visible)
+}
+
+/** The drawn maximize button (Windows): maximizes the window, or restores a maximized one. */
+export function toggleMaximize(win: BrowserWindow): void {
+  if (win.isMaximized()) win.unmaximize()
+  else win.maximize()
 }
 
 /** Applies the material live (DESIGN.md §4). */

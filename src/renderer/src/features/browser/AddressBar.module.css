@@ -8,7 +8,6 @@
   gap: var(--space-2);
   margin-bottom: var(--frame-gap);
   padding: 0 var(--space-1);
-  padding-right: calc(var(--space-1) + var(--titlebar-overlay-w));
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
@@ -18,13 +17,6 @@
   transition:
     background-color var(--dur-base) var(--ease),
     color var(--dur-base) var(--ease);
-}
-
-:root[data-platform='windows'] .bar {
-  padding-right: calc(
-    var(--space-1) + 100vw - env(titlebar-area-x, 0px) -
-      env(titlebar-area-width, calc(100vw - var(--titlebar-overlay-w)))
-  );
 }
 
 :root[data-glass='liquid'] .bar {
