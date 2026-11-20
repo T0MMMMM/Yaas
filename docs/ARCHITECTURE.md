@@ -538,8 +538,8 @@ results come back to the lead as a short summary + branch name, never the full c
   `ui.renameFolder` emit `browser.shortcut` (`{ kind: 'settings' }` / `{ kind: 'focus-address' }` /
   `{ kind: 'rename-folder', folderId }`) to the UI; these shortcuts (and ⌘L, ⌘,) close an open
   overlay first, so its card never stays drawn over the field that takes the keyboard. Kinds: `new-menu` (the + menu, opens upward),
-  `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`,
-  the sidebar's Search) and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
+  `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`)
+  and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
   only when the command field is submitted (`browser.openTab { input }`).
 - **Overlay modes.** The overlay is either a **popover** (above: the whole window, focused) or a

@@ -52,11 +52,14 @@
 - Hover a tab, move straight right onto the page and click a link at once: the first click must
   land (the tooltip overlay hides on entry). Playwright cannot drive real cross-view input. Check
   on macOS and Windows.
+- macOS icon-only mode at 48, 56 and 72 px: hover the top-left corner; the three traffic lights
+  must stay visible and clickable. The hover zone (`.controlsZone`) may be narrower than the
+  buttons: if they hide under the cursor, widen the zone to `--controls-zone-w` while the controls
+  are shown.
 
 ## Gotchas
 
 - On Windows, `cli.test.ts` "findCli prefers PATH" fails; it is pre-existing and unrelated to 3b-A.
-
 - The owner speaks **French**; docs, code and commits stay in English (`CLAUDE.md`).
 - Electron 45 downloads its binary on first run, not in `postinstall`. After `npm ci`, run
   `node node_modules/electron/install.js` if `npm run dev` complains.
