@@ -82,7 +82,17 @@ describe('usageView', () => {
 })
 
 const tab = (id: string, spaceId: string, position: number, url = `https://${id}.test/`) =>
-  ({ id, spaceId, url, title: id, faviconUrl: null, position }) satisfies BrowserTab
+  ({
+    id,
+    spaceId,
+    url,
+    title: id,
+    faviconUrl: null,
+    position,
+    section: 'today',
+    folderId: null,
+    parentId: null,
+  }) satisfies BrowserTab
 
 const browser: BrowserState = {
   spaces: [
@@ -97,6 +107,7 @@ const browser: BrowserState = {
     tab('c', 's1', 2),
     tab('x', 's2', 0),
   ],
+  folders: [],
   activeTabIds: { s1: 'b', s2: 'x' },
   runtime: {
     b: {

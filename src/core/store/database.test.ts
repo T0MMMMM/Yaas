@@ -17,6 +17,7 @@ describe('openDatabase', () => {
       'accounts',
       'spaces',
       'tabs',
+      'folders',
     ])
   })
 

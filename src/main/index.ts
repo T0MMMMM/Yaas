@@ -248,7 +248,9 @@ registerCommands(
         spaceId ?? browser.snapshot().activeSpaceId,
         input === undefined ? 'about:blank' : resolveInput(input),
       ),
-    'browser.closeTab': ({ tabId }) => browser.closeTab(tabId),
+    'browser.closeTab': ({ tabId }) => {
+      browser.closeTab(tabId)
+    },
     'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),
     'browser.navigate': ({ tabId, input }) => views().navigate(tabId, resolveInput(input)),
     'browser.goBack': ({ tabId }) => views().goBack(tabId),

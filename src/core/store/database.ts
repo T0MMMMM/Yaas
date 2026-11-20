@@ -37,6 +37,16 @@ const MIGRATIONS: string[] = [
      created_at TEXT NOT NULL
    );
    CREATE INDEX tabs_space ON tabs(space_id, position);`,
+  // 4 — sections, folders and nested tabs (whether a tab is loaded is runtime state, not stored)
+  `CREATE TABLE folders (
+     id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+     name TEXT NOT NULL, position INTEGER NOT NULL, collapsed INTEGER NOT NULL DEFAULT 0,
+     created_at TEXT NOT NULL
+   );
+   CREATE INDEX folders_space ON folders(space_id, position);
+   ALTER TABLE tabs ADD COLUMN section TEXT NOT NULL DEFAULT 'today';
+   ALTER TABLE tabs ADD COLUMN folder_id TEXT REFERENCES folders(id) ON DELETE SET NULL;
+   ALTER TABLE tabs ADD COLUMN parent_id TEXT;`,
 ]
 
 export type Database = DatabaseSync
@@ -51,9 +61,10 @@ export function openDatabase(file: string): Database {
   return db
 }
 
-function migrate(db: Database): void {
+/** Applies the pending migrations, up to `target` (all of them by default; tests stop earlier). */
+export function migrate(db: Database, target = MIGRATIONS.length): void {
   const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
-  for (let version = row.user_version; version < MIGRATIONS.length; version++) {
+  for (let version = row.user_version; version < target; version++) {
     db.exec('BEGIN')
     try {
       db.exec(MIGRATIONS[version] as string)

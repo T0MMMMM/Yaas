@@ -1,7 +1,7 @@
 // THE IPC contract. Every command and event crossing the preload bridge is declared here.
 // Main validates every input with these schemas; the renderer gets the types for free.
 import { z } from 'zod'
-import type { Account, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
+import type { Account, BrowserFolder, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
 import type { CommandChannel, EventChannel } from './channels'
 
 export const SIDEBAR_MIN = 200
@@ -86,7 +86,18 @@ export const browserTabSchema = z.object({
   title: z.string(),
   faviconUrl: z.string().nullable(),
   position: z.number().int(),
+  section: z.enum(['favorites', 'pinned', 'today']),
+  folderId: z.string().nullable(),
+  parentId: z.string().nullable(),
 }) satisfies z.ZodType<BrowserTab>
+
+export const browserFolderSchema = z.object({
+  id: z.string(),
+  spaceId: z.string(),
+  name: z.string(),
+  position: z.number().int(),
+  collapsed: z.boolean(),
+}) satisfies z.ZodType<BrowserFolder>
 
 /** Live state of a tab's web contents — never persisted. */
 export interface TabRuntime {
@@ -114,6 +125,7 @@ export const browserStateSchema = z.object({
   spaces: z.array(browserSpaceSchema),
   activeSpaceId: z.string(),
   tabs: z.array(browserTabSchema),
+  folders: z.array(browserFolderSchema),
   activeTabIds: z.record(z.string(), z.string().nullable()),
   runtime: z.record(z.string(), tabRuntimeSchema),
 }) satisfies z.ZodType<BrowserState>

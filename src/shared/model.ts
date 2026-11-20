@@ -80,12 +80,41 @@ export interface BrowserSpace {
   position: number
 }
 
+/** Where a tab sits in its space: favourite tiles, pinned tabs and folders, or the rest. */
+export type TabSection = 'favorites' | 'pinned' | 'today'
+
 export interface BrowserTab {
   id: string
   spaceId: string
   url: string
   title: string
   faviconUrl: string | null
+  /** Within its list: the section's top level (shared with folders in pinned), or its folder. */
+  position: number
+  section: TabSection
+  /** The pinned folder it is in, or null. */
+  folderId: string | null
+  /** The today tab it was opened from (drawn indented under it), or null. */
+  parentId: string | null
+}
+
+/** A folder of pinned tabs. Folders and top-level pinned tabs share one ordering. */
+export interface BrowserFolder {
+  id: string
+  spaceId: string
+  name: string
+  position: number
+  collapsed: boolean
+}
+
+/** What reopening a closed tab needs to put it back where it was. */
+export interface ClosedTab {
+  spaceId: string
+  url: string
+  title: string
+  section: TabSection
+  folderId: string | null
+  parentId: string | null
   position: number
 }
 
@@ -93,8 +122,10 @@ export interface BrowserSnapshot {
   /** By position. */
   spaces: BrowserSpace[]
   activeSpaceId: string
-  /** All spaces, by spaceId then position. */
+  /** All spaces, by spaceId, then section (favorites, pinned, today), folder and position. */
   tabs: BrowserTab[]
+  /** All spaces, by spaceId then position. */
+  folders: BrowserFolder[]
   /** Active tab per space. */
   activeTabIds: Record<string, string | null>
 }
