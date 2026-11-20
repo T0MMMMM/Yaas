@@ -79,6 +79,8 @@ export const browserSpaceSchema = z.object({
   position: z.number().int(),
 }) satisfies z.ZodType<BrowserSpace>
 
+export const tabSectionSchema = z.enum(['favorites', 'pinned', 'today'])
+
 export const browserTabSchema = z.object({
   id: z.string(),
   spaceId: z.string(),
@@ -86,7 +88,7 @@ export const browserTabSchema = z.object({
   title: z.string(),
   faviconUrl: z.string().nullable(),
   position: z.number().int(),
-  section: z.enum(['favorites', 'pinned', 'today']),
+  section: tabSectionSchema,
   folderId: z.string().nullable(),
   parentId: z.string().nullable(),
 }) satisfies z.ZodType<BrowserTab>
@@ -108,6 +110,8 @@ export interface TabRuntime {
   themeColor: string | null
   /** Id of the tab's web contents in main, or null when it has none. */
   webContentsId: number | null
+  /** The tab has a view (its page is loaded); false until first shown, and after an unload. */
+  loaded: boolean
 }
 
 export const tabRuntimeSchema = z.object({
@@ -116,9 +120,10 @@ export const tabRuntimeSchema = z.object({
   canGoForward: z.boolean(),
   themeColor: z.string().nullable(),
   webContentsId: z.number().int().nullable(),
+  loaded: z.boolean(),
 }) satisfies z.ZodType<TabRuntime>
 
-/** The browser model plus the runtime state of each tab that has a view, keyed by tab id. */
+/** The browser model plus the runtime state of every tab, keyed by tab id. */
 export type BrowserState = BrowserSnapshot & { runtime: Record<string, TabRuntime> }
 
 export const browserStateSchema = z.object({
@@ -153,8 +158,21 @@ export const overlayRequestSchema = z
   .strict()
 export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 
+/**
+ * What main asks the UI to do: shortcuts pressed while a page has focus, actions from the overlay
+ * or from a native menu (a folder's Rename edits its name in the sidebar).
+ */
+export const shortcutSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('focus-address') }).strict(),
+  z.object({ kind: z.literal('settings') }).strict(),
+  z.object({ kind: z.literal('rename-folder'), folderId: z.string().min(1) }).strict(),
+])
+export type Shortcut = z.infer<typeof shortcutSchema>
+
 const id = z.string().min(1)
 const tabRef = z.object({ tabId: id }).strict()
+const folderRef = z.object({ folderId: id }).strict()
+const folderName = z.string().min(1).max(80)
 
 export const commands = {
   'app.info': { input: z.void(), output: appInfoSchema },
@@ -170,7 +188,43 @@ export const commands = {
     input: z.object({ spaceId: id.optional(), input: z.string().optional() }).strict(),
     output: browserTabSchema,
   },
+  /** The user's close: a favourite or pinned tab is unloaded (its view destroyed), a today tab deleted. */
   'browser.closeTab': { input: tabRef, output: z.void() },
+  /** Deletes a tab whatever its section (reopenable). */
+  'browser.removeTab': { input: tabRef, output: z.void() },
+  /** Moves a tab to `index` of a section (or of a pinned folder); today's index is in drawn order. */
+  'browser.moveTab': {
+    input: z
+      .object({
+        tabId: id,
+        section: tabSectionSchema,
+        folderId: id.nullable().optional(),
+        index: z.number().int().min(0),
+      })
+      .strict(),
+    output: z.void(),
+  },
+  /** A new folder at the end of the space's pinned section (default: the active space). */
+  'browser.createFolder': {
+    input: z.object({ spaceId: id.optional(), name: folderName }).strict(),
+    output: browserFolderSchema,
+  },
+  'browser.renameFolder': {
+    input: z.object({ folderId: id, name: folderName }).strict(),
+    output: z.void(),
+  },
+  'browser.setFolderCollapsed': {
+    input: z.object({ folderId: id, collapsed: z.boolean() }).strict(),
+    output: z.void(),
+  },
+  /** Deletes a folder and its tabs (reopenable together). */
+  'browser.deleteFolder': { input: folderRef, output: z.void() },
+  /** Reopens the last closed tab, or the tabs of the last deleted folder. */
+  'browser.reopenClosed': { input: z.void(), output: z.void() },
+  /** The tab's native context menu, at the pointer (pin, favourites, folder, copy, close). */
+  'browser.showTabMenu': { input: tabRef, output: z.void() },
+  /** The folder's native context menu, at the pointer (rename, delete). */
+  'browser.showFolderMenu': { input: folderRef, output: z.void() },
   'browser.activateTab': { input: tabRef, output: z.void() },
   'browser.navigate': {
     input: z.object({ tabId: id, input: z.string() }).strict(),
@@ -198,9 +252,9 @@ export const commands = {
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
   'overlay.close': { input: z.void(), output: z.void() },
-  /** Asks the UI to open its settings (from the overlay): emits `browser.shortcut` 'settings'. */
+  /** Asks the UI to open its settings (from the overlay): emits `browser.shortcut` `settings`. */
   'ui.openSettings': { input: z.void(), output: z.void() },
-  /** Asks the UI to edit the address (from the overlay): emits `browser.shortcut` 'focus-address'. */
+  /** Asks the UI to edit the address (from the overlay): emits `browser.shortcut` `focus-address`. */
   'ui.focusAddress': { input: z.void(), output: z.void() },
 } as const satisfies Record<CommandChannel, { input: z.ZodType; output: z.ZodType }>
 
@@ -208,8 +262,8 @@ export const events = {
   'settings.changed': settingsSchema,
   'accounts.changed': z.array(accountSchema),
   'browser.changed': browserStateSchema,
-  /** A shortcut pressed while a page has focus, forwarded to the UI. */
-  'browser.shortcut': z.enum(['focus-address', 'settings']),
+  /** Something main asks the UI to do (see shortcutSchema). */
+  'browser.shortcut': shortcutSchema,
   /** To the overlay only: which popover to show, and where. */
   'overlay.opened': overlayRequestSchema,
   /** To the UI only: the overlay closed, so the button that opened it resets. */

@@ -116,6 +116,15 @@ const browser: BrowserState = {
       canGoForward: false,
       themeColor: '#123456',
       webContentsId: 7,
+      loaded: true,
+    },
+    c: {
+      loading: false,
+      canGoBack: false,
+      canGoForward: false,
+      themeColor: null,
+      webContentsId: null,
+      loaded: false,
     },
   },
 }
@@ -147,7 +156,7 @@ describe('browserView', () => {
     })
   })
 
-  it('browserView marks tabs without runtime as not loaded', () => {
+  it('browserView marks tabs without a view as not loaded', () => {
     const view = browserView(browser)
     expect(view.tabs.map((t) => [t.id, t.loaded])).toEqual([
       ['a', false],

@@ -7,10 +7,11 @@ import { BrowserStore } from '@core/browser/browserStore'
 import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli'
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
-import type { BrowserState, Settings } from '@shared/ipc/contract'
+import type { BrowserState, Settings, Shortcut } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
+import { showFolderMenu, showTabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
@@ -77,12 +78,21 @@ function overlayView(): OverlayView {
 }
 
 function browserState(): BrowserState {
-  return { ...browser.snapshot(), runtime: tabViews?.runtime() ?? {} }
+  const snapshot = browser.snapshot()
+  return { ...snapshot, runtime: tabViews?.runtime(snapshot.tabs.map((t) => t.id)) ?? {} }
 }
 
 function views(): TabViews {
   if (!tabViews) throw new Error('No browser window')
   return tabViews
+}
+
+/**
+ * The user's close. An unloaded (favourite or pinned) tab stays in the model, often with an
+ * unchanged snapshot, so `TabViews.sync` can't tell: its view is destroyed here.
+ */
+function closeTab(tabId: string): void {
+  if (browser.closeTab(tabId) === 'unloaded') tabViews?.unload(tabId)
 }
 
 /** URLs an extension may open as a tab: web pages and extension pages, nothing local. */
@@ -106,7 +116,7 @@ const extensionHost: ExtensionHost = {
   },
   closeTab: (contents) => {
     const tabId = tabViews?.tabIdOf(contents)
-    if (tabId) browser.closeTab(tabId)
+    if (tabId) closeTab(tabId)
   },
   window: () => mainWindow,
 }
@@ -162,13 +172,13 @@ function activeTabId(): string | null {
   return snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
 }
 
-/** Activates the neighbour of the active tab in its space, wrapping around. */
+/** Activates the neighbour of the active tab in its space's drawn order, wrapping around. */
 function cycleTab(step: 1 | -1): void {
-  const snapshot = browser.snapshot()
-  const tabs = snapshot.tabs.filter((t) => t.spaceId === snapshot.activeSpaceId)
-  const index = tabs.findIndex((t) => t.id === activeTabId())
+  const tabs = browser.visibleOrder(browser.snapshot().activeSpaceId)
+  const active = activeTabId()
+  const index = active ? tabs.indexOf(active) : -1
   const next = tabs[(index + step + tabs.length) % tabs.length]
-  if (tabs.length > 1 && next) browser.activateTab(next.id)
+  if (tabs.length > 1 && next) browser.activateTab(next)
 }
 
 /** The macOS share menu with the tab's URL, at the pointer; elsewhere the URL is copied. */
@@ -184,7 +194,14 @@ function shareTab(tabId: string): void {
 
 const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
 
-function emitShortcut(shortcut: 'focus-address' | 'settings'): void {
+const sidebarMenuHost: SidebarMenuHost = {
+  store: browser,
+  window: () => mainWindow,
+  closeTab,
+  emitShortcut,
+}
+
+function emitShortcut(shortcut: Shortcut): void {
   if (!mainWindow) return
   // A focused page keeps the keyboard: hand it back to the UI so the user types into its field.
   mainWindow.webContents.focus()
@@ -200,16 +217,19 @@ function setupMenu(): void {
     buildAppMenu({
       newTab: () => {
         browser.openTab(browser.snapshot().activeSpaceId, 'about:blank')
-        emitShortcut('focus-address')
+        emitShortcut({ kind: 'focus-address' })
       },
-      closeTab: withActive((id) => browser.closeTab(id)),
-      focusAddress: () => emitShortcut('focus-address'),
+      closeTab: withActive(closeTab),
+      reopenClosed: () => {
+        browser.reopenClosed()
+      },
+      focusAddress: () => emitShortcut({ kind: 'focus-address' }),
       reload: withActive((id) => tabViews?.reload(id)),
       back: withActive((id) => tabViews?.goBack(id)),
       forward: withActive((id) => tabViews?.goForward(id)),
       nextTab: () => cycleTab(1),
       previousTab: () => cycleTab(-1),
-      settings: () => emitShortcut('settings'),
+      settings: () => emitShortcut({ kind: 'settings' }),
     }),
   )
 }
@@ -248,9 +268,21 @@ registerCommands(
         spaceId ?? browser.snapshot().activeSpaceId,
         input === undefined ? 'about:blank' : resolveInput(input),
       ),
-    'browser.closeTab': ({ tabId }) => {
-      browser.closeTab(tabId)
+    'browser.closeTab': ({ tabId }) => closeTab(tabId),
+    'browser.removeTab': ({ tabId }) => browser.removeTab(tabId),
+    'browser.moveTab': ({ tabId, section, folderId, index }) =>
+      browser.moveTab(tabId, { section, index, ...(folderId === undefined ? {} : { folderId }) }),
+    'browser.createFolder': ({ spaceId, name }) =>
+      browser.createFolder(spaceId ?? browser.snapshot().activeSpaceId, name),
+    'browser.renameFolder': ({ folderId, name }) => browser.renameFolder(folderId, name),
+    'browser.setFolderCollapsed': ({ folderId, collapsed }) =>
+      browser.setFolderCollapsed(folderId, collapsed),
+    'browser.deleteFolder': ({ folderId }) => browser.deleteFolder(folderId),
+    'browser.reopenClosed': () => {
+      browser.reopenClosed()
     },
+    'browser.showTabMenu': ({ tabId }) => showTabMenu(sidebarMenuHost, tabId),
+    'browser.showFolderMenu': ({ folderId }) => showFolderMenu(sidebarMenuHost, folderId),
     'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),
     'browser.navigate': ({ tabId, input }) => views().navigate(tabId, resolveInput(input)),
     'browser.goBack': ({ tabId }) => views().goBack(tabId),
@@ -267,8 +299,8 @@ registerCommands(
     },
     'overlay.open': ({ kind, anchor }) => overlayView().open(kind, anchor),
     'overlay.close': () => overlayView().close(),
-    'ui.openSettings': () => emitShortcut('settings'),
-    'ui.focusAddress': () => emitShortcut('focus-address'),
+    'ui.openSettings': () => emitShortcut({ kind: 'settings' }),
+    'ui.focusAddress': () => emitShortcut({ kind: 'focus-address' }),
   },
   isTrustedSender,
 )

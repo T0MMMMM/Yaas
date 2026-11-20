@@ -54,6 +54,16 @@ const shownView = (app: ElectronApplication) =>
       ?.getBounds(),
   )
 
+/** Clicks an application menu item by id, as its accelerator would. */
+const clickMenu = (app: ElectronApplication, id: string) =>
+  app.evaluate(
+    ({ Menu }, itemId) => Menu.getApplicationMenu()?.getMenuItemById(itemId)?.click(),
+    id,
+  )
+
+/** The browser model and runtime, as main sends them to the UI. */
+const browserState = (page: Page) => page.evaluate(() => window.acab.invoke('browser.state'))
+
 test('open, navigate, go back', async () => {
   await withBrowser(async ({ page, site }) => {
     const bar = page.getByTestId('address-bar')
@@ -264,12 +274,6 @@ test('restored tabs stay dim until visited', async () => {
 
 test('shortcuts work while a page has focus', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    const clickMenu = (id: string) =>
-      app.evaluate(
-        ({ Menu }, itemId) => Menu.getApplicationMenu()?.getMenuItemById(itemId)?.click(),
-        id,
-      )
-
     await openTab(page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
@@ -281,7 +285,7 @@ test('shortcuts work while a page has focus', async () => {
         ?.executeJavaScript('document.body.focus()'),
     )
 
-    await clickMenu('newTab')
+    await clickMenu(app, 'newTab')
     await expect(page.getByTestId('tab')).toHaveCount(2)
     await expect(page.getByLabel('Address')).toBeFocused()
     await expect(page.getByTestId('tab').nth(1).getByRole('button').first()).toHaveAttribute(
@@ -289,7 +293,79 @@ test('shortcuts work while a page has focus', async () => {
       'page',
     )
 
-    await clickMenu('closeTab')
+    await clickMenu(app, 'closeTab')
     await expect(page.getByTestId('tab')).toHaveCount(1)
+  })
+})
+
+test('closing a pinned tab unloads it', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+    const pinnedId = (await browserState(page)).tabs.find((t) => t.url.endsWith('/a'))?.id ?? ''
+    await page.evaluate(async (tabId) => {
+      await window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 })
+      await window.acab.invoke('browser.activateTab', { tabId })
+    }, pinnedId)
+    const pinned = page.getByTestId('tab').filter({ hasText: 'Page A' }).getByRole('button').first()
+    await expect(pinned).toHaveAttribute('data-loaded', 'true')
+
+    await clickMenu(app, 'closeTab')
+    await expect(page.getByTestId('tab')).toHaveCount(2)
+    await expect(pinned).toHaveAttribute('data-loaded', 'false')
+    const state = await browserState(page)
+    expect(state.runtime[pinnedId]).toMatchObject({ loaded: false, webContentsId: null })
+    expect(
+      await app.evaluate(
+        ({ webContents }) =>
+          webContents.getAllWebContents().filter((w) => w.getURL().endsWith('/a')).length,
+      ),
+    ).toBe(0)
+  })
+})
+
+test('reopen closed tab', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+
+    await clickMenu(app, 'closeTab')
+    await expect(page.getByTestId('tab')).toHaveText(['Page A'])
+    await clickMenu(app, 'reopenClosed')
+    await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+    const state = await browserState(page)
+    const active = state.tabs.find((t) => t.id === state.activeTabIds[state.activeSpaceId])
+    expect(active?.url).toBe(site.url('/b'))
+  })
+})
+
+test('a link opened in a new tab is nested', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(page, site.url('/a'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A'])
+
+    await app.evaluate(({ webContents }) =>
+      webContents
+        .getAllWebContents()
+        .find((w) => w.getURL().endsWith('/a'))
+        ?.executeJavaScript("document.getElementById('pop').click()"),
+    )
+    await expect(page.getByTestId('tab')).toHaveCount(2)
+    const { tabs } = await browserState(page)
+    const opener = tabs.find((t) => t.url.endsWith('/a'))
+    const child = tabs.find((t) => t.id !== opener?.id)
+    expect(child?.parentId).toBe(opener?.id)
+  })
+})
+
+test('favicons are fetched', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/with-icon'))
+    await expect(page.getByTestId('tab')).toHaveText(['With Icon'])
+    await expect
+      .poll(async () => (await browserState(page)).tabs[0]?.faviconUrl ?? '')
+      .toMatch(/^data:image\/png;base64,/)
   })
 })

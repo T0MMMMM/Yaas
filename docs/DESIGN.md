@@ -298,7 +298,8 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 | Action | Shortcut |
 |---|---|
 | New tab (active space) | `Mod+T` |
-| Close tab | `Mod+W` |
+| Close tab (a favourite or pinned tab is unloaded) | `Mod+W` |
+| Reopen closed tab | `Mod+Shift+T` |
 | Focus the address bar | `Mod+L` |
 | Reload | `Mod+R` |
 | Back / forward | `Mod+[` / `Mod+]` |
@@ -306,8 +307,8 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 | Settings | `Mod+,` |
 
 Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
-web page swallows renderer key events. Command palette (`Mod+K`), reopen closed tab (`Mod+Z`),
-split view and new window (`Mod+N`) arrive in plans 3–4.
+web page swallows renderer key events. Command palette (`Mod+K`), reopen closed tab from the UI
+(`Mod+Z`), split view and new window (`Mod+N`) arrive in plans 3–4.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.

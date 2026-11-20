@@ -21,8 +21,9 @@ export function Shell() {
     () =>
       window.acab.on('browser.shortcut', (shortcut) => {
         const ui = useUi.getState()
-        if (shortcut === 'focus-address') ui.focusAddress()
-        else ui.openSettings()
+        if (shortcut.kind === 'focus-address') ui.focusAddress()
+        else if (shortcut.kind === 'settings') ui.openSettings()
+        // 'rename-folder' is handled by the sidebar's folders.
       }),
     [],
   )

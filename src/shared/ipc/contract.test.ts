@@ -84,4 +84,81 @@ describe('IPC contract', () => {
     expect(input.safeParse({ name: 'Work', color: '#2BB673' }).success).toBe(true)
     expect(input.safeParse({ name: 'Work', color: 'green' }).success).toBe(false)
   })
+  it.each(['browser.removeTab', 'browser.showTabMenu'] as const)(
+    'accepts only a tab id on %s',
+    (channel) => {
+      const input = commands[channel].input
+      expect(input.safeParse({ tabId: 'x' }).success).toBe(true)
+      expect(input.safeParse({ tabId: '' }).success).toBe(false)
+      expect(input.safeParse({ tabId: 'x', section: 'pinned' }).success).toBe(false)
+    },
+  )
+
+  it('accepts a known section and a non-negative index on browser.moveTab', () => {
+    const input = commands['browser.moveTab'].input
+    expect(
+      input.safeParse({ tabId: 'x', section: 'pinned', folderId: 'f', index: 0 }).success,
+    ).toBe(true)
+    expect(
+      input.safeParse({ tabId: 'x', section: 'today', folderId: null, index: 3 }).success,
+    ).toBe(true)
+    expect(input.safeParse({ tabId: 'x', section: 'favorites', index: 1 }).success).toBe(true)
+    expect(input.safeParse({ tabId: 'x', section: 'archive', index: 0 }).success).toBe(false)
+    expect(input.safeParse({ tabId: 'x', section: 'today', index: -1 }).success).toBe(false)
+    expect(input.safeParse({ tabId: 'x', section: 'today', index: 1.5 }).success).toBe(false)
+  })
+
+  it('accepts a folder name of 1 to 80 characters on browser.createFolder', () => {
+    const input = commands['browser.createFolder'].input
+    expect(input.safeParse({ name: 'Work' }).success).toBe(true)
+    expect(input.safeParse({ spaceId: 's', name: 'Work' }).success).toBe(true)
+    expect(input.safeParse({ name: '' }).success).toBe(false)
+    expect(input.safeParse({ name: 'Work', collapsed: true }).success).toBe(false)
+  })
+
+  it('accepts a folder name of 1 to 80 characters on browser.renameFolder', () => {
+    const input = commands['browser.renameFolder'].input
+    expect(input.safeParse({ folderId: 'f', name: 'a'.repeat(80) }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', name: 'a'.repeat(81) }).success).toBe(false)
+    expect(input.safeParse({ folderId: 'f', name: '' }).success).toBe(false)
+  })
+
+  it('accepts only a boolean on browser.setFolderCollapsed', () => {
+    const input = commands['browser.setFolderCollapsed'].input
+    expect(input.safeParse({ folderId: 'f', collapsed: true }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', collapsed: 'yes' }).success).toBe(false)
+  })
+
+  it.each(['browser.deleteFolder', 'browser.showFolderMenu'] as const)(
+    'accepts only a folder id on %s',
+    (channel) => {
+      const input = commands[channel].input
+      expect(input.safeParse({ folderId: 'f' }).success).toBe(true)
+      expect(input.safeParse({ folderId: 'f', tabId: 'x' }).success).toBe(false)
+      expect(input.safeParse({}).success).toBe(false)
+    },
+  )
+
+  it('takes no input on browser.reopenClosed', () => {
+    const input = commands['browser.reopenClosed'].input
+    expect(input.safeParse(undefined).success).toBe(true)
+    expect(input.safeParse({ tabId: 'x' }).success).toBe(false)
+  })
+
+  it('sends shortcuts as kinds, a folder rename with its folder id', () => {
+    const shortcut = events['browser.shortcut']
+    expect(shortcut.safeParse({ kind: 'focus-address' }).success).toBe(true)
+    expect(shortcut.safeParse({ kind: 'rename-folder', folderId: 'f' }).success).toBe(true)
+    expect(shortcut.safeParse({ kind: 'rename-folder' }).success).toBe(false)
+    expect(shortcut.safeParse('settings').success).toBe(false)
+  })
+
+  it('reports whether each tab has a loaded view', () => {
+    const runtime = events['browser.changed'].shape.runtime
+    const idle = { loading: false, canGoBack: false, canGoForward: false, themeColor: null }
+    expect(runtime.safeParse({ a: { ...idle, webContentsId: null, loaded: false } }).success).toBe(
+      true,
+    )
+    expect(runtime.safeParse({ a: { ...idle, webContentsId: 3 } }).success).toBe(false)
+  })
 })

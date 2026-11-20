@@ -5,6 +5,7 @@ import { app, Menu, type MenuItemConstructorOptions } from 'electron'
 export interface MenuActions {
   newTab(): void
   closeTab(): void
+  reopenClosed(): void
   focusAddress(): void
   reload(): void
   back(): void
@@ -50,6 +51,7 @@ export function buildAppMenu(actions: MenuActions): Menu {
       submenu: [
         item('newTab', 'New Tab', 'CmdOrCtrl+T'),
         item('closeTab', 'Close Tab', 'CmdOrCtrl+W'),
+        item('reopenClosed', 'Reopen Closed Tab', 'CmdOrCtrl+Shift+T'),
         item('focusAddress', 'Open Location', 'CmdOrCtrl+L'),
         ...(process.platform === 'darwin'
           ? []

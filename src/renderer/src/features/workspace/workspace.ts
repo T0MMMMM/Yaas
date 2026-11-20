@@ -33,7 +33,7 @@ export interface TabView {
   themeColor: string | null
   /** Id of the tab's web contents in main (extension actions, developer tools), or null. */
   webContentsId: number | null
-  /** Main has a view for it: its page was loaded at least once in this run. */
+  /** Main has a view for it: shown since launch and not unloaded since. */
   loaded: boolean
 }
 
@@ -45,13 +45,14 @@ export interface BrowserView {
   activeTab: TabView | null
 }
 
-/** A tab without a view yet (never shown since launch) has no live state. */
+/** A tab without a view (never shown since launch, or unloaded) has no live state. */
 const IDLE: TabRuntime = {
   loading: false,
   canGoBack: false,
   canGoForward: false,
   themeColor: null,
   webContentsId: null,
+  loaded: false,
 }
 
 const toSpace = (s: BrowserSpace): SpaceSummary => ({ id: s.id, label: s.name, color: s.color })
@@ -74,7 +75,6 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
     siteHost: hostOf(tab.url),
     connection: connectionOf(tab.url),
     ...(runtime ?? IDLE),
-    loaded: runtime !== undefined,
   }
 }
 

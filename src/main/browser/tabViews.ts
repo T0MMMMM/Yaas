@@ -9,6 +9,7 @@ import {
   type MenuItemConstructorOptions,
   type WebContents,
 } from 'electron'
+import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
@@ -39,6 +40,63 @@ const PAGE_MENU_LABELS: Record<PageMenuId, string> = {
   forward: 'Forward',
   reload: 'Reload',
   inspect: 'Inspect',
+}
+
+/** Live state of a tab without a view. */
+const UNLOADED: TabRuntime = {
+  loading: false,
+  canGoBack: false,
+  canGoForward: false,
+  themeColor: null,
+  webContentsId: null,
+  loaded: false,
+}
+
+/** How long a favicon request may take before the tab keeps no icon. */
+const FAVICON_TIMEOUT_MS = 10_000
+
+/** The body of `response`, or null when it is bigger than `max` bytes (reading stops there). */
+async function readCapped(response: Response, max: number): Promise<Uint8Array | null> {
+  if (Number(response.headers.get('content-length') ?? 0) > max) {
+    await response.body?.cancel()
+    return null
+  }
+  const reader = response.body?.getReader()
+  if (!reader) return new Uint8Array()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) return Buffer.concat(chunks)
+    total += value.length
+    if (total > max) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+}
+
+/** Fetches a favicon through the tab's session (its cookies) as a data URL, or null. */
+async function fetchFavicon(
+  contents: WebContents,
+  url: string | undefined,
+): Promise<string | null> {
+  if (!url || !/^(https?|data):/i.test(url)) return null
+  try {
+    const response = await contents.session.fetch(url, {
+      signal: AbortSignal.timeout(FAVICON_TIMEOUT_MS),
+    })
+    if (!response.ok) {
+      await response.body?.cancel()
+      return null
+    }
+    // One byte over the cap is enough to know the icon is too big.
+    const bytes = await readCapped(response, FAVICON_MAX_BYTES)
+    return bytes ? faviconDataUrl(response.headers.get('content-type') ?? '', bytes) : null
+  } catch {
+    return null
+  }
 }
 
 const isWebUrl = (url: string): boolean => {
@@ -73,7 +131,10 @@ export class TabViews {
     })
   }
 
-  /** Mirrors the model: drops views of closed tabs, creates and shows the active tab's view. */
+  /**
+   * Mirrors the model: drops views of deleted tabs, creates and shows the active tab's view. An
+   * unloaded tab is still in the model, so its view goes through `unload` instead.
+   */
   sync(snapshot: BrowserSnapshot): void {
     const tabs = new Map(snapshot.tabs.map((t) => [t.id, t]))
     for (const [tabId, entry] of this.views) {
@@ -89,6 +150,13 @@ export class TabViews {
     if (shown !== this.shownTabId && shown) this.selectForExtensions(shown)
     this.shownTabId = shown
     this.layout()
+  }
+
+  /** Destroys a tab's view while its entry stays (a closed favourite or pinned tab). */
+  unload(tabId: string): void {
+    if (!this.views.has(tabId)) return
+    this.destroy(tabId)
+    this.onRuntime()
   }
 
   webContentsOf(tabId: string): WebContents | null {
@@ -151,9 +219,9 @@ export class TabViews {
     else contents.openDevTools({ mode: 'detach' })
   }
 
-  /** Runtime state of every tab that has a view, keyed by tab id (plain, serializable). */
-  runtime(): Record<string, TabRuntime> {
-    return Object.fromEntries([...this.state].map(([id, r]) => [id, { ...r }]))
+  /** Runtime state of each of `tabIds`, keyed by tab id (plain, serializable). */
+  runtime(tabIds: readonly string[]): Record<string, TabRuntime> {
+    return Object.fromEntries(tabIds.map((id) => [id, { ...(this.state.get(id) ?? UNLOADED) }]))
   }
 
   private layout(): void {
@@ -188,6 +256,7 @@ export class TabViews {
       canGoForward: false,
       themeColor: null,
       webContentsId: view.webContents.id,
+      loaded: true,
     })
     this.win.contentView.addChildView(view)
     this.onViewAdded()
@@ -207,13 +276,15 @@ export class TabViews {
 
   private wire(tabId: string, view: WebContentsView): void {
     const contents = view.webContents
-    // Events can still arrive while a closed tab's view is torn down.
+    // Events (and favicon requests) can still arrive while a closed or unloaded tab's view is torn
+    // down, or after the tab got a new view: only this view's own tab is updated.
+    const isCurrent = (): boolean => this.views.get(tabId)?.view === view
     const update = (patch: Parameters<BrowserStore['updateTab']>[1]): void => {
-      if (this.views.has(tabId)) this.store.updateTab(tabId, patch)
+      if (isCurrent()) this.store.updateTab(tabId, patch)
     }
     const setRuntime = (patch: Partial<TabRuntime>): void => {
       const current = this.state.get(tabId)
-      if (!current) return
+      if (!current || !isCurrent()) return
       this.state.set(tabId, { ...current, ...patch })
       this.onRuntime()
     }
@@ -233,17 +304,22 @@ export class TabViews {
       updateHistory()
     })
     contents.on('page-title-updated', (_event, title) => update({ title }))
-    contents.on('page-favicon-updated', (_event, favicons) =>
-      update({ faviconUrl: favicons[0] ?? null }),
-    )
+    // Only the latest page's icon is kept: an older, slower request is dropped.
+    let faviconRequest = 0
+    contents.on('page-favicon-updated', (_event, favicons) => {
+      const request = ++faviconRequest
+      void fetchFavicon(contents, favicons[0]).then((faviconUrl) => {
+        if (request === faviconRequest) update({ faviconUrl })
+      })
+    })
     contents.on('did-start-loading', () => setRuntime({ loading: true }))
     contents.on('did-stop-loading', () => setRuntime({ loading: false }))
     contents.on('did-change-theme-color', (_event, color) => setRuntime({ themeColor: color }))
 
-    // Popups and target=_blank become tabs in the same space, never windows.
+    // Popups and target=_blank become tabs in the same space, nested under this one, never windows.
     contents.setWindowOpenHandler(({ url }) => {
       const entry = this.views.get(tabId)
-      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url)
+      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url, { parentId: tabId })
       return { action: 'deny' }
     })
     contents.on('will-navigate', (event, url) => {
@@ -260,7 +336,7 @@ export class TabViews {
   ): void {
     const openInTab = (url: string): void => {
       const entry = this.views.get(tabId)
-      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url)
+      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url, { parentId: tabId })
     }
     const run: Record<PageMenuId, () => void> = {
       openLinkInNewTab: () => openInTab(params.linkURL),

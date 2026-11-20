@@ -10,9 +10,11 @@ const pages: Record<string, string> = {
   '/c': `<!doctype html><html><head><title>Page C</title></head><body>C</body></html>`,
   '/with-ad': `<!doctype html><html><head><title>With Ad</title></head>
 <body><img id="ad" src="/ads/banner.png" alt=""></body></html>`,
+  '/with-icon': `<!doctype html><html><head><title>With Icon</title>
+<link rel="icon" href="/favicon.png"></head><body>Icon</body></html>`,
 }
 
-/** A transparent 1×1 PNG: the "ad" of `/with-ad` (blocked by `fixtures/ads.txt`). */
+/** A transparent 1×1 PNG: the "ad" of `/with-ad` (blocked by `fixtures/ads.txt`), and the favicon. */
 const BANNER_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64',
@@ -24,7 +26,7 @@ export async function startSite(): Promise<{
   close: () => Promise<void>
 }> {
   const server = createServer((req, res) => {
-    if (req.url === '/ads/banner.png') {
+    if (req.url === '/ads/banner.png' || req.url === '/favicon.png') {
       res.writeHead(200, { 'content-type': 'image/png' }).end(BANNER_PNG)
       return
     }

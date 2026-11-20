@@ -419,18 +419,47 @@ results come back to the lead as a short summary + branch name, never the full c
 
 ## 11. Browser
 
-- **Model in core.** `core/browser/browserStore.ts` owns spaces and tabs (SQLite, `spaces` /
-  `tabs` tables) and knows nothing of Electron. Main mirrors it; the renderer only sees it through
-  `browser.state` and the `browser.changed` event (`BrowserState` = the snapshot plus each tab's
-  `runtime`: loading, back/forward, `theme-color`, the view's `webContentsId` — live data, never
-  persisted).
+- **Model in core.** `core/browser/browserStore.ts` owns spaces, tabs and folders (SQLite,
+  `spaces` / `tabs` / `folders` tables) and knows nothing of Electron. Main mirrors it; the
+  renderer only sees it through `browser.state` and the `browser.changed` event (`BrowserState` =
+  the snapshot plus every tab's `runtime`: loading, back/forward, `theme-color`, the view's
+  `webContentsId`, `loaded` — live data, never persisted; a tab without a view gets an idle entry
+  with `loaded: false`, which the sidebar dims).
+- **Sections.** A space's tabs sit in `favorites` (tiles), `pinned` (top-level tabs and folders
+  share one ordering; a folder orders its own tabs, one level deep) and `today` (a tree: a tab
+  opened from another is its child, `parentId`, drawn under it; closing a parent hands its
+  children to its own parent). `visibleOrder` is the drawn order: the next active tab after a
+  close and `Ctrl+Tab` follow it. Moving into today takes an index in drawn order; leaving today
+  drops the parent.
+- **Close, unload, remove.** The user's close (`browser.closeTab`, `Mod+W`, an extension's
+  `chrome.tabs.remove`, the tab menu) deletes a today tab but only **unloads** a favourite or
+  pinned tab: the entry stays and its view is destroyed. The model often doesn't change then (a
+  non-active tab), so `TabViews.sync` can't see it: `BrowserStore.closeTab` returns `'unloaded'`
+  and main calls `TabViews.unload` at every call site (`closeTab` in `main/index.ts`).
+  `browser.removeTab` deletes a tab whatever its section; deleting a folder deletes its tabs.
+- **Undo.** Deleted tabs (a folder's tabs as one entry) go on an in-memory stack of 20
+  (`core/browser/undoStack.ts`). `browser.reopenClosed` / `Mod+Shift+T` (menu accelerator, works
+  over pages) puts the last one back where it was, or at the end of the active space's today when
+  its space or folder is gone, and activates it.
+- **Sidebar menus.** `browser.showTabMenu` / `browser.showFolderMenu` pop native menus at the
+  pointer (`main/browser/sidebarMenus.ts`), so they float over the page view. Tab: Pin / Unpin
+  (pinned end / today top), Add to / Remove from Favourites (favourites end / today top), Move to
+  Folder ▸ (the space's folders, New Folder…), Copy Link, Duplicate, then Remove (favourite,
+  pinned) or Close (today). Folder: Rename, Delete Folder. Rename (and New Folder…) emit
+  `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in place.
+- **Favicons.** On `page-favicon-updated` main fetches the first candidate through the tab's
+  session (`session.fetch`, its cookies, 10 s timeout) and stores it as a `data:` URL
+  (`core/browser/favicon.ts` `faviconDataUrl`: `image/*` only, at most 64 KB — reading stops past
+  the cap — else no icon). The UI's CSP (`img-src 'self' data: crx:`) stays closed to the web. A
+  newer page's icon wins over an older, slower request.
 - **One view per tab.** `main/browser/tabViews.ts` gives every tab its own `WebContentsView`,
   added to the window's `contentView` above the UI. Only the active tab of the active space is
   visible. Views are `sandbox` + `contextIsolation`, no `nodeIntegration`, **no app preload; the
   session's `browser.*` mirror only**; the
   user agent is plain Chrome (`core/browser/userAgent.ts` drops the `Electron/` and `ACAB/`
-  tokens). Popups and `target=_blank` become tabs in the same space (`deny` + `openTab`), never
-  windows; `will-navigate` to a non-http(s) scheme is blocked.
+  tokens). Popups, `target=_blank` and "Open Link in New Tab" become tabs in the same space
+  (`deny` + `openTab` with `parentId` = the opener), never windows; `will-navigate` to a
+  non-http(s) scheme is blocked.
 - **Partitions.** Each space browses in its own persistent session,
   `persist:space-<spaceId>`: cookies and storage never leak between spaces.
   `main/browser/spaceSessions.ts` (`SpaceSessions.get`) sets a session up once, when the space's
@@ -477,15 +506,18 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Permissions.** Every space session denies page permissions except
   `clipboard-sanitized-write`, `fullscreen` and `pointerLock` (`core/browser/permissions.ts`):
   no camera, microphone, location, notifications or `openExternal` until a per-site prompt exists.
-- **Memory.** A view lives until its tab closes, even hidden (other space, inactive tab): memory
-  grows with visited tabs. Eviction of idle views is for a later plan.
+- **Memory.** A view lives until its tab closes or is unloaded, even hidden (other space,
+  inactive tab): memory grows with visited tabs. Eviction of idle views is for a later plan.
 - **Bounds from the renderer.** The UI lays out the page area and sends it with
   `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
-- **Lazy loading.** A view is created the first time its tab is active, so restored tabs don't
-  load until visited; closing a tab destroys its view (`webContents.close()`).
-- **Commands:** `browser.openTab` / `closeTab` / `activateTab` / `navigate` / `goBack` /
-  `goForward` / `reload` / `createSpace` / `activateSpace` / `setPageBounds` / `setPageVisible`.
+- **Lazy loading.** A view is created the first time its tab is active, so restored and
+  unloaded tabs don't load until visited; closing or unloading a tab destroys its view
+  (`webContents.close()`).
+- **Commands:** `browser.openTab` / `closeTab` / `removeTab` / `moveTab` / `activateTab` /
+  `navigate` / `goBack` / `goForward` / `reload` / `createSpace` / `activateSpace` /
+  `createFolder` / `renameFolder` / `setFolderCollapsed` / `deleteFolder` / `reopenClosed` /
+  `showTabMenu` / `showFolderMenu` / `setPageBounds` / `setPageVisible`.
   Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).
 - **Overlay.** `main/browser/overlayView.ts` is one transparent `WebContentsView` over the whole
   window (content size, kept in sync on resize), always above the tab views (raised again each
@@ -497,5 +529,5 @@ results come back to the lead as a short summary + branch name, never the full c
   sends `overlay.closed` to the UI (the button resets). It is a **trusted sender** exactly like the
   UI window (nothing else is) and also receives `settings.changed` and `browser.changed`. Actions
   that belong to the UI go through main: `ui.openSettings` / `ui.focusAddress` emit
-  `browser.shortcut` to the UI. Kinds: `new-menu` (the + menu, opens upward) and `site-menu`
+  `browser.shortcut` (`{ kind: 'settings' }` / `{ kind: 'focus-address' }`) to the UI. Kinds: `new-menu` (the + menu, opens upward) and `site-menu`
   (the address bar's menu, opens downward).
