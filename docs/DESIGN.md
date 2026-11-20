@@ -210,7 +210,6 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-sidebar` | Sidebar fill: accent-tinted neutral; translucent when glass is on |
 | `--bg-surface` | Main pane |
 | `--bg-raised` | Cards, approval sheet, palette, menus |
-| `--fill-raised-hover` | Hovered row on a raised surface (menus) |
 | `--bg-menu` / `--bg-menu-hover` | Opaque menu and popover card (light grey; dark grey in the dark scheme) and its hovered row |
 | `--border-menu` / `--shadow-menu` | Menu card hairline and shadow |
 | `--bg-tile` | Favourite tile card |
