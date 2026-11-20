@@ -542,3 +542,15 @@ results come back to the lead as a short summary + branch name, never the full c
   the sidebar's Search) and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
   only when the command field is submitted (`browser.openTab { input }`).
+- **Overlay modes.** The overlay is either a **popover** (above: the whole window, focused) or a
+  **tooltip** strip. `overlay.tooltip({ anchor, title, detail })` (from the sidebar: a tab row's
+  or favourite tile's height, across to the sidebar's right edge) shows the view as a strip
+  `TOOLTIP_STRIP_W` (320) wide from the anchor's right edge, full height, clamped to the window
+  (`tooltipBounds`), **never focused**, and forwards the tooltip to the overlay with the
+  `overlay.tooltip` event; the overlay draws one card that slides from row to row.
+  `overlay.tooltip(null)` from the UI sends `null` (the card fades) and hides the strip
+  `TOOLTIP_FADE_MS` (150) later unless a tooltip or popover came meanwhile; from the overlay itself
+  (sent on a `pointermove`: the pointer is on the strip) it hides at once, so the page under it gets
+  the next click. A tooltip is ignored while a popover is open, and `overlay.open` replaces any
+  tooltip (the overlay drops it on `overlay.opened`): a menu always wins. A window resize drops the
+  tooltip.

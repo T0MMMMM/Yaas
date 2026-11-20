@@ -432,3 +432,90 @@ test('collapsing a folder keeps its tab rows in the DOM but hides them from assi
     await expect(folderRow.getByRole('button', { name: 'Page A' })).toHaveCount(1)
   })
 })
+
+/** Whether the overlay view is shown, and its bounds (window DIP). */
+const overlayView = (app: ElectronApplication) =>
+  app.evaluate(({ BrowserWindow }) => {
+    const view = BrowserWindow.getAllWindows()[0]?.contentView.children.find(
+      (v) =>
+        'webContents' in v && (v.webContents as Electron.WebContents).getURL().endsWith('#overlay'),
+    )
+    const contents =
+      view && 'webContents' in view ? (view.webContents as Electron.WebContents) : null
+    return {
+      visible: view?.getVisible() ?? false,
+      bounds: view?.getBounds(),
+      focused: contents?.isFocused() ?? false,
+    }
+  })
+
+test('tooltips slide from row to row', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/a'))
+    const today = page.getByTestId('today')
+    const rowA = today.getByRole('button', { name: 'Page A', exact: true })
+    const rowB = today.getByRole('button', { name: 'Page B', exact: true })
+    await expect(rowA).toBeVisible()
+    // Replaced by the overlay's tooltip.
+    await expect(rowA).not.toHaveAttribute('title')
+
+    const overlay = await overlayPage(app)
+    const tooltip = overlay.getByTestId('tooltip')
+    await rowA.hover()
+    expect(await tooltip.count()).toBe(0)
+    await expect(tooltip).toContainText('Page A')
+    await expect(tooltip).toContainText('127.0.0.1')
+    // A strip over the page beside the sidebar, never focused.
+    const sidebar = await page.getByTestId('sidebar').boundingBox()
+    if (!sidebar) throw new Error('sidebar not found')
+    const shown = await overlayView(app)
+    expect(shown.visible).toBe(true)
+    expect(shown.bounds?.x).toBeGreaterThanOrEqual(Math.floor(sidebar.x + sidebar.width))
+    expect(shown.bounds?.width).toBe(320)
+    expect(shown.focused).toBe(false)
+
+    // Another row: the same card slides there, never gone in between.
+    const key = await tooltip.getAttribute('data-key')
+    await overlay.evaluate(() => {
+      const w = window as unknown as { tooltipGaps: number }
+      w.tooltipGaps = 0
+      new MutationObserver(() => {
+        if (document.querySelectorAll('[data-testid="tooltip"]').length !== 1) w.tooltipGaps++
+      }).observe(document.body, { childList: true, subtree: true })
+    })
+    await rowB.hover()
+    await expect(tooltip).toContainText('Page B')
+    expect(await tooltip.getAttribute('data-key')).toBe(key)
+    expect(
+      await overlay.evaluate(() => (window as unknown as { tooltipGaps: number }).tooltipGaps),
+    ).toBe(0)
+
+    // The pointer leaves the sidebar onto the page, over the strip: the tooltip hides at once, and
+    // the click reaches the page.
+    const rowBox = await rowB.boundingBox()
+    if (!rowBox) throw new Error('row not found')
+    await overlay.mouse.move(40, rowBox.y)
+    await page.mouse.move(sidebar.x + sidebar.width + 40, rowBox.y)
+    await expect.poll(async () => (await overlayView(app)).visible).toBe(false)
+    const tabPage = app.windows().find((p) => p.url() === site.url('/a'))
+    if (!tabPage) throw new Error('tab page not found')
+    await tabPage.locator('#b').click()
+    await expect(page.getByTestId('url-rest')).toHaveText('/b')
+
+    // A menu wins: opening it drops the tooltip, and hovering rows while it is open shows none.
+    // (Both tabs now show Page B.)
+    const rows = today.getByTestId('tab').getByRole('button', { name: 'Page B', exact: true })
+    await expect(rows).toHaveCount(2)
+    await rows.first().hover()
+    await expect(tooltip).toContainText('Page B')
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    await expect(overlay.getByTestId('menu')).toBeVisible()
+    await expect(tooltip).toHaveCount(0)
+    await rows.last().hover()
+    await page.waitForTimeout(700)
+    await expect(tooltip).toHaveCount(0)
+    await expect(overlay.getByTestId('menu')).toBeVisible()
+    expect((await overlayView(app)).bounds?.x).toBe(0)
+  })
+})

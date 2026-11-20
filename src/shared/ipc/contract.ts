@@ -173,6 +173,15 @@ export const overlayRequestSchema = z.union([
 export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 
 /**
+ * A sidebar row's tooltip, drawn in the overlay beside the row: the row's rect (window DIP; the
+ * tooltip starts at its right edge and is centred on it vertically), its title and a detail line.
+ */
+export const tooltipSchema = z
+  .object({ anchor: pageBoundsSchema, title: z.string(), detail: z.string() })
+  .strict()
+export type Tooltip = z.infer<typeof tooltipSchema>
+
+/**
  * What main asks the UI to do: shortcuts pressed while a page has focus, actions from the overlay
  * or from a native menu (a folder's Rename edits its name in the sidebar).
  */
@@ -275,6 +284,11 @@ export const commands = {
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
   'overlay.close': { input: z.void(), output: z.void() },
+  /**
+   * Shows a sidebar tooltip in the overlay (never focused), or hides it with `null`: from the UI
+   * after a fade, from the overlay (the pointer is on it) at once. Ignored while a popover is open.
+   */
+  'overlay.tooltip': { input: tooltipSchema.nullable(), output: z.void() },
   /** Asks the UI to open its settings (from the overlay): emits `browser.shortcut` `settings`. */
   'ui.openSettings': { input: z.void(), output: z.void() },
   /** Asks the UI to edit the address (from the overlay): emits `browser.shortcut` `focus-address`. */
@@ -291,6 +305,8 @@ export const events = {
   'browser.shortcut': shortcutSchema,
   /** To the overlay only: which popover to show, and where. */
   'overlay.opened': overlayRequestSchema,
+  /** To the overlay only: the tooltip to draw, or `null` to fade it out. */
+  'overlay.tooltip': tooltipSchema.nullable(),
   /**
    * To the UI and the overlay: the overlay closed, so the button that opened it resets and the
    * overlay drops its popover (main can close it, e.g. for ⌘L, without the overlay asking).

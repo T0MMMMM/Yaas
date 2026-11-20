@@ -180,9 +180,11 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
     await dragTo(80)
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(72)
     await expect(sidebar).toHaveAttribute('data-compact', 'true')
-    // Only the favicon shows; the title is the tooltip.
+    // Only the favicon shows; the title is its label and the overlay's tooltip.
     const row = page.getByTestId('tab').getByRole('button').first()
-    await expect(row).toHaveAttribute('title', /.+/)
+    await expect(row).toHaveAttribute('aria-label', /.+/)
+    await row.hover()
+    await expect((await overlayPage(app)).getByTestId('tooltip')).toBeVisible()
     await expect(page.getByTestId('tab').locator('span')).toBeHidden()
     // The page card still follows the sidebar.
     const slot = async () => {

@@ -74,6 +74,17 @@ describe('IPC contract', () => {
     expect(input.safeParse({ kind: 'command', anchor }).success).toBe(false)
   })
 
+  it('takes a tooltip with an anchor, or null, on overlay.tooltip', () => {
+    const input = commands['overlay.tooltip'].input
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(input.safeParse({ anchor, title: 'A', detail: 'a.com' }).success).toBe(true)
+    expect(input.safeParse(null).success).toBe(true)
+    expect(input.safeParse({ title: 'A', detail: 'a.com' }).success).toBe(false)
+    expect(input.safeParse({ anchor, title: 'A', detail: 'a.com', html: '<b>' }).success).toBe(
+      false,
+    )
+  })
+
   it.each(['browser.share', 'browser.toggleDevTools'] as const)(
     'accepts only a tab id on %s',
     (channel) => {

@@ -7,6 +7,7 @@ import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
 import { useTabDragHandle } from './useTabDrag'
+import { useTooltipEnter } from './useTooltip'
 import styles from './TabRow.module.css'
 
 /**
@@ -28,6 +29,7 @@ export function TabRow({
   const drag = useTabDragHandle(tab.id)
   const compact = useCompact()
   const trail = useContext(FolderTrailContext)
+  const enterTooltip = useTooltipEnter()
   return (
     <li
       className={styles.item}
@@ -59,8 +61,8 @@ export function TabRow({
         data-active={active}
         data-loaded={tab.loaded}
         aria-current={active ? 'page' : undefined}
-        title={compact ? tab.title : tab.url}
         aria-label={compact ? tab.title : undefined}
+        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
         onPointerDown={drag.onPointerDown}
         onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
       >

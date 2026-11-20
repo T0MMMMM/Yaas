@@ -1,0 +1,40 @@
+import type { Tooltip } from '@shared/ipc/contract'
+
+/** How long the pointer rests on a row before its tooltip shows. */
+export const TOOLTIP_DELAY_MS = 500
+
+/** The sidebar's tooltip: the one shown in the overlay, and the one waiting for the delay. */
+export interface TooltipState {
+  shown: Tooltip | null
+  pending: Tooltip | null
+}
+
+export type TooltipEvent =
+  /** The pointer entered a row. */
+  | { type: 'enter'; tooltip: Tooltip }
+  /** TOOLTIP_DELAY_MS after the first `enter`. */
+  | { type: 'delay' }
+  /** The pointer left the sidebar. */
+  | { type: 'leave' }
+  /** A pointer press or a drag start in the sidebar. */
+  | { type: 'press' }
+
+export const NO_TOOLTIP: TooltipState = { shown: null, pending: null }
+
+/**
+ * Once a tooltip shows, hovering another row slides it there at once; until then, the last row
+ * hovered waits for the delay. Leaving the sidebar or pressing clears both.
+ */
+export function tooltipReducer(state: TooltipState, event: TooltipEvent): TooltipState {
+  switch (event.type) {
+    case 'enter':
+      return state.shown
+        ? { shown: event.tooltip, pending: null }
+        : { shown: null, pending: event.tooltip }
+    case 'delay':
+      return state.pending ? { shown: state.pending, pending: null } : state
+    case 'leave':
+    case 'press':
+      return NO_TOOLTIP
+  }
+}

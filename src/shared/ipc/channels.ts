@@ -35,6 +35,7 @@ export const COMMAND_CHANNELS = [
   'window.setControlsVisible',
   'overlay.open',
   'overlay.close',
+  'overlay.tooltip',
   'ui.openSettings',
   'ui.focusAddress',
   'ui.renameFolder',
@@ -46,6 +47,7 @@ export const EVENT_CHANNELS = [
   'browser.changed',
   'browser.shortcut',
   'overlay.opened',
+  'overlay.tooltip',
   'overlay.closed',
 ] as const
 

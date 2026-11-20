@@ -306,6 +306,9 @@ registerCommands(
     },
     'overlay.open': (request) => overlayView().open(request),
     'overlay.close': () => overlayView().close(),
+    // From the overlay itself, the pointer is on the strip: hide it at once so the page gets the click.
+    'overlay.tooltip': (tooltip, event) =>
+      overlayView().tooltip(tooltip, { now: event.sender === overlayView().webContents }),
     'ui.openSettings': () => emitShortcut({ kind: 'settings' }),
     'ui.focusAddress': () => emitShortcut({ kind: 'focus-address' }),
     'ui.renameFolder': ({ folderId }) => emitShortcut({ kind: 'rename-folder', folderId }),

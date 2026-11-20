@@ -92,7 +92,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   context bars reserve the caption buttons' width from `env(titlebar-area-*)`.
   Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
   (tabs stay listed under them, unindented), spaces stack as dots, New tab is an icon.
-  Tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
+  The overlay's tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
   past 120 px restores the normal layout.
 - **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 44, favicon
   `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
@@ -134,6 +134,16 @@ animation backwards (`--dur-fast`, the card gets `data-state="closing"`) before 
 a chosen item's action runs first, never after the animation. The + menu has a
 filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
 at once), New space, Settings.
+
+**Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
+`title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar and centred on
+the row (the title, then the host in `--text-muted`), on the popovers' opaque card (`--bg-menu`,
+`--border-menu`, `--shadow-menu`, `--radius-md`; no blur). Once shown, hovering another row
+slides the same card there (`top`, `--dur-base`) with no new delay. It fades in and out
+(`--dur-fast`); leaving the sidebar fades it out (the overlay's strip hides 150 ms later), moving
+onto it hides it at once so the page gets the click, and a press or a drag start clears it. A menu
+always wins: opening one drops the tooltip, and none shows while a menu is open. Folder rows and
+buttons keep their native `title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
 
 **Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w` 560 wide,
 centred `--finder-top` (20 % of the window) from the top, in the overlay: a field over a list,

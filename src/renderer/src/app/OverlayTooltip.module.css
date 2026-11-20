@@ -1,0 +1,39 @@
+/* A sidebar row's tooltip: the popovers' opaque card, small, beside the sidebar, vertically centred
+   on its row. `top` is set inline; moving it slides the card to the next row. */
+.tooltip {
+  position: fixed;
+  left: var(--space-2);
+  max-width: calc(100vw - 2 * var(--space-2));
+  translate: 0 -50%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-hair);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-menu);
+  border-radius: var(--radius-md);
+  background: var(--bg-menu);
+  box-shadow: var(--shadow-menu);
+  color: var(--text);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+  transition:
+    top var(--dur-base) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+  animation: fade-in var(--dur-fast) var(--ease);
+}
+
+.tooltip[data-state='closing'] {
+  opacity: 0;
+}
+
+.detail {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -4,10 +4,12 @@ import { Favicon } from './Favicon'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
 import { TabDragContext, useTabDragHandle } from './useTabDrag'
+import { useTooltipEnter } from './useTooltip'
 import styles from './FavoriteTiles.module.css'
 
 function Tile({ tab, active }: { tab: TabView; active: boolean }) {
   const drag = useTabDragHandle(tab.id)
+  const enterTooltip = useTooltipEnter()
   return (
     <li
       className={styles.item}
@@ -22,7 +24,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
         data-loaded={tab.loaded}
         aria-current={active ? 'page' : undefined}
         aria-label={tab.title}
-        title={tab.title}
+        onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
         onPointerDown={drag.onPointerDown}
         onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
         onContextMenu={(e) => {
