@@ -116,3 +116,8 @@
   color: var(--text);
   background: var(--hover-fill);
 }
+
+/* Being dragged (useTabDrag): dimmed where it was. */
+.item[data-dragged] {
+  opacity: var(--opacity-dragged);
+}

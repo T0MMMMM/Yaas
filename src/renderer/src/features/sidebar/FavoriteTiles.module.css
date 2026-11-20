@@ -69,3 +69,23 @@
   height: var(--tile-icon-size);
   color: var(--text-muted);
 }
+
+/* Drag and drop (useTabDrag): the dragged tile is dimmed; the grid is lit when a drop goes in. */
+.item[data-dragged] {
+  opacity: var(--opacity-dragged);
+}
+
+.tiles[data-drop-target] {
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+}
+
+/* While dragging with no favourite yet: the empty grid's hint. */
+.hint {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  height: var(--tile-h);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}

@@ -56,6 +56,16 @@ export interface SidebarSections {
   pinned: SidebarNode[]
   /** The rest, depth-first by parent, with automatic folders when on. */
   today: SidebarNode[]
+  /**
+   * Today's tabs in the store's drawn order (depth-first, automatic folders ignored): the order
+   * `browser.moveTab` counts a today index in. `parentId` is null for a top-level tab.
+   */
+  todayOrder: TodayEntry[]
+}
+
+export interface TodayEntry {
+  id: string
+  parentId: string | null
 }
 
 export interface SidebarOptions {
@@ -196,14 +206,23 @@ function sectionsOf(
       })),
   ]
 
-  const trees = todayTrees(
-    tabs.filter((t) => t.section === 'today'),
-    view,
+  const todayTabs = tabs.filter((t) => t.section === 'today')
+  const trees = todayTrees(todayTabs, view)
+  const todayIds = new Set(todayTabs.map((t) => t.id))
+  const parentOf = new Map(
+    todayTabs.map((t) => [
+      t.id,
+      t.parentId !== null && todayIds.has(t.parentId) ? t.parentId : null,
+    ]),
   )
   return {
     favorites,
     pinned: pinnedItems.sort(byPosition).map((item) => item.node),
     today: opts.autoFolders ? withAutoFolders(trees) : trees.flat(),
+    todayOrder: tabsOf(trees.flat()).map((t) => ({
+      id: t.id,
+      parentId: parentOf.get(t.id) ?? null,
+    })),
   }
 }
 
@@ -227,6 +246,18 @@ export function sidebarSections(
 /** The tabs of a pinned or today list, in drawn order (folders' tabs included). */
 export function tabsOf(nodes: SidebarNode[]): TabView[] {
   return nodes.flatMap((n) => (n.kind === 'tab' ? [n.tab] : tabsOf(n.children)))
+}
+
+/** A today tab and its descendants: what moves with it (empty when it is not in today). */
+export function todaySubtree(order: TodayEntry[], tabId: string): Set<string> {
+  const ids = new Set<string>()
+  if (!order.some((t) => t.id === tabId)) return ids
+  ids.add(tabId)
+  // Depth-first order: a descendant always comes after its parent.
+  for (const entry of order) {
+    if (entry.parentId !== null && ids.has(entry.parentId)) ids.add(entry.id)
+  }
+  return ids
 }
 
 /**

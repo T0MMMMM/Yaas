@@ -9,6 +9,7 @@ import {
   sidebarSections,
   sidebarTree,
   todayCloseOrder,
+  todaySubtree,
   usageView,
   type SidebarNode,
 } from './workspace'
@@ -413,5 +414,45 @@ describe('todayCloseOrder', () => {
   it('closes the active tab last, so closing the others never activates (loads) a tab', () => {
     expect(todayCloseOrder(today, 'b')).toEqual(['a3', 'a2', 'a1', 'c', 'a', 'b'])
     expect(todayCloseOrder(today, 'elsewhere')).toEqual(['a3', 'a2', 'a1', 'c', 'b', 'a'])
+  })
+})
+
+describe('todayOrder', () => {
+  it("lists today in the store's order with parents, whatever automatic folders regroup", () => {
+    const sections = sidebarSections(
+      stateOf([
+        at('a1', 0, {}, 'https://a.com/1'),
+        at('kid', 1, { parentId: 'a1' }, 'https://b.com/'),
+        at('y1', 2, {}, 'https://y.com/'),
+        at('a2', 3, {}, 'https://a.com/2'),
+        at('a3', 4, {}, 'https://a.com/3'),
+        at('p1', 0, { section: 'pinned' }),
+      ]),
+      's1',
+      { autoFolders: true },
+    )
+    expect(sections.today.map(shape)).toEqual([
+      { 'auto:a.com': ['a1@0', 'kid@1', 'a2@0', 'a3@0'] },
+      'y1@0',
+    ])
+    expect(sections.todayOrder).toEqual([
+      { id: 'a1', parentId: null },
+      { id: 'kid', parentId: 'a1' },
+      { id: 'y1', parentId: null },
+      { id: 'a2', parentId: null },
+      { id: 'a3', parentId: null },
+    ])
+  })
+
+  it('gives a today tab with its descendants, nothing for a tab outside today', () => {
+    const order = [
+      { id: 'a', parentId: null },
+      { id: 'b', parentId: 'a' },
+      { id: 'c', parentId: 'b' },
+      { id: 'd', parentId: null },
+    ]
+    expect([...todaySubtree(order, 'a')]).toEqual(['a', 'b', 'c'])
+    expect([...todaySubtree(order, 'b')]).toEqual(['b', 'c'])
+    expect([...todaySubtree(order, 'pinned')]).toEqual([])
   })
 })

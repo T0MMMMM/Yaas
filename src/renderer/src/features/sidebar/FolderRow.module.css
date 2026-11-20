@@ -56,3 +56,8 @@
   flex-direction: column;
   gap: 1px;
 }
+
+/* A tab dragged onto the folder's row files into it (useTabDrag). */
+.header[data-drop-target] .row::before {
+  background: var(--accent-soft);
+}

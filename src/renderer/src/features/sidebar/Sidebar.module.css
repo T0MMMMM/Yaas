@@ -130,6 +130,8 @@ kbd {
 /* ---------- tabs ---------- */
 
 .scroll {
+  /* The drop line is placed in the scroll content. */
+  position: relative;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -275,4 +277,46 @@ kbd {
   height: 7px;
   border-radius: var(--radius-pill);
   background: currentColor;
+}
+
+/* ---------- drag and drop (useTabDrag) ---------- */
+
+.sidebar[data-dragging] {
+  cursor: grabbing;
+}
+
+.sidebar[data-dragging] * {
+  cursor: inherit;
+}
+
+/* An empty list can still be dropped on while a tab is dragged. */
+.sidebar[data-dragging] .list {
+  min-height: var(--row-h);
+}
+
+/* The list (or folder, or favourites) the drop goes into. */
+.list[data-drop-target] {
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+}
+
+.dropHint {
+  display: grid;
+  place-items: center;
+  min-height: var(--row-h);
+  border-radius: var(--radius-lg);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+/* The insertion point: centred on the boundary between two rows. */
+.dropLine {
+  position: absolute;
+  left: var(--space-1);
+  right: var(--space-1);
+  height: var(--drop-line-w);
+  translate: 0 -50%;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  pointer-events: none;
 }

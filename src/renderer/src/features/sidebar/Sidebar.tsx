@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
@@ -9,6 +9,7 @@ import { FavoriteTiles } from './FavoriteTiles'
 import { FolderRow } from './FolderRow'
 import { TabRow } from './TabRow'
 import { tilt } from './tilt'
+import { TabDragContext, useTabDrag } from './useTabDrag'
 import styles from './Sidebar.module.css'
 
 /** Opens a blank tab in the active space, then puts the address bar in edit mode. */
@@ -50,7 +51,8 @@ function Rows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | nu
 
 /**
  * Arc-style vertical sidebar: favourite tiles, pinned tabs and folders, a separator, today's tabs,
- * then the spaces. No data logic here — the tree comes from the workspace.
+ * then the spaces. No data logic here — the tree comes from the workspace. Tabs are dragged
+ * between the lists (useTabDrag).
  */
 export function Sidebar() {
   const workspace = useWorkspace()
@@ -62,88 +64,124 @@ export function Sidebar() {
 
   const sections = workspace?.sections
   const activeId = workspace?.activeTab?.id ?? null
+  const scroll = useRef<HTMLDivElement>(null)
+  const { drag, indicator } = useTabDrag(sections, scroll)
+  const dragging = drag.dragging.size > 0
+  const dropOn = (key: string): true | undefined => drag.zone === key || undefined
 
   return (
-    <nav className={styles.sidebar} aria-label="Spaces and tabs" data-testid="sidebar">
-      <div className={`${styles.titlebar} drag`} />
+    <TabDragContext.Provider value={drag}>
+      <nav
+        className={styles.sidebar}
+        aria-label="Spaces and tabs"
+        data-testid="sidebar"
+        data-dragging={dragging || undefined}
+      >
+        <div className={`${styles.titlebar} drag`} />
 
-      <button className={`${styles.search} no-drag`}>
-        <MagnifyingGlass size={15} weight="bold" />
-        <span>Search</span>
-        <kbd>⌘K</kbd>
-      </button>
+        <button className={`${styles.search} no-drag`}>
+          <MagnifyingGlass size={15} weight="bold" />
+          <span>Search</span>
+          <kbd>⌘K</kbd>
+        </button>
 
-      <div className={styles.scroll}>
-        {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
+        <div className={styles.scroll} ref={scroll}>
+          {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
 
-        {sections && sections.pinned.length > 0 && (
-          <ul className={styles.list} aria-label="Pinned" data-testid="pinned">
-            <Rows nodes={sections.pinned} activeId={activeId} />
-          </ul>
-        )}
-
-        <div className={styles.separator} data-testid="today-header">
-          <span className={styles.rule} />
-          {sections && sections.today.length > 0 && (
-            <button
-              className={styles.clear}
-              title="Close today's tabs (⌘⇧T reopens them one by one)"
-              onClick={() => void clearToday(sections.today, activeId)}
+          {/* While a tab is dragged, an empty pinned list is drawn to drop it on. */}
+          {sections && (sections.pinned.length > 0 || dragging) && (
+            <ul
+              className={styles.list}
+              aria-label="Pinned"
+              data-testid="pinned"
+              data-drop="list:pinned"
+              data-drop-target={dropOn('list:pinned')}
             >
-              Clear
-            </button>
+              <Rows nodes={sections.pinned} activeId={activeId} />
+              {sections.pinned.length === 0 && (
+                <li className={styles.dropHint}>Drop here to pin</li>
+              )}
+            </ul>
           )}
+
+          <div className={styles.separator} data-testid="today-header">
+            <span className={styles.rule} />
+            {sections && sections.today.length > 0 && (
+              <button
+                className={styles.clear}
+                title="Close today's tabs (⌘⇧T reopens them one by one)"
+                onClick={() => void clearToday(sections.today, activeId)}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          <ul
+            className={styles.list}
+            aria-label="Today"
+            data-testid="today"
+            data-drop="list:today"
+            data-drop-target={dropOn('list:today')}
+          >
+            {sections && <Rows nodes={sections.today} activeId={activeId} />}
+          </ul>
+
+          {indicator?.kind === 'line' && (
+            <div
+              className={styles.dropLine}
+              style={{ top: indicator.top }}
+              data-testid="drop-line"
+              aria-hidden="true"
+            />
+          )}
+
+          <button className={styles.newTab} onClick={() => void newTab()} data-testid="new-tab">
+            <Plus size={13} weight="bold" />
+            <span>New tab</span>
+            <kbd>⌘T</kbd>
+          </button>
         </div>
 
-        <ul className={styles.list} aria-label="Today" data-testid="today">
-          {sections && <Rows nodes={sections.today} activeId={activeId} />}
-        </ul>
+        <div className={styles.bottom}>
+          {/* Downloads (plan 4). */}
+          <div className={styles.slot} />
 
-        <button className={styles.newTab} onClick={() => void newTab()} data-testid="new-tab">
-          <Plus size={13} weight="bold" />
-          <span>New tab</span>
-          <kbd>⌘T</kbd>
-        </button>
-      </div>
+          <div className={styles.spaces} role="tablist" aria-label="Spaces">
+            {workspace?.spaces.map((s) => (
+              <button
+                key={s.id}
+                role="tab"
+                aria-selected={s.id === workspace.space.id}
+                aria-label={s.label}
+                title={s.label}
+                className={styles.space}
+                style={{ ...tilt(s.id), color: s.color }}
+                onClick={() => void window.acab.invoke('browser.activateSpace', { spaceId: s.id })}
+                {...magnet}
+              >
+                <span className={styles.dot} />
+              </button>
+            ))}
+          </div>
 
-      <div className={styles.bottom}>
-        {/* Downloads (plan 4). */}
-        <div className={styles.slot} />
-
-        <div className={styles.spaces} role="tablist" aria-label="Spaces">
-          {workspace?.spaces.map((s) => (
-            <button
-              key={s.id}
-              role="tab"
-              aria-selected={s.id === workspace.space.id}
-              aria-label={s.label}
-              title={s.label}
-              className={styles.space}
-              style={{ ...tilt(s.id), color: s.color }}
-              onClick={() => void window.acab.invoke('browser.activateSpace', { spaceId: s.id })}
-              {...magnet}
-            >
-              <span className={styles.dot} />
-            </button>
-          ))}
+          <button
+            className={`${styles.iconButton} no-drag`}
+            aria-label="New tab, space or settings"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            title="New…"
+            onClick={(e) => {
+              setMenuOpen(true)
+              // If the overlay cannot open, nothing will ever send `overlay.closed`.
+              openNewMenu(e.currentTarget).catch(() => setMenuOpen(false))
+            }}
+            {...magnet}
+          >
+            <Plus size={18} weight="regular" />
+          </button>
         </div>
-
-        <button
-          className={`${styles.iconButton} no-drag`}
-          aria-label="New tab, space or settings"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          title="New…"
-          onClick={(e) => {
-            setMenuOpen(true)
-            // If the overlay cannot open, nothing will ever send `overlay.closed`.
-            openNewMenu(e.currentTarget).catch(() => setMenuOpen(false))
-          }}
-          {...magnet}
-        >
-          <Plus size={18} weight="regular" />
-        </button>
-      </div>
-    </nav>
+      </nav>
+    </TabDragContext.Provider>
   )
 }

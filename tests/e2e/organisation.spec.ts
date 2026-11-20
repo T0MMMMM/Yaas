@@ -113,6 +113,97 @@ test('three tabs of one site are drawn as an automatic folder, unless turned off
   })
 })
 
+/** The tabs of the active space as main stores them (section and folder). */
+const storedTabs = (page: Page) =>
+  page.evaluate(() =>
+    window.acab
+      .invoke('browser.state')
+      .then((state) =>
+        state.tabs.map((t) => ({ title: t.title, section: t.section, folderId: t.folderId })),
+      ),
+  )
+
+test('dragging a tab pins it, files it into a folder and moves it back to today', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const a = await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    await page.evaluate(
+      (tabId) => window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
+      a.id,
+    )
+    const pinned = page.getByTestId('pinned')
+    const today = page.getByTestId('today')
+    await expect(pinned.getByTestId('tab')).toHaveText(['Page A'])
+    await expect(today.getByTestId('tab')).toHaveText(['Page B', 'Page C'])
+
+    // The first today tab dropped on the pinned list's tab (its lower half): pinned after it.
+    await today
+      .getByTestId('tab')
+      .first()
+      .dragTo(pinned.getByTestId('tab').first(), {
+        targetPosition: { x: 40, y: 26 },
+      })
+    await expect(pinned.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+    await expect(today.getByTestId('tab')).toHaveText(['Page C'])
+
+    // A tab dropped on the middle of a folder's row is filed into it.
+    const folder = await page.evaluate(() =>
+      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+    )
+    const folderButton = pinned.getByRole('button', { name: 'Reading' })
+    await today.getByTestId('tab').first().dragTo(folderButton)
+    await expect(pinned.getByTestId('folder').getByTestId('tab')).toHaveText(['Page C'])
+    expect(await storedTabs(page)).toContainEqual({
+      title: 'Page C',
+      section: 'pinned',
+      folderId: folder.id,
+    })
+
+    // Back to today: dropped on the upper half of a today tab, a pinned tab goes before it.
+    await openTab(page, site.url('/with-icon'))
+    await expect(today.getByTestId('tab')).toHaveCount(1)
+    await pinned
+      .getByTestId('tab')
+      .first()
+      .dragTo(today.getByTestId('tab').first(), {
+        targetPosition: { x: 40, y: 6 },
+      })
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'With Icon'])
+    await expect(pinned.getByTestId('tab')).toHaveText(['Page B', 'Page C'])
+  })
+})
+
+test('while a tab is dragged, an empty favourites grid appears to drop it on', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    const favorites = page.getByTestId('favorites')
+    await expect(favorites).toHaveCount(0)
+
+    const row = page.getByTestId('today').getByTestId('tab').first()
+    const box = await row.boundingBox()
+    if (!box) throw new Error('No tab row')
+    await page.mouse.move(box.x + 40, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + 40, box.y + box.height / 2 + 10, { steps: 2 })
+    await expect(favorites).toBeVisible()
+    await expect(page.getByTestId('tab').filter({ hasText: 'Page A' })).toHaveAttribute(
+      'data-dragged',
+      'true',
+    )
+    const grid = await favorites.boundingBox()
+    if (!grid) throw new Error('No favourites grid')
+    await page.mouse.move(grid.x + grid.width / 2, grid.y + grid.height / 2, { steps: 4 })
+    await expect(favorites).toHaveAttribute('data-drop-target', 'true')
+    await page.mouse.up()
+
+    await expect(favorites.getByTestId('favorite')).toHaveCount(1)
+    await expect(favorites.getByRole('button', { name: 'Page A' })).toBeVisible()
+    await expect(page.getByTestId('today').getByTestId('tab')).toHaveText(['Page B'])
+  })
+})
+
 /** Counts web contents main creates from now on (a tab's view is one). */
 const countCreatedContents = (app: ElectronApplication) =>
   app.evaluate(({ app: electronApp }) => {

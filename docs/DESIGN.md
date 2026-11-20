@@ -98,6 +98,14 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 - Every row and tile: right-click opens its native menu (tab: pin, favourites, folders, copy,
   close; folder: rename, delete). A tab whose page is not loaded is dimmed
   (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
+- **Drag and drop** (`useTabDrag`, pointer events): drag a tab row or tile to reorder it, pin it,
+  favourite it or file it into a folder. The upper half of a row drops before it, the lower half
+  after it; the middle half of a pinned folder's row files into it; the tiles grid adds it to the
+  end of the favourites. A `--drop-line-w` `--accent` line marks the insertion point, a folder or
+  list the drop goes into gets the `--accent-soft` fill, the dragged row is at
+  `--opacity-dragged`. Empty favourites and pinned lists appear while dragging so a tab can be
+  dropped on them. Automatic folders are no drop target (their tabs are plain today tabs); a
+  today tab moves with its subtree. Esc cancels.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 glass card (`ui/Popover.module.css`, composed by each popover's own CSS module).
@@ -220,7 +228,8 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) · `--tile-h` 44 (favourite tiles) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
-| Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
+| Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
+| Drag and drop | `--drop-line-w` 2 (the `--accent` insertion line of a tab dragged in the sidebar) |
 
 ## 4. Transparency, per platform
 

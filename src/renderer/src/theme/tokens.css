@@ -66,6 +66,8 @@
   --dur-spin: 900ms; /* one turn of the loading spinner */
 
   --opacity-unloaded: 0.5; /* sidebar tabs whose page is not loaded yet */
+  --opacity-dragged: 0.5; /* a sidebar tab while it is dragged */
+  --drop-line-w: 2px; /* the insertion line of a tab dragged in the sidebar */
 
   /* the "askew card" motion: selected and hovered items tilt slightly */
   --tilt-selected: -0.8deg;

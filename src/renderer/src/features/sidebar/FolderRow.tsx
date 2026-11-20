@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useContext, useRef, useState } from 'react'
 import { Folder, FolderOpen } from '@phosphor-icons/react'
 import type { SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { showFolderMenu } from './menus'
 import { TabRow } from './TabRow'
 import { tilt } from './tilt'
+import { TabDragContext } from './useTabDrag'
 import styles from './FolderRow.module.css'
 
 type FolderNode = Extract<SidebarNode, { kind: 'folder' | 'auto-folder' }>
@@ -49,12 +50,14 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
 
 /**
  * A pinned folder (collapsed state in main, renamable, native menu on right-click) or an
- * automatic folder of today (collapsed state per host in the UI store, no menu).
+ * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs dragged
+ * onto a pinned folder's row are filed into it.
  */
 export function FolderRow({ node, activeId }: { node: FolderNode; activeId: string | null }) {
   const collapsedHosts = useUi((s) => s.collapsedHosts)
   const toggleHost = useUi((s) => s.toggleHost)
   const renaming = useUi((s) => node.kind === 'folder' && s.renamingFolderId === node.folder.id)
+  const { zone } = useContext(TabDragContext)
 
   const auto = node.kind === 'auto-folder'
   const key = auto ? `auto:${node.host}` : node.folder.id
@@ -77,6 +80,9 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
       <div
         className={styles.header}
         style={tilt(key)}
+        // A tab dropped on a pinned folder files into it; automatic folders are no drop target.
+        data-drop={auto ? undefined : `folder:${node.folder.id}`}
+        data-drop-target={(!auto && zone === `folder:${node.folder.id}`) || undefined}
         onContextMenu={(e) => {
           if (node.kind !== 'folder') return
           e.preventDefault()
