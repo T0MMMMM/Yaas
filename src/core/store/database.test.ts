@@ -16,9 +16,9 @@ describe('openDatabase', () => {
   })
 
   it('is idempotent when reopened', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'yaas-db-'))
+    const dir = mkdtempSync(join(tmpdir(), 'acab-db-'))
     dirs.push(dir)
-    const file = join(dir, 'yaas.db')
+    const file = join(dir, 'acab.db')
     openDatabase(file).close()
     const db = openDatabase(file)
     expect(db.prepare('PRAGMA user_version').get()).toEqual({ user_version: SCHEMA_VERSION })

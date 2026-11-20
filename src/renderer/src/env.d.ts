@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
-import type { YaasBridge } from '@shared/ipc/contract'
+import type { AcabBridge } from '@shared/ipc/contract'
 
 declare global {
   interface Window {
-    readonly yaas: YaasBridge
+    readonly acab: AcabBridge
   }
 }

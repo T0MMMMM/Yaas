@@ -13,13 +13,13 @@ export const useSettings = create<SettingsState>((set) => ({
   info: null,
   settings: null,
   init: () => {
-    void Promise.all([window.yaas.invoke('app.info'), window.yaas.invoke('settings.get')]).then(
+    void Promise.all([window.acab.invoke('app.info'), window.acab.invoke('settings.get')]).then(
       ([info, settings]) => set({ info, settings }),
     )
-    return window.yaas.on('settings.changed', (settings) => set({ settings }))
+    return window.acab.on('settings.changed', (settings) => set({ settings }))
   },
   update: async (patch) => {
-    const settings = await window.yaas.invoke('settings.update', patch)
+    const settings = await window.acab.invoke('settings.update', patch)
     set({ settings })
   },
 }))

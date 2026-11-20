@@ -1,7 +1,7 @@
 # Packaging — see docs/ARCHITECTURE.md §1. Unsigned for now (personal project).
-appId: dev.yaas.app
-productName: YAAS
-copyright: Copyright © 2026 YAAS contributors
+appId: dev.acab.app
+productName: ACAB
+copyright: Copyright © 2026 ACAB contributors
 
 directories:
   output: release/${version}
@@ -21,7 +21,7 @@ mac:
   target:
     - target: dmg
       arch: [arm64, x64]
-  category: public.app-category.developer-tools
+  category: public.app-category.productivity
   identity: null # no signing / notarization yet
   darkModeSupport: true
 

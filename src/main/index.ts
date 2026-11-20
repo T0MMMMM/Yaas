@@ -7,16 +7,16 @@ import { openDatabase } from '@core/store/database'
 import { emit, registerCommands } from './ipc/router'
 import { applyMaterial, createMainWindow, glassSupported, materialFor } from './windows/mainWindow'
 
-// Tests and parallel dev profiles can point YAAS at a throwaway data dir.
-const userDataOverride = process.env['YAAS_USER_DATA']
+// Tests and parallel dev profiles can point ACAB at a throwaway data dir.
+const userDataOverride = process.env['ACAB_USER_DATA']
 if (userDataOverride) app.setPath('userData', userDataOverride)
 
 if (!app.requestSingleInstanceLock()) app.quit()
 
-const db = openDatabase(join(app.getPath('userData'), 'yaas.db'))
+const db = openDatabase(join(app.getPath('userData'), 'acab.db'))
 const settings = new SettingsStore(db)
 // `npm run dev:onboarding` shows the onboarding on every launch (to work on it).
-if (process.env['YAAS_ONBOARDING'] === '1') settings.update({ onboardingDone: false })
+if (process.env['ACAB_ONBOARDING'] === '1') settings.update({ onboardingDone: false })
 const accounts = new Accounts({
   db,
   authStatus: async (configDir) => {

@@ -41,7 +41,7 @@ export function Onboarding() {
       <button
         className={`${styles.logo} no-drag`}
         onClick={() => stage === 'intro' && setStage('visual')}
-        aria-label="YAAS"
+        aria-label="ACAB"
         tabIndex={stage === 'intro' ? 0 : -1}
       >
         <Logo />

@@ -4,10 +4,10 @@ import { join } from 'node:path'
 import { _electron as electron, expect, test } from '@playwright/test'
 
 test('first launch shows onboarding, then the sidebar', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'yaas-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const app = await electron.launch({
     args: [join(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, YAAS_USER_DATA: userData, YAAS_PROVIDER: 'fake' },
+    env: { ...process.env, ACAB_USER_DATA: userData },
   })
 
   try {
@@ -23,7 +23,7 @@ test('first launch shows onboarding, then the sidebar', async () => {
     await page.getByRole('button', { name: 'Continue' }).click()
 
     await expect(page.getByTestId('technical-setup')).toBeVisible()
-    await page.getByRole('button', { name: 'Open YAAS' }).click()
+    await page.getByRole('button', { name: 'Open ACAB' }).click()
 
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await expect(page.getByTestId('empty-state')).toBeVisible()
@@ -56,9 +56,9 @@ test('first launch shows onboarding, then the sidebar', async () => {
     // The renderer is isolated: no Node, only the bridge.
     const globals = await page.evaluate(() => ({
       require: typeof (globalThis as { require?: unknown }).require,
-      yaas: typeof (globalThis as { yaas?: { invoke?: unknown } }).yaas?.invoke,
+      acab: typeof (globalThis as { acab?: { invoke?: unknown } }).acab?.invoke,
     }))
-    expect(globals).toEqual({ require: 'undefined', yaas: 'function' })
+    expect(globals).toEqual({ require: 'undefined', acab: 'function' })
   } finally {
     await app.close()
     rmSync(userData, { recursive: true, force: true })
@@ -66,11 +66,11 @@ test('first launch shows onboarding, then the sidebar', async () => {
 })
 
 test('settings survive a relaunch', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'yaas-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const launch = () =>
     electron.launch({
       args: [join(__dirname, '../../out/main/index.js')],
-      env: { ...process.env, YAAS_USER_DATA: userData, YAAS_PROVIDER: 'fake' },
+      env: { ...process.env, ACAB_USER_DATA: userData },
     })
 
   try {
@@ -80,7 +80,7 @@ test('settings survive a relaunch', async () => {
     await page.getByRole('radio', { name: '#2BB673' }).click()
     await page.getByRole('button', { name: 'Continue' }).click()
     await expect(page.getByTestId('cli-status')).not.toHaveText(/Looking for/)
-    await page.getByRole('button', { name: 'Open YAAS' }).click()
+    await page.getByRole('button', { name: 'Open ACAB' }).click()
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await first.close()
 

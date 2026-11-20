@@ -1,8 +1,8 @@
-# YAAS — conventions for Claude sessions
+# ACAB — conventions for Claude sessions
 
-YAAS ("Yeah, An Account Switcher") is an Electron desktop app (macOS + Windows) that runs
-**Claude Code** sessions across several isolated accounts ("spaces"), in an Arc-style UI.
-Personal project, pre-alpha.
+ACAB ("AI Custom Another Browser") is an Electron desktop web browser (macOS + Windows) that you
+customize with your own AI, in an Arc-style UI. It grew out of YAAS (multi-account Claude Code);
+the YAAS docs stay as the AI-tabs reference (ADR-0006). Personal project, pre-alpha.
 
 ## Read first
 
@@ -38,12 +38,12 @@ npm run dist:mac    # package (dist:win on Windows)
    shows an estimate and needs a click. Tests use the fake provider — never a real account.
 2. **Layering.**
    - `src/core/` and `src/shared/` never import `electron` or `react` (ESLint enforces it).
-   - `src/renderer/` never imports Node, `electron` or `@core/*`; it only talks to `window.yaas`.
+   - `src/renderer/` never imports Node, `electron` or `@core/*`; it only talks to `window.acab`.
    - `src/main/` is the Electron shell: windows, IPC handlers, OS integration. Domain logic goes in `core/`.
 3. **IPC goes through the contract.** To add a command or event:
    add the name to `src/shared/ipc/channels.ts` → its zod schema to `src/shared/ipc/contract.ts`
    → the handler in `src/main/index.ts` (validated by `registerCommands`) → use it via
-   `window.yaas.invoke/on`. Never expose a raw `ipcRenderer` or a new global.
+   `window.acab.invoke/on`. Never expose a raw `ipcRenderer` or a new global.
 4. **Security defaults stay on**: `contextIsolation`, `sandbox`, no `nodeIntegration`, CSP in
    `src/renderer/index.html`, navigation and popups blocked.
 5. **Account isolation (ADR-0002)**: one `CLAUDE_CONFIG_DIR` per account at a stable path; never

@@ -1,7 +1,8 @@
-# YAAS — Yeah, An Account Switcher
+# ACAB — AI Custom Another Browser
 
-A desktop app (macOS + Windows) to run **Claude Code** sessions across several accounts at once —
-work and personal side by side — in one Arc-style window.
+A desktop web browser (macOS + Windows) that you customize with your own AI. It grew out of ACAB,
+a multi-account Claude Code app; the ACAB design docs in `docs/` remain the reference for AI tabs
+(see ADR-0006).
 
 > **Status: pre-alpha.** Design docs are done; the app skeleton is being set up. Nothing works yet.
 
@@ -12,11 +13,11 @@ work and personal side by side — in one Arc-style window.
 - **Session admin** — create, rename, pin, archive, search; live usage gauges (5 h / 7 d) per account.
 - **Context profiles** — choose which skills, MCP servers and plugins each session loads, so you
   don't pay tokens for what you don't use.
-- **Handoff** — an account hit its limit? YAAS proposes to continue the same session on another
+- **Handoff** — an account hit its limit? ACAB proposes to continue the same session on another
   account, with the full context.
 - **Crew mode** — a lead session can delegate sub-tasks to Claude running on your other accounts,
   always with your approval.
-- **Near-zero overhead** — YAAS never calls the model behind your back.
+- **Near-zero overhead** — ACAB never calls the model behind your back.
 
 See [`docs/FEATURES.md`](docs/FEATURES.md) for the full roadmap (MVP / v1 / later).
 
@@ -54,7 +55,7 @@ npm run dist       # package dmg / nsis
 
 ## Disclaimer
 
-YAAS is an independent project, not affiliated with or endorsed by Anthropic. It drives the
+ACAB is an independent project, not affiliated with or endorsed by Anthropic. It drives the
 official Claude Code CLI with your own accounts; you remain responsible for complying with the
 terms that apply to them.
 

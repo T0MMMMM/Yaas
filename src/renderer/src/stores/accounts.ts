@@ -11,8 +11,8 @@ interface AccountsState {
 export const useAccounts = create<AccountsState>((set) => ({
   accounts: null,
   init: () => {
-    void window.yaas.invoke('accounts.list').then((accounts) => set({ accounts }))
-    return window.yaas.on('accounts.changed', (accounts) => set({ accounts }))
+    void window.acab.invoke('accounts.list').then((accounts) => set({ accounts }))
+    return window.acab.on('accounts.changed', (accounts) => set({ accounts }))
   },
-  importDefault: () => window.yaas.invoke('accounts.importDefault'),
+  importDefault: () => window.acab.invoke('accounts.importDefault'),
 }))

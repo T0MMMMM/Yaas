@@ -87,8 +87,8 @@ export type EventPayload<E extends EventChannel> = z.output<(typeof events)[E]>
 export type IpcResult<T> =
   { ok: true; data: T } | { ok: false; error: { code: string; message: string } }
 
-/** Shape of `window.yaas`, implemented by the preload. */
-export interface YaasBridge {
+/** Shape of `window.acab`, implemented by the preload. */
+export interface AcabBridge {
   invoke<C extends CommandChannel>(
     channel: C,
     ...args: undefined extends CommandInput<C> ? [] : [input: CommandInput<C>]

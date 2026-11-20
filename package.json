@@ -1,9 +1,9 @@
 {
-  "name": "yaas",
-  "productName": "YAAS",
+  "name": "acab",
+  "productName": "ACAB",
   "version": "0.0.1",
   "private": true,
-  "description": "Yeah, An Account Switcher \u2014 run Claude Code sessions across several accounts.",
+  "description": "AI Custom Another Browser \u2014 a web browser you customize with your own AI.",
   "main": "./out/main/index.js",
   "engines": {
     "node": ">=22"
@@ -25,7 +25,7 @@
     "dist:win": "electron-vite build && electron-builder --win",
     "postinstall": "electron-builder install-app-deps",
     "setup:fonts": "node scripts/setup-fonts.mjs",
-    "dev:onboarding": "YAAS_ONBOARDING=1 electron-vite dev"
+    "dev:onboarding": "ACAB_ONBOARDING=1 electron-vite dev"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

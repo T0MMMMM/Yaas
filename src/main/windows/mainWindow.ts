@@ -39,7 +39,7 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
     minWidth: 760,
     minHeight: 520,
     show: false,
-    title: 'YAAS',
+    title: 'ACAB',
     // Transparent so native material shows through; opaque fallback is set by CSS tokens.
     backgroundColor: glass ? '#00000000' : '#f3f2f5',
     // macOS: a transparent window is what lets the desktop show through in `clear` mode.

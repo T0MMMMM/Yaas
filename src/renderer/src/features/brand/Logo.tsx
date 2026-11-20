@@ -11,7 +11,7 @@ export function Logo({ withWordmark = true }: { withWordmark?: boolean }) {
         <rect x="4" y="10" width="26" height="26" rx="8" className={styles.back} />
         <rect x="18" y="12" width="26" height="26" rx="8" className={styles.front} />
       </svg>
-      {withWordmark && <span className={styles.wordmark}>yaas</span>}
+      {withWordmark && <span className={styles.wordmark}>acab</span>}
     </span>
   )
 }

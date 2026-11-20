@@ -34,7 +34,7 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
   const [imported, setImported] = useState<ImportState>({ kind: 'idle' })
 
   useEffect(() => {
-    void window.yaas.invoke('claude.detect').then(setCli)
+    void window.acab.invoke('claude.detect').then(setCli)
   }, [])
 
   const onImport = async () => {
@@ -125,7 +125,7 @@ export function TechnicalSetup({ onBack }: { onBack: () => void }) {
           <ArrowLeft size={16} /> Back
         </button>
         <button className={styles.primary} onClick={() => void update({ onboardingDone: true })}>
-          Open YAAS
+          Open ACAB
         </button>
       </footer>
     </section>
