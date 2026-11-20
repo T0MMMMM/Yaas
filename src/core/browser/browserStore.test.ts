@@ -47,8 +47,9 @@ describe('BrowserStore', () => {
   it('closing the active tab activates the one below, else above', () => {
     const { store, spaceId } = setup()
     const a = store.openTab(spaceId, 'a')
-    const b = store.openTab(spaceId, 'b', { activate: false })
-    const c = store.openTab(spaceId, 'c', { activate: false })
+    const b = store.openTab(spaceId, 'b')
+    const c = store.openTab(spaceId, 'c')
+    expect(urls(store, spaceId)).toEqual(['a', 'b', 'c'])
     store.activateTab(b.id)
     store.closeTab(b.id)
     expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
