@@ -160,6 +160,33 @@ test('settings hide the page', async () => {
   })
 })
 
+test('the + menu stays inside the sidebar in liquid glass', async () => {
+  await withBrowser(async ({ page }) => {
+    await page.evaluate(() => window.acab.invoke('settings.update', { transparency: 1 }))
+    // Liquid glass only exists where the platform supports it (macOS, Windows 11).
+    const glassSupported = await page.evaluate(
+      async () => (await window.acab.invoke('app.info')).glassSupported,
+    )
+    if (glassSupported) {
+      await expect(page.locator('html')).toHaveAttribute('data-glass', 'liquid')
+    }
+
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    const menu = page.getByTestId('menu')
+    await expect(menu).toBeVisible()
+    const box = await menu.boundingBox()
+    const sidebar = await page.getByTestId('sidebar').boundingBox()
+    if (!box || !sidebar) throw new Error('menu or sidebar not found')
+    expect(box.x).toBeGreaterThanOrEqual(sidebar.x)
+    expect(box.x + box.width).toBeLessThanOrEqual(sidebar.x + sidebar.width)
+    expect(box.y).toBeGreaterThanOrEqual(sidebar.y)
+    expect(box.y + box.height).toBeLessThanOrEqual(sidebar.y + sidebar.height)
+
+    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await expect(page.getByTestId('settings')).toBeVisible()
+  })
+})
+
 test('spaces keep their own tabs', async () => {
   await withBrowser(async ({ page, site }) => {
     await openTab(page, site.url('/a'))

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react'
+import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
 import styles from './Menu.module.css'
 
@@ -56,8 +57,10 @@ export function Menu({ anchor, items, onClose }: MenuProps) {
   }
 
   if (!anchor) return null
-  // Geometry comes from the anchor at runtime. A page view is drawn above the UI, so the menu
-  // must stay inside the sidebar: it ends at the anchor's right edge.
+  // Geometry comes from the anchor at runtime, in viewport coordinates: the menu is portalled to
+  // <body> because an ancestor with backdrop-filter (liquid glass) would otherwise become the
+  // containing block of a fixed element. A page view is drawn above the UI, so the menu must stay
+  // inside the sidebar: it ends at the anchor's right edge.
   const box = anchor.getBoundingClientRect()
   const place: CSSProperties = {
     bottom: window.innerHeight - box.top + GAP,
@@ -65,7 +68,7 @@ export function Menu({ anchor, items, onClose }: MenuProps) {
     maxWidth: Math.max(0, box.right - GAP),
   }
 
-  return (
+  return createPortal(
     <div
       ref={ref}
       className={`${styles.menu} no-drag`}
@@ -93,6 +96,7 @@ export function Menu({ anchor, items, onClose }: MenuProps) {
           </button>
         ),
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }
