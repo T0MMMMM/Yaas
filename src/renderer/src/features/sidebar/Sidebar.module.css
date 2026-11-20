@@ -94,8 +94,31 @@
   transition: color var(--dur-fast) var(--ease);
 }
 
+.newTab {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Same hover card as a tab row: a layer behind the text, only it tilts. */
+.newTab::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
 .newTab:hover {
   color: var(--text);
+}
+
+.newTab:hover::before {
+  background: var(--hover-fill);
+  transform: rotate(var(--tilt-hover));
 }
 
 kbd {

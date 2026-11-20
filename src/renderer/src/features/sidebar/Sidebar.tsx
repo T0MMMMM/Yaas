@@ -140,7 +140,7 @@ export function Sidebar() {
           onClick={(e) => setMenuAnchor(menuAnchor ? null : e.currentTarget)}
           {...magnet}
         >
-          <Plus size={18} />
+          <Plus size={18} weight="regular" />
         </button>
       </div>
 
