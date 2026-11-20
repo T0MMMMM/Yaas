@@ -11,7 +11,7 @@ type Site = Awaited<ReturnType<typeof startSite>>
 async function withPage(
   run: (ctx: { app: ElectronApplication; page: Page; overlay: Page; site: Site }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData)
   try {

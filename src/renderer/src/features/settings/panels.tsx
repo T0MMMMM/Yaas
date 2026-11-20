@@ -14,7 +14,7 @@ const ARCHIVE_DAYS = [1, 3, 7, 14, 30]
 export function General() {
   return (
     <SettingGroup>
-      <SettingRow label="Open at login" description="Start ACAB when you log in." soon>
+      <SettingRow label="Open at login" description="Start Big Browser when you log in." soon>
         <Switch label="Open at login" checked={false} disabled />
       </SettingRow>
       <SettingRow
@@ -280,7 +280,7 @@ export function Handoff() {
     <SettingGroup>
       <SettingRow
         label="Suggest a handoff when usage reaches"
-        description="ACAB proposes; it never switches accounts on its own."
+        description="Big Browser proposes; it never switches accounts on its own."
         soon
       >
         <select className={fields.select} disabled defaultValue="90">
@@ -330,7 +330,7 @@ export function Notifications() {
       <SettingRow label="Session waiting for your action" soon>
         <Switch label="Waiting" checked disabled />
       </SettingRow>
-      <SettingRow label="Session finished" description="Only when ACAB is not focused." soon>
+      <SettingRow label="Session finished" description="Only when Big Browser is not focused." soon>
         <Switch label="Finished" checked disabled />
       </SettingRow>
       <SettingRow label="Account limited / usage reset" soon>
@@ -359,8 +359,8 @@ export function Privacy() {
   return (
     <SettingGroup>
       <p className={styles.statement}>
-        ACAB sends no telemetry and never calls a model on its own. Your data stays on this
-        computer; Claude Code talks to Anthropic exactly as it does without ACAB.
+        Big Browser sends no telemetry and never calls a model on its own. Your data stays on this
+        computer; Claude Code talks to Anthropic exactly as it does without Big Browser.
       </p>
       <SettingRow label="Data folder" soon>
         <button className={styles.button} disabled>
@@ -402,7 +402,7 @@ export function Advanced() {
       </SettingRow>
       <SettingRow
         label="Claude Code CLI"
-        description="Bundled with ACAB, or the one on your PATH."
+        description="Bundled with Big Browser, or the one on your PATH."
         soon
       >
         <Segmented
@@ -434,7 +434,7 @@ export function About() {
   const info = useSettings((s) => s.info)
   return (
     <SettingGroup>
-      <SettingRow label="ACAB" description="AI Custom Another Browser">
+      <SettingRow label="Big Browser" description="A web browser you customize with your own AI">
         <span className={styles.muted}>v{info?.version ?? '—'}</span>
       </SettingRow>
       <p className={styles.statement}>

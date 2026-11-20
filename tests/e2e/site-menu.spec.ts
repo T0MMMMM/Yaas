@@ -7,22 +7,22 @@ import { finishOnboarding, launchApp, overlayPage, uiPage } from './helpers'
 
 /** Both local fixtures: the e2e never downloads filter lists or extensions. */
 const FIXTURES = {
-  ACAB_ADBLOCK_FILTERS: join(__dirname, 'fixtures/ads.txt'),
-  ACAB_TEST_EXTENSION: join(__dirname, 'fixtures/extension'),
+  BIG_BROWSER_ADBLOCK_FILTERS: join(__dirname, 'fixtures/ads.txt'),
+  BIG_BROWSER_TEST_EXTENSION: join(__dirname, 'fixtures/extension'),
 }
 
 /** A fresh app (onboarding done) showing the fixture page /a, with its site menu open. */
 async function withSiteMenu(
   run: (ctx: { app: ElectronApplication; page: Page; overlay: Page; url: string }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData, FIXTURES)
   try {
     const page = await uiPage(app)
     await finishOnboarding(page)
     const url = site.url('/a')
-    await page.evaluate((input) => window.acab.invoke('browser.openTab', { input }), url)
+    await page.evaluate((input) => window.bigBrowser.invoke('browser.openTab', { input }), url)
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
     await page.getByRole('button', { name: 'Site menu' }).click()
     const overlay = await overlayPage(app)
@@ -51,7 +51,7 @@ test('turning off ad blocking adds the host', async () => {
   await withSiteMenu(async ({ page, overlay, url }) => {
     await adBlockSwitch(overlay).click()
     await expect(adBlockSwitch(overlay)).toHaveAttribute('aria-checked', 'false')
-    const settings = await page.evaluate(() => window.acab.invoke('settings.get'))
+    const settings = await page.evaluate(() => window.bigBrowser.invoke('settings.get'))
     expect(settings.adBlock.allowedHosts).toContain(new URL(url).hostname)
   })
 })
@@ -59,14 +59,14 @@ test('turning off ad blocking adds the host', async () => {
 test('extension actions are listed', async () => {
   await withSiteMenu(async ({ overlay }) => {
     // CSS locators pierce the open shadow root of <browser-action-list>.
-    await expect(overlay.locator('[title="ACAB Test Action"]')).toBeAttached()
+    await expect(overlay.locator('[title="Big Browser Test Action"]')).toBeAttached()
   })
 })
 
 test("an extension action opens its popup in the space's session", async () => {
   await withSiteMenu(async ({ app, page, overlay }) => {
-    await overlay.locator('[title="ACAB Test Action"]').click()
-    const { activeSpaceId } = await page.evaluate(() => window.acab.invoke('browser.state'))
+    await overlay.locator('[title="Big Browser Test Action"]').click()
+    const { activeSpaceId } = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
     // Not checked for visibility: under Playwright's launch the library never gets
     // `preferred-size-changed`, so the popup stays hidden (it shows in a normal run).
     await expect
@@ -88,7 +88,7 @@ test('developer tools open for the tab', async () => {
   await withSiteMenu(async ({ app, page, overlay }) => {
     await overlay.getByRole('button', { name: 'Developer tools' }).click()
     const { runtime, activeSpaceId, activeTabIds } = await page.evaluate(() =>
-      window.acab.invoke('browser.state'),
+      window.bigBrowser.invoke('browser.state'),
     )
     const tabId = activeTabIds[activeSpaceId]
     const contentsId = tabId ? (runtime[tabId]?.webContentsId ?? null) : null

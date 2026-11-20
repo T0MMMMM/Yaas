@@ -1,4 +1,4 @@
-// The Claude Code CLI as seen from ACAB: where it is, which version, who is signed in.
+// The Claude Code CLI as seen from Big Browser: where it is, which version, who is signed in.
 // Process execution is injected so this module is tested without spawning anything.
 import { execFile } from 'node:child_process'
 import { accessSync, constants } from 'node:fs'

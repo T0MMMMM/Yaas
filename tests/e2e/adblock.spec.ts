@@ -6,7 +6,7 @@ import { startSite } from './fixtures/site'
 import { finishOnboarding, launchApp, uiPage } from './helpers'
 
 /** The local filter list (one rule: `/ads/banner.png`): the e2e never downloads the real lists. */
-const FILTERS = { ACAB_ADBLOCK_FILTERS: join(__dirname, 'fixtures/ads.txt') }
+const FILTERS = { BIG_BROWSER_ADBLOCK_FILTERS: join(__dirname, 'fixtures/ads.txt') }
 
 /**
  * `naturalWidth` of the `#ad` image of the tab showing `url` once it has loaded or failed: 0 when
@@ -25,10 +25,10 @@ const adWidth = (app: ElectronApplication, url: string) =>
   }, url)
 
 const openTab = (page: Page, url: string) =>
-  page.evaluate((input) => window.acab.invoke('browser.openTab', { input }), url)
+  page.evaluate((input) => window.bigBrowser.invoke('browser.openTab', { input }), url)
 
 test('ads are blocked by default', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData, FILTERS)
   try {
@@ -44,7 +44,7 @@ test('ads are blocked by default', async () => {
 })
 
 test('ads are blocked in every space', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData, FILTERS)
   try {
@@ -58,10 +58,10 @@ test('ads are blocked in every space', async () => {
     const second = first.replace('127.0.0.1', 'localhost')
     await page.evaluate(
       (url) =>
-        window.acab
+        window.bigBrowser
           .invoke('browser.createSpace', { name: 'Work', color: '#3366ff' })
           .then((space) =>
-            window.acab.invoke('browser.openTab', { spaceId: space.id, input: url }),
+            window.bigBrowser.invoke('browser.openTab', { spaceId: space.id, input: url }),
           ),
       second,
     )
@@ -74,7 +74,7 @@ test('ads are blocked in every space', async () => {
 })
 
 test('allowing the site shows the ad and survives a relaunch', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const url = site.url('/with-ad')
   try {
@@ -88,7 +88,7 @@ test('allowing the site shows the ad and survives a relaunch', async () => {
       // Main reloads the tab when its host's exception changes: no reload here.
       await page.evaluate(
         (host) =>
-          window.acab.invoke('settings.update', {
+          window.bigBrowser.invoke('settings.update', {
             adBlock: { enabled: true, allowedHosts: [host] },
           }),
         new URL(url).hostname,
@@ -120,14 +120,17 @@ test('allowing the site shows the ad and survives a relaunch', async () => {
         })
         .toBe(0)
 
-      const { tabs } = await page.evaluate(() => window.acab.invoke('browser.state'))
+      const { tabs } = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
       const restored = tabs.find((t) => t.url === url)
       if (!restored) throw new Error('The allowed tab was not restored')
       await page.evaluate(
-        (tabId) => window.acab.invoke('browser.activateTab', { tabId }),
+        (tabId) => window.bigBrowser.invoke('browser.activateTab', { tabId }),
         restored.id,
       )
-      await page.evaluate((tabId) => window.acab.invoke('browser.reload', { tabId }), restored.id)
+      await page.evaluate(
+        (tabId) => window.bigBrowser.invoke('browser.reload', { tabId }),
+        restored.id,
+      )
       await expect.poll(() => adWidth(second, url)).toBe(1)
     } finally {
       await second.close()

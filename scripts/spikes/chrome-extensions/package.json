@@ -1,5 +1,5 @@
 {
-  "name": "acab-spike-chrome-extensions",
+  "name": "big-browser-spike-chrome-extensions",
   "private": true,
   "main": "main.js",
   "scripts": {

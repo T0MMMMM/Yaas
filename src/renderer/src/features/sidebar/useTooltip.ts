@@ -102,7 +102,7 @@ export function useTooltip(
     if (disabled) press()
   }, [disabled, press])
   // A popover took the overlay meanwhile (main ignored any tooltip): start over once it closes.
-  useEffect(() => window.acab.on('overlay.closed', leave), [leave])
+  useEffect(() => window.bigBrowser.on('overlay.closed', leave), [leave])
   useEffect(
     () => () => {
       clearDelay()
@@ -114,7 +114,7 @@ export function useTooltip(
   useEffect(() => {
     if (state.shown === sent.current) return
     sent.current = state.shown
-    void window.acab.invoke('overlay.tooltip', state.shown)
+    void window.bigBrowser.invoke('overlay.tooltip', state.shown)
   }, [state.shown])
 
   return { enter, over, leave, press }

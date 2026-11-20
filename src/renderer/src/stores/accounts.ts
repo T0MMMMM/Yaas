@@ -11,8 +11,8 @@ interface AccountsState {
 export const useAccounts = create<AccountsState>((set) => ({
   accounts: null,
   init: () => {
-    void window.acab.invoke('accounts.list').then((accounts) => set({ accounts }))
-    return window.acab.on('accounts.changed', (accounts) => set({ accounts }))
+    void window.bigBrowser.invoke('accounts.list').then((accounts) => set({ accounts }))
+    return window.bigBrowser.on('accounts.changed', (accounts) => set({ accounts }))
   },
-  importDefault: () => window.acab.invoke('accounts.importDefault'),
+  importDefault: () => window.bigBrowser.invoke('accounts.importDefault'),
 }))

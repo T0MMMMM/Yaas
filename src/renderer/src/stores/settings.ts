@@ -13,13 +13,14 @@ export const useSettings = create<SettingsState>((set) => ({
   info: null,
   settings: null,
   init: () => {
-    void Promise.all([window.acab.invoke('app.info'), window.acab.invoke('settings.get')]).then(
-      ([info, settings]) => set({ info, settings }),
-    )
-    return window.acab.on('settings.changed', (settings) => set({ settings }))
+    void Promise.all([
+      window.bigBrowser.invoke('app.info'),
+      window.bigBrowser.invoke('settings.get'),
+    ]).then(([info, settings]) => set({ info, settings }))
+    return window.bigBrowser.on('settings.changed', (settings) => set({ settings }))
   },
   update: async (patch) => {
-    const settings = await window.acab.invoke('settings.update', patch)
+    const settings = await window.bigBrowser.invoke('settings.update', patch)
     set({ settings })
   },
 }))

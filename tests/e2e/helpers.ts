@@ -13,25 +13,26 @@ export function launchApp(
 ): Promise<ElectronApplication> {
   return electron.launch({
     args: [join(__dirname, '../../out/main/index.js')],
-    env: { ...process.env, ACAB_USER_DATA: userData, ...env },
+    env: { ...process.env, BIG_BROWSER_USER_DATA: userData, ...env },
   })
 }
 
 /** Walks through the onboarding with its defaults, up to the main UI. */
 export async function finishOnboarding(page: Page): Promise<void> {
   await expect(page.getByTestId('visual-setup')).toBeVisible()
-  await page.getByRole('button', { name: 'Open ACAB' }).click()
+  await page.getByRole('button', { name: 'Open Big Browser' }).click()
   await expect(page.getByTestId('sidebar')).toBeVisible()
 }
 
 /**
- * The ACAB UI page. After a relaunch the restored active tab's view is a web contents too, and
- * `firstWindow()` can resolve to it instead, so pick the page that exposes the `acab` bridge.
+ * The Big Browser UI page. After a relaunch the restored active tab's view is a web contents too, and
+ * `firstWindow()` can resolve to it instead, so pick the page that exposes the `bigBrowser` bridge.
  */
 export async function uiPage(app: ElectronApplication): Promise<Page> {
   // The overlay view loads the same renderer (and bridge) under `#overlay`: skip it.
   const isUi = (page: Page) =>
-    !page.url().endsWith('#overlay') && page.evaluate(() => 'acab' in window).catch(() => false)
+    !page.url().endsWith('#overlay') &&
+    page.evaluate(() => 'bigBrowser' in window).catch(() => false)
   let found: Page | undefined
   // Poll rather than wait for the 'window' event: one fired between the scan and the wait is lost.
   await expect
@@ -45,7 +46,7 @@ export async function uiPage(app: ElectronApplication): Promise<Page> {
       return false
     })
     .toBe(true)
-  if (!found) throw new Error('ACAB UI page not found')
+  if (!found) throw new Error('Big Browser UI page not found')
   return found
 }
 

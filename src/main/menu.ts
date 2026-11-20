@@ -32,7 +32,7 @@ export function buildAppMenu(actions: MenuActions): Menu {
     ...(process.platform === 'darwin'
       ? [
           {
-            label: 'ACAB',
+            label: 'Big Browser',
             submenu: [
               { role: 'about' },
               { type: 'separator' },

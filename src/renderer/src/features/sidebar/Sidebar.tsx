@@ -17,18 +17,18 @@ import styles from './Sidebar.module.css'
 
 /** Opens the command field (⌘T): the tab is created only when the user submits it. */
 function newTab(): Promise<void> {
-  return window.acab.invoke('overlay.open', { kind: 'command' })
+  return window.bigBrowser.invoke('overlay.open', { kind: 'command' })
 }
 
 /** Opens the + menu in the overlay view, above the button (it floats over the page). */
 function openNewMenu(button: HTMLElement): Promise<void> {
-  return window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
+  return window.bigBrowser.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
 /** Closes every today tab in `todayCloseOrder`; ⌘⇧T reopens them one by one. */
 async function clearToday(nodes: SidebarNode[], activeId: string | null): Promise<void> {
   for (const tabId of todayCloseOrder(nodes, activeId)) {
-    await window.acab.invoke('browser.closeTab', { tabId })
+    await window.bigBrowser.invoke('browser.closeTab', { tabId })
   }
 }
 
@@ -71,7 +71,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   /** Whether the + menu is open in the overlay. */
   const [menuOpen, setMenuOpen] = useState(false)
 
-  useEffect(() => window.acab.on('overlay.closed', () => setMenuOpen(false)), [])
+  useEffect(() => window.bigBrowser.on('overlay.closed', () => setMenuOpen(false)), [])
 
   const sections = workspace?.sections
   const activeId = workspace?.activeTab?.id ?? null
@@ -182,7 +182,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                     className={styles.space}
                     style={{ ...tilt(s.id), color: s.color }}
                     onClick={() =>
-                      void window.acab.invoke('browser.activateSpace', { spaceId: s.id })
+                      void window.bigBrowser.invoke('browser.activateSpace', { spaceId: s.id })
                     }
                     {...magnet}
                   >

@@ -36,7 +36,7 @@ export function TabFinder({ closing, onClose }: { closing?: boolean; onClose(): 
       query={query}
       onQuery={setQuery}
       rows={rows}
-      onRun={(row) => void window.acab.invoke('browser.activateTab', { tabId: row.key })}
+      onRun={(row) => void window.bigBrowser.invoke('browser.activateTab', { tabId: row.key })}
       closing={closing}
       onClose={onClose}
       testId="finder"

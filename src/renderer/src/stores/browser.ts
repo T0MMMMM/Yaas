@@ -12,12 +12,12 @@ export const useBrowser = create<BrowserStoreState>((set) => ({
   state: null,
   init: () => {
     let changed = false
-    const off = window.acab.on('browser.changed', (state) => {
+    const off = window.bigBrowser.on('browser.changed', (state) => {
       changed = true
       set({ state })
     })
     // An event that lands while the first read is in flight is newer: keep it.
-    void window.acab.invoke('browser.state').then((state) => {
+    void window.bigBrowser.invoke('browser.state').then((state) => {
       if (!changed) set({ state })
     })
     return off

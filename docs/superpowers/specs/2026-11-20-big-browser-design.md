@@ -1,9 +1,9 @@
-# ACAB — design (draft)
+# Big Browser — design (draft)
 
 - **Date:** 2026-11-20
 - **Status:** **Approved by the owner (2026-11-20) for step 1.** Questions in §7 that are not
   struck out concern steps 2–4 and do not block step 1.
-- **Decision record:** [ADR-0006](../../adr/0006-pivot-to-acab-browser.md)
+- **Decision record:** [ADR-0006](../../adr/0006-pivot-to-big-browser.md)
 - **Evidence:** [Chrome extensions spike](../../spikes/2026-11-20-chrome-extensions-electron.md)
 
 Legend: **[owner]** = said or chosen by the owner · **[proposed]** = Claude's proposal, not
@@ -11,7 +11,7 @@ objected to but not explicitly validated · **[open]** = still to decide.
 
 ## 1. Intent
 
-ACAB — **AI Custom Another Browser** [owner] — is a web browser that:
+Big Browser — **AI Custom Another Browser** [owner] — is a web browser that:
 
 - replaces the owner's daily browser (Arc, and yab) on **macOS and Windows**, with **sync** between
   the two later on [owner];
@@ -46,7 +46,7 @@ inspiration; many yab features should come over [owner].
   user's own risk** [owner].
 
 **Anti-goals** (would make it a failure even if it works)
-- The AI breaking the browser: a bad module must never stop ACAB from starting [proposed — this is
+- The AI breaking the browser: a bad module must never stop Big Browser from starting [proposed — this is
   why modules stay out of the core and can be disabled at startup].
 - Hidden token spending: the near-zero overhead rule of `CLAUDE.md` still applies — no model call
   without an explicit user action.
@@ -84,13 +84,13 @@ Build order [proposed, not objected to]:
 3. **AI tabs** (the YAAS scope: `docs/FEATURES.md`, ADR-0002/3/4).
 4. **Workshop.**
 
-The repo is renamed to ACAB in step 1; the YAAS docs stay as the reference for step 3 [proposed].
+The repo is renamed to Big Browser in step 1; the YAAS docs stay as the reference for step 3 [proposed].
 
 ### 5.1 Step 1 — daily-driver browser
 
 Plans for this step: 1 browser core, 2 extensions and site menu, 3 organisation, **3b sidebar
 finish** (3b-A look and motion: done; 3b-B structure; spec
-`2026-11-20-acab-sidebar-finish-design.md`), 4 window features, then 5 settings and 6 onboarding.
+`2026-11-20-big-browser-sidebar-finish-design.md`), 4 window features, then 5 settings and 6 onboarding.
 
 Goal: the owner can leave Arc the next day without missing anything. Day-one list [Claude's
 proposal, accepted by the owner 2026-11-20]:
@@ -144,11 +144,11 @@ proposal, accepted by the owner 2026-11-20]:
   (step 2).
 - **Sidebar footer**: a downloads button on the left, the **spaces as dots in the middle** with
   the repo's magnetic motion (`useMagnetic`), a **+** button on the right.
-- **Later, not step 1**: the element inspector (DevTools) in its own card, restyled to match ACAB.
+- **Later, not step 1**: the element inspector (DevTools) in its own card, restyled to match Big Browser.
 
 #### Menus and settings [owner, 2026-11-20, from yab screenshots]
 
-The **shape** of yab's menus and settings is the model for all of ACAB's menus: popovers made of
+The **shape** of yab's menus and settings is the model for all of Big Browser's menus: popovers made of
 grouped cards, icon-button rows, section titles with a right-hand action, rows with an icon, a
 title and a status line, segmented controls, dropdowns and toggles. They are drawn **in the
 `style/visual-pass` look** (system font, grain, drawn controls) [Claude's reading — the owner
@@ -157,7 +157,7 @@ not glass (decided in plan 3b-A; see `docs/DESIGN.md` §3.1).
 
 - **Site menu** (button in the address bar):
   - a row of quick actions — share, capture, hide an element, translate;
-  - **Boosts** with "Add" — in ACAB these are site modules (step 2);
+  - **Boosts** with "Add" — in Big Browser these are site modules (step 2);
   - **Extensions** with "Manage": pinned extension icons and a **+**;
   - **This site**: block ads and trackers, automatic picture-in-picture, developer mode, each
     with its state for the current site;
@@ -286,7 +286,7 @@ storage format (SQLite through `node:sqlite`, ADR-0005), test strategy — withi
 the ADRs.
 
 Calls Claude made while checking this document as a builder [Claude's call — correct if wrong]:
-- **Default browser**: step 1 lets ACAB register as the system's default browser, so links from
+- **Default browser**: step 1 lets Big Browser register as the system's default browser, so links from
   other apps open in it — needed to be a daily driver.
 - **Several windows**: ⌘N opens another window, like Arc; tabs belong to a space, not a window.
 - **⌘T search**: Google by default, changeable in settings.

@@ -1,9 +1,9 @@
 {
-  "name": "acab",
-  "productName": "ACAB",
+  "name": "big-browser",
+  "productName": "Big Browser",
   "version": "0.0.1",
   "private": true,
-  "description": "AI Custom Another Browser \u2014 a web browser you customize with your own AI.",
+  "description": "A web browser you customize with your own AI.",
   "main": "./out/main/index.js",
   "engines": {
     "node": ">=22"
@@ -24,7 +24,7 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win",
     "postinstall": "electron-builder install-app-deps",
-    "dev:onboarding": "ACAB_ONBOARDING=1 electron-vite dev"
+    "dev:onboarding": "BIG_BROWSER_ONBOARDING=1 electron-vite dev"
   },
   "dependencies": {
     "@ghostery/adblocker-electron": "2.20.3",

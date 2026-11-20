@@ -30,8 +30,8 @@ export function CommandField({ closing, onClose }: { closing?: boolean; onClose(
   }, [workspace, query])
 
   const run = (row: PickerRow) => {
-    if (row.key === OPEN) void window.acab.invoke('browser.openTab', { input: query.trim() })
-    else void window.acab.invoke('browser.activateTab', { tabId: row.key })
+    if (row.key === OPEN) void window.bigBrowser.invoke('browser.openTab', { input: query.trim() })
+    else void window.bigBrowser.invoke('browser.activateTab', { tabId: row.key })
   }
 
   return (

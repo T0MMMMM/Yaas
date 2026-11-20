@@ -59,7 +59,7 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
   /** Runs a command on the tab and closes the menu: it opens something else (a menu, a window). */
   const act = (command: 'browser.share' | 'browser.toggleDevTools') => () => {
     if (closing) return
-    if (tab) void window.acab.invoke(command, { tabId: tab.id })
+    if (tab) void window.bigBrowser.invoke(command, { tabId: tab.id })
     onClose()
   }
 
@@ -111,7 +111,7 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
             aria-label="Add extensions"
             title="Chrome Web Store"
             onClick={() => {
-              void window.acab.invoke('browser.openWebStore')
+              void window.bigBrowser.invoke('browser.openWebStore')
               onClose()
             }}
           >

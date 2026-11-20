@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test'
 import { launchApp, overlayPage, uiPage } from './helpers'
 
 test('first launch shows onboarding, then the browser', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const app = await launchApp(userData)
 
   try {
@@ -19,7 +19,7 @@ test('first launch shows onboarding, then the browser', async () => {
     await expect
       .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')))
       .toBe('#2BB673')
-    await page.getByRole('button', { name: 'Open ACAB' }).click()
+    await page.getByRole('button', { name: 'Open Big Browser' }).click()
 
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await expect(page.getByTestId('empty-state')).toBeVisible()
@@ -50,9 +50,9 @@ test('first launch shows onboarding, then the browser', async () => {
     // The renderer is isolated: no Node, only the bridge.
     const globals = await page.evaluate(() => ({
       require: typeof (globalThis as { require?: unknown }).require,
-      acab: typeof (globalThis as { acab?: { invoke?: unknown } }).acab?.invoke,
+      bigBrowser: typeof (globalThis as { bigBrowser?: { invoke?: unknown } }).bigBrowser?.invoke,
     }))
-    expect(globals).toEqual({ require: 'undefined', acab: 'function' })
+    expect(globals).toEqual({ require: 'undefined', bigBrowser: 'function' })
   } finally {
     await app.close()
     rmSync(userData, { recursive: true, force: true })
@@ -60,7 +60,7 @@ test('first launch shows onboarding, then the browser', async () => {
 })
 
 test('settings survive a relaunch', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const launch = () => launchApp(userData)
 
   try {
@@ -68,7 +68,7 @@ test('settings survive a relaunch', async () => {
     const page = await uiPage(first)
     await expect(page.getByTestId('visual-setup')).toBeVisible()
     await page.getByRole('radio', { name: '#2BB673' }).click()
-    await page.getByRole('button', { name: 'Open ACAB' }).click()
+    await page.getByRole('button', { name: 'Open Big Browser' }).click()
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await first.close()
 
@@ -86,11 +86,11 @@ test('settings survive a relaunch', async () => {
 })
 
 test('appearance settings toggle askew cards and attach the address bar', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const app = await launchApp(userData)
   try {
     const page = await uiPage(app)
-    await page.getByRole('button', { name: 'Open ACAB' }).click()
+    await page.getByRole('button', { name: 'Open Big Browser' }).click()
     const root = (name: string) =>
       page.evaluate((key) => document.documentElement.dataset[key], name)
     await expect.poll(() => root('askew')).toBe('on')

@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>ACAB spike</title>
+    <title>Big Browser spike</title>
     <style>
       body {
         margin: 0;
@@ -81,7 +81,10 @@
       <button onclick="spike.nav('forward')">→</button>
       <button onclick="spike.nav('reload')">⟳</button>
       <input id="url" placeholder="URL ou recherche" />
-      <browser-action-list partition="persist:acab" alignment="bottom left"></browser-action-list>
+      <browser-action-list
+        partition="persist:big-browser"
+        alignment="bottom left"
+      ></browser-action-list>
       <button title="Nouvel onglet" onclick="spike.newTab()">＋</button>
       <button title="DevTools de la page" onclick="spike.nav('devtools')">⚙</button>
     </div>

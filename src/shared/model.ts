@@ -43,7 +43,7 @@ export type SessionStatus = 'idle' | 'running' | 'needs-approval' | 'done' | 'er
 export type SessionOrigin = 'created' | 'imported' | 'handoff' | 'crew'
 
 export interface Session {
-  /** Stable ACAB id — survives forks and handoffs. */
+  /** Stable Big Browser id — survives forks and handoffs. */
   id: string
   accountId: string
   /** Provider's own session id; changes on fork / handoff. */

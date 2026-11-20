@@ -18,7 +18,7 @@ export function PageSlot() {
     if (!el) return
     const send = () => {
       const box = el.getBoundingClientRect()
-      void window.acab.invoke('browser.setPageBounds', {
+      void window.bigBrowser.invoke('browser.setPageBounds', {
         x: Math.max(0, Math.round(box.left)),
         y: Math.max(0, Math.round(box.top)),
         width: Math.max(0, Math.round(box.width)),
@@ -36,7 +36,7 @@ export function PageSlot() {
   }, [])
 
   useEffect(() => {
-    void window.acab.invoke('browser.setPageVisible', { visible: !settingsOpen })
+    void window.bigBrowser.invoke('browser.setPageVisible', { visible: !settingsOpen })
   }, [settingsOpen])
 
   return (

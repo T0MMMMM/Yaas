@@ -406,7 +406,7 @@ export function useTabDrag(
         // Released over the pressed row (also after Esc): that click must not activate it.
         swallowNextClick()
         if (hit) {
-          void window.acab.invoke('browser.moveTab', { tabId, ...hit.target })
+          void window.bigBrowser.invoke('browser.moveTab', { tabId, ...hit.target })
         }
       }
       /** Esc: no drop, but the release is still awaited so its click can be swallowed. */

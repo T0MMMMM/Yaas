@@ -1,4 +1,4 @@
-# ACAB extensions & site menu — implementation plan (step 1, plan 2 of 6)
+# Big Browser extensions & site menu — implementation plan (step 1, plan 2 of 6)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
@@ -18,24 +18,24 @@ settings, applied to the engine as `@@||host^$document` filters.
 0.13.0, `@ghostery/adblocker-electron` 2.20.3 (the spike's versions), React 19, zod, Vitest,
 Playwright `_electron`.
 
-**Spec:** [`docs/superpowers/specs/2026-11-20-acab-design.md`](../specs/2026-11-20-acab-design.md)
+**Spec:** [`docs/superpowers/specs/2026-11-20-big-browser-design.md`](../specs/2026-11-20-big-browser-design.md)
 (§3 constraints, §5.1 day-one list, "Menus and settings" → site menu, §8 ad blocker). Evidence:
 [the extensions spike](../../spikes/2026-11-20-chrome-extensions-electron.md) and its code in
 `scripts/spikes/chrome-extensions/` (read `main.js` before Task 2). Also obey `CLAUDE.md`.
 
 ## Global constraints
 
-- Branch `feat/acab-extensions` cut from `feat/acab-browser-core`. Claude never pushes.
+- Branch `feat/big-browser-extensions` cut from `feat/big-browser-core`. Claude never pushes.
 - `npm run check` passes after every task; UI tasks also pass `npm run test:e2e`.
 - Layering (`CLAUDE.md` rule 2): `src/core`, `src/shared` never import `electron`/`react`; the
-  renderer only talks to `window.acab`.
+  renderer only talks to `window.bigBrowser`.
 - IPC: `channels.ts` → `contract.ts` → handler in `main/index.ts` (rule 3).
 - Security defaults stay on for the UI window, the overlay and every tab view (`contextIsolation`,
   `sandbox`, no `nodeIntegration`). Tab views get **no app preload**; the only script added to a
   space session is the `browser.*` mirror (spike fix 1), which exposes nothing to pages.
 - The overlay is a trusted sender exactly like the UI window; nothing else is.
 - E2E never touches the network: ad-block lists and extensions come from local fixtures through
-  `ACAB_ADBLOCK_FILTERS` and `ACAB_TEST_EXTENSION` (Tasks 2–3).
+  `BIG_BROWSER_ADBLOCK_FILTERS` and `BIG_BROWSER_TEST_EXTENSION` (Tasks 2–3).
 - CSS: design tokens only. Menus follow the yab shape in the visual-pass look (`ui/Menu`).
 - Ad blocker on by default, with a per-site toggle (spec §8).
 - Extensions are per space: one session per space, extensions stored under
@@ -116,7 +116,7 @@ Playwright `_electron`.
 **Files:**
 - Create: `src/main/browser/spaceSessions.ts`, `src/preload/browserMirror.ts`,
   `tests/e2e/fixtures/extension/` (`manifest.json` MV3 with `action.default_title`
-  `"ACAB Test Action"`, `action.default_popup` `popup.html`, a `page.html` that calls
+  `"Big Browser Test Action"`, `action.default_popup` `popup.html`, a `page.html` that calls
   `window.open('<url from its query string>')`), `tests/e2e/extensions.spec.ts`
 - Modify: `package.json` (the three deps at the spike's exact versions),
   `electron.vite.config.ts` (second preload entry `browserMirror`; make sure the three deps stay
@@ -138,7 +138,7 @@ Playwright `_electron`.
   `get` does, once per partition: user agent, permission handlers (moved from `TabViews`), the
   mirror preload for `frame` and `service-worker` (spike fix 1), `new ElectronChromeExtensions`
   wired to `host` (its `createWindow` opens a tab, like fix 2), `installChromeWebStore({ session,
-  extensionsPath: <userData>/extensions/<spaceId> })`, and — when `ACAB_TEST_EXTENSION` is set —
+  extensionsPath: <userData>/extensions/<spaceId> })`, and — when `BIG_BROWSER_TEST_EXTENSION` is set —
   `session.extensions.loadExtension(<that path>)`. Check the option names against the installed
   packages' READMEs; if `ElectronChromeExtensions` requires a `license` option, use the value its
   README gives for open-source projects and note it in the spike doc.
@@ -152,10 +152,10 @@ Playwright `_electron`.
 - `TabViews.webContentsOf(tabId): WebContents | null`; runtime gains `webContentsId`.
 
 - [ ] **Step 1: Failing e2e** `tests/e2e/extensions.spec.ts` (launched with
-  `ACAB_TEST_EXTENSION=<fixture path>`):
+  `BIG_BROWSER_TEST_EXTENSION=<fixture path>`):
   - `the test extension loads in the active space`: from main,
     `session.fromPartition('persist:space-<id>').extensions.getAllExtensions()` contains
-    `ACAB Test Action`.
+    `Big Browser Test Action`.
   - `window.open from an extension page opens a tab`: load
     `chrome-extension://<id>/page.html?open=<fixture url>` in a tab; a new tab with the fixture
     URL appears in the same space; `BrowserWindow.getAllWindows().length` stays 1.
@@ -190,7 +190,7 @@ Playwright `_electron`.
   Promise<AdBlocker | null>; enable(session: Session): void; disable(session: Session): void;
   setAllowedHosts(hosts: string[]): void }` — `load` uses
   `ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, { path: cachePath, read, write })`, or
-  `ElectronBlocker.parse(<file text>)` when `filtersFile` (from `ACAB_ADBLOCK_FILTERS`) is set;
+  `ElectronBlocker.parse(<file text>)` when `filtersFile` (from `BIG_BROWSER_ADBLOCK_FILTERS`) is set;
   any failure is logged and returns `null` (the app browses without blocking).
   `setAllowedHosts` applies `diffAllowed` with `engine.updateFromDiff`. Loaded once at startup,
   without awaiting before the window opens; `SpaceSessions` enables it on every session (now and
@@ -206,10 +206,10 @@ Playwright `_electron`.
   so put the load-failure rule in core: `loadEngine(load: () => Promise<T>): Promise<T | null>`
   in `adblock.ts` (catches, logs through an injected `log`, returns null); test it with a
   rejecting loader.
-- [ ] **Step 3: Failing e2e** `adblock.spec.ts` (with `ACAB_ADBLOCK_FILTERS=<fixtures/ads.txt>`):
+- [ ] **Step 3: Failing e2e** `adblock.spec.ts` (with `BIG_BROWSER_ADBLOCK_FILTERS=<fixtures/ads.txt>`):
   - `ads are blocked by default`: open `/with-ad`; the image's `naturalWidth` is 0.
   - `allowing the site shows the ad and survives a relaunch`: `settings.update` with the
-    fixture host in `allowedHosts` (through `window.acab.invoke` in the UI page); the tab reloads
+    fixture host in `allowedHosts` (through `window.bigBrowser.invoke` in the UI page); the tab reloads
     and `naturalWidth` is 1; relaunch on the same userData → still 1.
 - [ ] **Step 4: Run** → FAIL. **Step 5: Implement.** **Step 6: Run** `npm run check`,
   `npm run test:e2e` → PASS.
@@ -258,7 +258,7 @@ Playwright `_electron`.
   - `turning off ad blocking adds the host`: click the switch; `settings.get()` has the host in
     `adBlock.allowedHosts`.
   - `extension actions are listed`: the overlay contains an element with title
-    `ACAB Test Action` (pierce the shadow root).
+    `Big Browser Test Action` (pierce the shadow root).
   - `developer tools open for the tab`: click it; from main,
     `webContents.fromId(<id>).isDevToolsOpened()` is true.
 - [ ] **Step 3: Run** → FAIL. **Step 4: Implement.** **Step 5: Run** `npm run check`,

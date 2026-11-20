@@ -53,7 +53,7 @@ export type Database = DatabaseSync
 
 export const SCHEMA_VERSION = MIGRATIONS.length
 
-/** Opens (or creates) the ACAB database and brings its schema up to date. `:memory:` for tests. */
+/** Opens (or creates) the Big Browser database and brings its schema up to date. `:memory:` for tests. */
 export function openDatabase(file: string): Database {
   const db = new DatabaseSync(file)
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;')

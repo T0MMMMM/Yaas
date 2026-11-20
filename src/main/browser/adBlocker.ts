@@ -8,7 +8,7 @@ import { diffAllowed, isCacheStale, loadEngine } from '@core/browser/adblock'
 export interface AdBlockerOptions {
   /** Where the prebuilt engine is cached between launches; a launch refreshes it after 7 days. */
   cachePath: string
-  /** A local filter list used instead of the prebuilt lists (e2e, `ACAB_ADBLOCK_FILTERS`). */
+  /** A local filter list used instead of the prebuilt lists (e2e, `BIG_BROWSER_ADBLOCK_FILTERS`). */
   filtersFile?: string
 }
 

@@ -1,18 +1,18 @@
-# ACAB — conventions for Claude sessions
+# Big Browser — conventions for Claude sessions
 
-ACAB ("AI Custom Another Browser") is an Electron desktop web browser (macOS + Windows) that you
+Big Browser is an Electron desktop web browser (macOS + Windows) that you
 customize with your own AI, in an Arc-style UI. It grew out of YAAS (multi-account Claude Code);
 the YAAS docs stay as the AI-tabs reference (ADR-0006). Personal project, pre-alpha.
 
 ## Read first
 
-> **Pivot in progress (2026-11-20):** YAAS is becoming **ACAB**, an AI-customizable browser.
+> **Pivot in progress (2026-11-20):** YAAS is becoming **Big Browser**, an AI-customizable browser.
 > Start with `HANDOFF.md` (if present), then ADR-0006 and
-> `docs/superpowers/specs/2026-11-20-acab-design.md` (approved for step 1).
+> `docs/superpowers/specs/2026-11-20-big-browser-design.md` (approved for step 1).
 
 | When you touch… | Read |
 |---|---|
-| anything | `HANDOFF.md`, `docs/adr/0006-pivot-to-acab-browser.md`, the ACAB design |
+| anything | `HANDOFF.md`, `docs/adr/0006-pivot-to-big-browser.md`, the Big Browser design |
 | AI tabs (the former YAAS scope) | `docs/FEATURES.md` (scope, roadmap, **guiding principles**) |
 | main / core / IPC / data | `docs/ARCHITECTURE.md` |
 | UI, CSS, shortcuts | `docs/DESIGN.md` |
@@ -37,12 +37,12 @@ npm run dist:mac    # package (dist:win on Windows)
    shows an estimate and needs a click. Tests use the fake provider — never a real account.
 2. **Layering.**
    - `src/core/` and `src/shared/` never import `electron` or `react` (ESLint enforces it).
-   - `src/renderer/` never imports Node, `electron` or `@core/*`; it only talks to `window.acab`.
+   - `src/renderer/` never imports Node, `electron` or `@core/*`; it only talks to `window.bigBrowser`.
    - `src/main/` is the Electron shell: windows, IPC handlers, OS integration. Domain logic goes in `core/`.
 3. **IPC goes through the contract.** To add a command or event:
    add the name to `src/shared/ipc/channels.ts` → its zod schema to `src/shared/ipc/contract.ts`
    → the handler in `src/main/index.ts` (validated by `registerCommands`) → use it via
-   `window.acab.invoke/on`. Never expose a raw `ipcRenderer` or a new global.
+   `window.bigBrowser.invoke/on`. Never expose a raw `ipcRenderer` or a new global.
 4. **Security defaults stay on**: `contextIsolation`, `sandbox`, no `nodeIntegration`, CSP in
    `src/renderer/index.html`, navigation and popups blocked.
 5. **Account isolation (ADR-0002)**: one `CLAUDE_CONFIG_DIR` per account at a stable path; never

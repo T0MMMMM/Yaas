@@ -81,7 +81,7 @@ caption buttons.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
 
-**Browser sidebar (ACAB, top → bottom of the scroll area)** — the tree comes from
+**Browser sidebar (Big Browser, top → bottom of the scroll area)** — the tree comes from
 `sidebarSections` in `features/workspace` (same order as the store's `visibleOrder`); the rows
 are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 - **Icon-only mode**: dragging the sidebar narrower than 120 px (`SIDEBAR_COMPACT_FROM`) settles

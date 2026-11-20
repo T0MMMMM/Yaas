@@ -27,7 +27,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
         {...TOOLTIP_ROW}
         onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
         onPointerDown={drag.onPointerDown}
-        onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
+        onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
         onContextMenu={(e) => {
           e.preventDefault()
           showTabMenu(tab.id)

@@ -1,4 +1,4 @@
-# ACAB sidebar finish, part A: look and motion — implementation plan (step 1, plan 3b-A)
+# Big Browser sidebar finish, part A: look and motion — implementation plan (step 1, plan 3b-A)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
@@ -18,15 +18,15 @@ hide the macOS window buttons.
 
 **Tech stack:** Electron 45, React 19 + Zustand, zod, Vitest, Playwright.
 
-**Spec:** [`docs/superpowers/specs/2026-11-20-acab-sidebar-finish-design.md`](../specs/2026-11-20-acab-sidebar-finish-design.md)
+**Spec:** [`docs/superpowers/specs/2026-11-20-big-browser-sidebar-finish-design.md`](../specs/2026-11-20-big-browser-sidebar-finish-design.md)
 (approved). This plan covers its goals **1–2 (look of the existing menus only), 11–25, 27**.
-Part B (`2026-11-20-acab-sidebar-finish-structure.md`, written after this one is merged) covers
+Part B (`2026-11-20-big-browser-sidebar-finish-structure.md`, written after this one is merged) covers
 goals 1 and 3 (drawn menus replacing the native ones), 4–10 (dock, history, space section,
 nested folders, folder icons), 26 (lifted drag) and 28 (downloads). Also obey `CLAUDE.md`.
 
 ## Global constraints
 
-- Branch `feat/acab-sidebar-finish` cut from `feat/acab-organisation`. Claude never pushes.
+- Branch `feat/big-browser-sidebar-finish` cut from `feat/big-browser-organisation`. Claude never pushes.
 - `npm run check` after every task; every task here touches UI, so also `npm run test:e2e`.
 - CSS: design tokens only; every new token goes in `tokens.css` **and** `docs/DESIGN.md` §3.
 - Menus are **opaque white / light grey** (dark scheme: dark grey) — **no glass, no
@@ -35,7 +35,7 @@ nested folders, folder icons), 26 (lifted drag) and 28 (downloads). Also obey `C
   only delays hiding.
 - Motion uses `--dur-*` / `--ease-*` tokens, which are already zeroed under
   `prefers-reduced-motion` (`tokens.css`).
-- IPC additions follow `CLAUDE.md` rule 3 (channels → contract → handler → `window.acab`).
+- IPC additions follow `CLAUDE.md` rule 3 (channels → contract → handler → `window.bigBrowser`).
 - Every user-visible string in English.
 
 ## Decisions made for this plan [Claude's calls within the spec]
@@ -358,7 +358,7 @@ nested folders, folder icons), 26 (lifted drag) and 28 (downloads). Also obey `C
 **Files:**
 - Modify: `HANDOFF.md` (next steps: plan 3b-A done → write and follow 3b-B, then plan 4),
   `docs/DESIGN.md` (check every token and behaviour added above is listed),
-  `docs/superpowers/specs/2026-11-20-acab-design.md` (§5.1: menus opaque white/grey, not glass;
+  `docs/superpowers/specs/2026-11-20-big-browser-design.md` (§5.1: menus opaque white/grey, not glass;
   plan list gains 3b)
 
 - [ ] **Step 1:** Update the three docs.

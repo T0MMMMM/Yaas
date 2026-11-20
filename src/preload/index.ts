@@ -1,15 +1,15 @@
-// The only bridge between the sandboxed renderer and main. Exposes `window.acab`, plus the
+// The only bridge between the sandboxed renderer and main. Exposes `window.bigBrowser`, plus the
 // extension actions' `browserAction` in the overlay (below).
 // Type-only imports from the contract: zod is never bundled here.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
 import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 import { COMMAND_CHANNELS, EVENT_CHANNELS } from '@shared/ipc/channels'
-import type { IpcResult, AcabBridge } from '@shared/ipc/contract'
+import type { IpcResult, BigBrowserBridge } from '@shared/ipc/contract'
 
 const commandChannels: ReadonlySet<string> = new Set(COMMAND_CHANNELS)
 const eventChannels: ReadonlySet<string> = new Set(EVENT_CHANNELS)
 
-const bridge: AcabBridge = {
+const bridge: BigBrowserBridge = {
   async invoke(channel, ...args) {
     if (!commandChannels.has(channel)) throw new Error(`Unknown IPC command: ${channel}`)
     const result = (await ipcRenderer.invoke(channel, args[0])) as IpcResult<never>
@@ -27,7 +27,7 @@ const bridge: AcabBridge = {
   },
 }
 
-contextBridge.exposeInMainWorld('acab', bridge)
+contextBridge.exposeInMainWorld('bigBrowser', bridge)
 
 // The site menu (overlay only) lists the tab's extension actions with the library's
 // `<browser-action-list>` element; this defines it and its `browserAction` bridge, which only reads

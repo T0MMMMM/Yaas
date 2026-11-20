@@ -1,4 +1,4 @@
-// Accounts: the spaces of ACAB. Stored in SQLite; profiles come from the provider's auth status.
+// Accounts: the spaces of Big Browser. Stored in SQLite; profiles come from the provider's auth status.
 import { randomUUID } from 'node:crypto'
 import type { Account } from '@shared/model'
 import type { AuthStatus } from '../providers/claude-code/cli'

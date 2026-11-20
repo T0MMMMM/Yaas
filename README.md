@@ -1,4 +1,4 @@
-# ACAB — AI Custom Another Browser
+# Big Browser
 
 A desktop web browser (macOS + Windows) that you customize with your own AI. It grew out of YAAS,
 a multi-account Claude Code app; the YAAS design docs in `docs/` remain the reference for AI tabs
@@ -12,10 +12,10 @@ a multi-account Claude Code app; the YAAS design docs in `docs/` remain the refe
 - **Chrome extensions** support.
 - **Removable feature modules** — browser features are modules your own AI can edit or remove.
 - **AI tabs** — Claude Code sessions as tabs, coming later (the former YAAS scope).
-- **Near-zero overhead** — ACAB never calls a model behind your back.
+- **Near-zero overhead** — Big Browser never calls a model behind your back.
 
-Design: [`docs/superpowers/specs/2026-11-20-acab-design.md`](docs/superpowers/specs/2026-11-20-acab-design.md)
-and [`docs/adr/0006-pivot-to-acab-browser.md`](docs/adr/0006-pivot-to-acab-browser.md). The AI-tabs
+Design: [`docs/superpowers/specs/2026-11-20-big-browser-design.md`](docs/superpowers/specs/2026-11-20-big-browser-design.md)
+and [`docs/adr/0006-pivot-to-big-browser.md`](docs/adr/0006-pivot-to-big-browser.md). The AI-tabs
 roadmap is in [`docs/FEATURES.md`](docs/FEATURES.md).
 
 ## Requirements
@@ -51,7 +51,7 @@ npm run dist       # package dmg / nsis
 
 ## Disclaimer
 
-ACAB is an independent project, not affiliated with or endorsed by Anthropic. It drives the
+Big Browser is an independent project, not affiliated with or endorsed by Anthropic. It drives the
 official Claude Code CLI with your own accounts; you remain responsible for complying with the
 terms that apply to them.
 

@@ -1,9 +1,9 @@
-# ACAB — sidebar, menus and motion finish (step 1, plan 3b) — design
+# Big Browser — sidebar, menus and motion finish (step 1, plan 3b) — design
 
 > Status: **approved by the owner, 2026-11-20** (builder check done; owner answered favourites per space and hidden window controls). When approved, it
 > replaces HANDOFF's "next: plan 4" with plan 3b, then plan 4. Legend: **[owner]** = the owner asked for it
 > (list of 2026-11-20, with yab screenshots); **[call]** = Claude's call, correct if wrong.
-> Parent design: `2026-11-20-acab-design.md` (§5.1). Plans 1–3 are done; this plan comes **before
+> Parent design: `2026-11-20-big-browser-design.md` (§5.1). Plans 1–3 are done; this plan comes **before
 > plan 4** (window features).
 
 ## 1. Intent
@@ -19,7 +19,7 @@ finished browser. Screenshots of yab are the reference for shape and colour (not
 Goals — the owner's list, grouped:
 
 **A. Menus** [owner]
-1. **Every menu is drawn by ACAB, never native**: the tab, folder, space, + and site menus, and
+1. **Every menu is drawn by Big Browser, never native**: the tab, folder, space, + and site menus, and
    the **web page's right-click menu**. Opaque, **white / light grey** cards like yab's (no glass,
    no blur) [owner]; the dark scheme uses the matching dark grey [call].
 2. A **connector** joins an icon button to the menu it opens (the card grows a small neck towards
@@ -27,7 +27,7 @@ Goals — the owner's list, grouped:
 3. The page's right-click menu is complete, shaped like the owner's screenshot 1: Back, Forward,
    Reload; the extensions' items (`chrome.contextMenus`, e.g. 1Password, with their submenus and
    icons); Inspect Element; plus the contextual entries that exist today (link, image, selection,
-   editing). Spelling suggestions on a misspelled word are redrawn by ACAB [call, agreed]. macOS
+   editing). Spelling suggestions on a misspelled word are redrawn by Big Browser [call, agreed]. macOS
    "Look Up" and "Services" are dropped [owner agreed]. Capture, Hide Element and Translate are
    **not** added: they are step 2 modules (parent design §5.1) [call].
 4. The **space menu** (screenshot 6), opened by the "…" of the space header: a search field,

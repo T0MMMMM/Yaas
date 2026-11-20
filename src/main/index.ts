@@ -7,6 +7,7 @@ import { BrowserStore } from '@core/browser/browserStore'
 import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli'
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
+import { DB_FILE, migrateLegacyData } from '@core/store/legacyData'
 import type { BrowserState, Settings, Shortcut } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
@@ -29,16 +30,23 @@ import {
 /** The `browser.*` mirror registered on every space session (spike fix 1). */
 const MIRROR_PRELOAD_PATH = join(__dirname, '../preload/browserMirror.js')
 
-// Tests and parallel dev profiles can point ACAB at a throwaway data dir.
-const userDataOverride = process.env['ACAB_USER_DATA']
+// Tests and parallel dev profiles can point Big Browser at a throwaway data dir.
+const userDataOverride = process.env['BIG_BROWSER_USER_DATA']
 if (userDataOverride) app.setPath('userData', userDataOverride)
+else {
+  try {
+    migrateLegacyData(app.getPath('appData'), app.getPath('userData'))
+  } catch (error) {
+    console.warn('Could not move the data kept under the former name (ACAB):', error)
+  }
+}
 
 if (!app.requestSingleInstanceLock()) app.quit()
 
-const db = openDatabase(join(app.getPath('userData'), 'acab.db'))
+const db = openDatabase(join(app.getPath('userData'), DB_FILE))
 const settings = new SettingsStore(db)
 // `npm run dev:onboarding` shows the onboarding on every launch (to work on it).
-if (process.env['ACAB_ONBOARDING'] === '1') settings.update({ onboardingDone: false })
+if (process.env['BIG_BROWSER_ONBOARDING'] === '1') settings.update({ onboardingDone: false })
 const accounts = new Accounts({
   db,
   authStatus: async (configDir) => {
@@ -122,7 +130,7 @@ const extensionHost: ExtensionHost = {
   window: () => mainWindow,
 }
 
-const testExtension = process.env['ACAB_TEST_EXTENSION']
+const testExtension = process.env['BIG_BROWSER_TEST_EXTENSION']
 const spaceSessions = new SpaceSessions({
   userData: app.getPath('userData'),
   mirrorPreload: MIRROR_PRELOAD_PATH,
@@ -141,10 +149,12 @@ function applyAdBlock({ enabled, allowedHosts }: Settings['adBlock']): void {
 }
 
 // Loaded without holding up the window: sessions set up before it arrives get it then. Under test
-// (`ACAB_USER_DATA`) the lists are never downloaded: a local list or no blocker at all.
-const adBlockFilters = process.env['ACAB_ADBLOCK_FILTERS']
+// (`BIG_BROWSER_USER_DATA`) the lists are never downloaded: a local list or no blocker at all.
+const adBlockFilters = process.env['BIG_BROWSER_ADBLOCK_FILTERS']
 if (userDataOverride && !adBlockFilters) {
-  console.warn('Ad blocker skipped: ACAB_USER_DATA is set without ACAB_ADBLOCK_FILTERS')
+  console.warn(
+    'Ad blocker skipped: BIG_BROWSER_USER_DATA is set without BIG_BROWSER_ADBLOCK_FILTERS',
+  )
 } else {
   void AdBlocker.load({
     cachePath: join(app.getPath('userData'), 'adblock-engine.bin'),

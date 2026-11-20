@@ -335,7 +335,7 @@ never gets it. It defines the `<browser-action-list>` / `<browser-action>` eleme
 `window.browserAction`: `getState(partition)`, `activate(partition, details)` (click: run the
 action or open its popup; right-click: its context menu), `addObserver` / `removeObserver` and
 update listeners. It goes through the library's `crx-msg-remote` channel, not through
-`window.acab`, and gives no raw `ipcRenderer`. Note the library's `browserAction.getState` /
+`window.bigBrowser`, and gives no raw `ipcRenderer`. Note the library's `browserAction.getState` /
 `activate` handlers accept **any sender** (`allowRemote: true`) for any partition: the exposure is
 the library's, registered on `ipcMain` as soon as a space session exists, and the overlay only
 uses it to read and activate actions.
@@ -414,7 +414,7 @@ results come back to the lead as a short summary + branch name, never the full c
 | Core unit | Vitest | Against `FakeProvider` — 0 tokens |
 | Contract | Vitest | Real transcript fixtures (anonymised) → reader/sanitizer; CLI event fixtures → normalizer |
 | IPC | Vitest | Every command schema rejects bad payloads |
-| E2E | Playwright `_electron` | App launched with a temp userData (`ACAB_USER_DATA`), no real account |
+| E2E | Playwright `_electron` | App launched with a temp userData (`BIG_BROWSER_USER_DATA`), no real account |
 | Real-account spikes | scripts | Opt-in, never in CI |
 
 ## 11. Browser
@@ -458,7 +458,7 @@ results come back to the lead as a short summary + branch name, never the full c
   added to the window's `contentView` above the UI. Only the active tab of the active space is
   visible. Views are `sandbox` + `contextIsolation`, no `nodeIntegration`, **no app preload; the
   session's `browser.*` mirror only**; the
-  user agent is plain Chrome (`core/browser/userAgent.ts` drops the `Electron/` and `ACAB/`
+  user agent is plain Chrome (`core/browser/userAgent.ts` drops the `Electron/` and `Big Browser/`
   tokens). Popups, `target=_blank` and "Open Link in New Tab" become tabs in the same space
   (`deny` + `openTab` with `parentId` = the opener), never windows; `will-navigate` to a
   non-http(s) scheme is blocked.
@@ -472,7 +472,7 @@ results come back to the lead as a short summary + branch name, never the full c
   stored under `<userData>/extensions/<spaceId>`. "Add to Chrome" asks first: a native dialog
   lists what the extension can do (`core/browser/extensionPermissions.ts`, via the store's
   `beforeInstall`), Cancel by default. Web Store update checks are off and installs are allowed
-  without the dialog when `ACAB_USER_DATA` is set (tests). `TabViews` registers each tab (`addTab`), reports the shown one
+  without the dialog when `BIG_BROWSER_USER_DATA` is set (tests). `TabViews` registers each tab (`addTab`), reports the shown one
   (`selectTab`) and adds the extensions' `chrome.contextMenus` items to the page menu (own group
   before Inspect). Extensions reach tabs through an `ExtensionHost` in `main/index.ts`:
   `chrome.tabs.create` and `chrome.windows.create` open a tab in the extension's space (bringing
@@ -483,7 +483,7 @@ results come back to the lead as a short summary + branch name, never the full c
   any non-tab web contents of a space session (extension popups, background pages) open a tab in
   that space and deny the window (tab views, the UI and the overlay replace it with their own
   handler). The three packages stay external in the main build so they resolve their own preload
-  files. E2E loads an unpacked fixture through `ACAB_TEST_EXTENSION` (no network).
+  files. E2E loads an unpacked fixture through `BIG_BROWSER_TEST_EXTENSION` (no network).
 - **Ad blocker.** Built in and on by default (spec §8): Ghostery's engine
   (`@ghostery/adblocker-electron`, `main/browser/adBlocker.ts`) blocks ads and trackers in every
   space session. It loads once at startup without holding up the window
@@ -503,7 +503,7 @@ results come back to the lead as a short summary + branch name, never the full c
   referrer, so a page sent with `no-referrer` is still filtered. When a host is allowed or no
   longer allowed, main reloads the tabs showing it. Ghostery's cosmetic preload is a second script
   on space sessions; it talks to main over two `ipcMain` handlers and exposes nothing to pages.
-  E2E loads a local list through `ACAB_ADBLOCK_FILTERS`; with `ACAB_USER_DATA` set and no list, the
+  E2E loads a local list through `BIG_BROWSER_ADBLOCK_FILTERS`; with `BIG_BROWSER_USER_DATA` set and no list, the
   blocker is skipped (never a download in tests).
 - **Permissions.** Every space session denies page permissions except
   `clipboard-sanitized-write`, `fullscreen` and `pointerLock` (`core/browser/permissions.ts`):

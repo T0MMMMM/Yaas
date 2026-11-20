@@ -5,7 +5,7 @@ import fields from '../settings/Fields.module.css'
 import { MiniPreview } from './MiniPreview'
 import styles from './Onboarding.module.css'
 
-/** Onboarding screen 2 — every choice applies live; "Open ACAB" finishes (DESIGN.md §6). */
+/** Onboarding screen 2 — every choice applies live; "Open Big Browser" finishes (DESIGN.md §6). */
 export function VisualSetup() {
   const settings = useSettings((s) => s.settings)
   const update = useSettings((s) => s.update)
@@ -28,7 +28,7 @@ export function VisualSetup() {
       <footer className={styles.footer}>
         <span />
         <button className={styles.primary} onClick={() => void update({ onboardingDone: true })}>
-          Open ACAB <ArrowRight size={16} />
+          Open Big Browser <ArrowRight size={16} />
         </button>
       </footer>
     </section>

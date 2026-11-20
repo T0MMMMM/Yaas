@@ -16,7 +16,7 @@ async function withBrowser(
     userData: string
   }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData)
   try {
@@ -52,7 +52,7 @@ async function openTab(app: ElectronApplication, page: Page, url: string): Promi
 
 /** Opens a blank tab straight through the bridge (the UI only opens tabs with an address). */
 async function blankTab(page: Page): Promise<void> {
-  await page.evaluate(() => window.acab.invoke('browser.openTab', {}))
+  await page.evaluate(() => window.bigBrowser.invoke('browser.openTab', {}))
 }
 
 /** Bounds of the page view main currently shows, or undefined when none is visible. */
@@ -71,7 +71,7 @@ const clickMenu = (app: ElectronApplication, id: string) =>
   )
 
 /** The browser model and runtime, as main sends them to the UI. */
-const browserState = (page: Page) => page.evaluate(() => window.acab.invoke('browser.state'))
+const browserState = (page: Page) => page.evaluate(() => window.bigBrowser.invoke('browser.state'))
 
 test('open, navigate, go back', async () => {
   await withBrowser(async ({ app, page, site }) => {
@@ -238,18 +238,18 @@ test('icon-only mode hides the window buttons and marks filed tabs', async () =>
 
     // The blank tab is filed in a pinned folder; a second tab stays in today.
     const folderId = await page.evaluate(async () => {
-      const folder = await window.acab.invoke('browser.createFolder', { name: 'Reading' })
-      const { tabs } = await window.acab.invoke('browser.state')
+      const folder = await window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' })
+      const { tabs } = await window.bigBrowser.invoke('browser.state')
       const first = tabs[0]
       if (first) {
-        await window.acab.invoke('browser.moveTab', {
+        await window.bigBrowser.invoke('browser.moveTab', {
           tabId: first.id,
           section: 'pinned',
           folderId: folder.id,
           index: 0,
         })
       }
-      await window.acab.invoke('browser.openTab', {})
+      await window.bigBrowser.invoke('browser.openTab', {})
       return folder.id
     })
     expect(folderId).toBeTruthy()
@@ -323,10 +323,10 @@ test('the sidebar uses the system font and 38 px rows', async () => {
 
 test('the + menu opens over the page in liquid glass', async () => {
   await withBrowser(async ({ app, page }) => {
-    await page.evaluate(() => window.acab.invoke('settings.update', { transparency: 1 }))
+    await page.evaluate(() => window.bigBrowser.invoke('settings.update', { transparency: 1 }))
     // Liquid glass only exists where the platform supports it (macOS, Windows 11).
     const glassSupported = await page.evaluate(
-      async () => (await window.acab.invoke('app.info')).glassSupported,
+      async () => (await window.bigBrowser.invoke('app.info')).glassSupported,
     )
     const overlay = await overlayPage(app)
     if (glassSupported) {
@@ -374,7 +374,9 @@ test('magnetic buttons follow the setting', async () => {
     await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.translate)).not.toBe('')
     await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.scale)).toBe('1.08')
 
-    await page.evaluate(() => window.acab.invoke('settings.update', { magneticButtons: false }))
+    await page.evaluate(() =>
+      window.bigBrowser.invoke('settings.update', { magneticButtons: false }),
+    )
     await expect
       .poll(() => page.evaluate(() => document.documentElement.dataset['magnetic']))
       .toBe('off')
@@ -399,7 +401,7 @@ test('magnetic buttons stay still under reduced motion', async () => {
 })
 
 test('tabs survive a relaunch', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   try {
     const first = await launchApp(userData)
@@ -430,7 +432,7 @@ test('tabs survive a relaunch', async () => {
 })
 
 test('restored tabs stay dim until visited', async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   try {
     const first = await launchApp(userData)
@@ -498,8 +500,8 @@ test('closing a pinned tab unloads it', async () => {
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
     const pinnedId = (await browserState(page)).tabs.find((t) => t.url.endsWith('/a'))?.id ?? ''
     await page.evaluate(async (tabId) => {
-      await window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 })
-      await window.acab.invoke('browser.activateTab', { tabId })
+      await window.bigBrowser.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 })
+      await window.bigBrowser.invoke('browser.activateTab', { tabId })
     }, pinnedId)
     const pinned = page.getByTestId('tab').filter({ hasText: 'Page A' }).getByRole('button').first()
     await expect(pinned).toHaveAttribute('data-loaded', 'true')

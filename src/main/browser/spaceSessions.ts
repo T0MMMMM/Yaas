@@ -10,7 +10,7 @@ import { chromeUserAgent } from '@core/browser/userAgent'
 import { spacePartition } from '@shared/spaces'
 import type { AdBlocker } from './adBlocker'
 
-/** What extensions may do to the browser: tabs and windows are ACAB's tabs and its one window. */
+/** What extensions may do to the browser: tabs and windows are Big Browser's tabs and its one window. */
 export interface ExtensionHost {
   /** Opens `url` as the active tab of the space and resolves with its web contents. */
   openTab(spaceId: string, url: string): Promise<WebContents>
@@ -24,7 +24,7 @@ export interface SpaceSessionsOptions {
   /** The built `browserMirror` preload (spike fix 1). */
   mirrorPreload: string
   host: ExtensionHost
-  /** An unpacked extension loaded in every space (e2e, `ACAB_TEST_EXTENSION`). */
+  /** An unpacked extension loaded in every space (e2e, `BIG_BROWSER_TEST_EXTENSION`). */
   testExtension?: string
   /** Web Store update checks (off under test: they go to the network). Defaults to true. */
   autoUpdate?: boolean
@@ -60,7 +60,7 @@ export class SpaceSessions {
     // extensions that prefer it (1Password) would miss the APIs added to `chrome`.
     for (const type of ['frame', 'service-worker'] as const) {
       ses.registerPreloadScript({
-        id: `acab-browser-mirror-${type}`,
+        id: `big-browser-mirror-${type}`,
         type,
         filePath: this.opts.mirrorPreload,
       })

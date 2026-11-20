@@ -11,7 +11,7 @@ type Site = Awaited<ReturnType<typeof startSite>>
 async function withTabs(
   run: (ctx: { app: ElectronApplication; page: Page; overlay: Page; site: Site }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData)
   try {
@@ -19,7 +19,7 @@ async function withTabs(
     await finishOnboarding(page)
     for (const path of ['/a', '/b']) {
       await page.evaluate(
-        (input) => window.acab.invoke('browser.openTab', { input }),
+        (input) => window.bigBrowser.invoke('browser.openTab', { input }),
         site.url(path),
       )
     }
@@ -42,7 +42,7 @@ const clickMenu = (app: ElectronApplication, id: string) =>
 /** The URL of the active tab, from the model main sends the UI. */
 const activeUrl = (page: Page) =>
   page.evaluate(async () => {
-    const state = await window.acab.invoke('browser.state')
+    const state = await window.bigBrowser.invoke('browser.state')
     return state.tabs.find((t) => t.id === state.activeTabIds[state.activeSpaceId])?.url
   })
 

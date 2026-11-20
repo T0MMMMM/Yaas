@@ -11,7 +11,7 @@ type Site = Awaited<ReturnType<typeof startSite>>
 async function withBrowser(
   run: (ctx: { app: ElectronApplication; page: Page; site: Site }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   const app = await launchApp(userData)
   try {
@@ -27,7 +27,7 @@ async function withBrowser(
 
 /** Opens a tab on `url` straight through the bridge (the sidebar's + is not under test here). */
 const openTab = (page: Page, url: string) =>
-  page.evaluate((input) => window.acab.invoke('browser.openTab', { input }), url)
+  page.evaluate((input) => window.bigBrowser.invoke('browser.openTab', { input }), url)
 
 // Native context menus can't be clicked from Playwright: the tests call what their items call.
 
@@ -38,7 +38,8 @@ test('pinned tabs and folders: pin, file into a folder, collapse, rename', async
     await expect(today.getByTestId('tab')).toHaveText(['Page A'])
 
     await page.evaluate(
-      (tabId) => window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
+      (tabId) =>
+        window.bigBrowser.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
       tab.id,
     )
     const pinned = page.getByTestId('pinned')
@@ -46,11 +47,16 @@ test('pinned tabs and folders: pin, file into a folder, collapse, rename', async
     await expect(today.getByTestId('tab')).toHaveCount(0)
 
     const folder = await page.evaluate(() =>
-      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+      window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }),
     )
     await page.evaluate(
       ({ tabId, folderId }) =>
-        window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', folderId, index: 0 }),
+        window.bigBrowser.invoke('browser.moveTab', {
+          tabId,
+          section: 'pinned',
+          folderId,
+          index: 0,
+        }),
       { tabId: tab.id, folderId: folder.id },
     )
     const folderRow = pinned.getByTestId('folder')
@@ -118,7 +124,7 @@ test('three tabs of one site are drawn as an automatic folder, unless turned off
 /** The tabs of the active space as main stores them (section and folder). */
 const storedTabs = (page: Page) =>
   page.evaluate(() =>
-    window.acab
+    window.bigBrowser
       .invoke('browser.state')
       .then((state) =>
         state.tabs.map((t) => ({ title: t.title, section: t.section, folderId: t.folderId })),
@@ -131,7 +137,8 @@ test('dragging a tab pins it, files it into a folder and moves it back to today'
     await openTab(page, site.url('/b'))
     await openTab(page, site.url('/c'))
     await page.evaluate(
-      (tabId) => window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
+      (tabId) =>
+        window.bigBrowser.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
       a.id,
     )
     const pinned = page.getByTestId('pinned')
@@ -151,7 +158,7 @@ test('dragging a tab pins it, files it into a folder and moves it back to today'
 
     // A tab dropped on the middle of a folder's row is filed into it.
     const folder = await page.evaluate(() =>
-      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+      window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }),
     )
     const folderButton = pinned.getByRole('button', { name: 'Reading' })
     await today.getByTestId('tab').first().dragTo(folderButton)
@@ -235,7 +242,7 @@ const createdContents = (app: ElectronApplication) =>
   app.evaluate(() => (globalThis as unknown as { createdContents: number }).createdContents)
 
 test("Clear closes today's tabs without loading any, ⌘⇧T reopens the last one", async () => {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
   try {
     const first = await launchApp(userData)
@@ -339,7 +346,11 @@ test('favourite tiles fill the width and wrap', async () => {
       for (const tabId of tabIds) {
         await page.evaluate(
           (id) =>
-            window.acab.invoke('browser.moveTab', { tabId: id, section: 'favorites', index: 0 }),
+            window.bigBrowser.invoke('browser.moveTab', {
+              tabId: id,
+              section: 'favorites',
+              index: 0,
+            }),
           tabId,
         )
       }
@@ -370,7 +381,7 @@ test('no Search button at the top of the sidebar', async () => {
 test('closing a tab animates its row out', async () => {
   await withBrowser(async ({ page, site }) => {
     // Three tabs of one site would be an automatic folder, which dissolves when one closes.
-    await page.evaluate(() => window.acab.invoke('settings.update', { autoFolders: false }))
+    await page.evaluate(() => window.bigBrowser.invoke('settings.update', { autoFolders: false }))
     await openTab(page, site.url('/a'))
     const second = await openTab(page, site.url('/b'))
     await openTab(page, site.url('/c'))
@@ -391,7 +402,7 @@ test('closing a tab animates its row out', async () => {
         exiting = Math.max(exiting, list.querySelectorAll('[data-testid=tab-exiting]').length)
       })
       observer.observe(list, { childList: true, subtree: true, attributes: true })
-      await window.acab.invoke('browser.closeTab', { tabId })
+      await window.bigBrowser.invoke('browser.closeTab', { tabId })
       await new Promise((resolve) => setTimeout(resolve, 600))
       observer.disconnect()
       return {
@@ -424,7 +435,10 @@ async function exitingDuring(page: Page, channel: string, input: unknown): Promi
         exiting = Math.max(exiting, sidebar.querySelectorAll('[data-testid=tab-exiting]').length)
       })
       observer.observe(sidebar, { childList: true, subtree: true, attributes: true })
-      const invoke = window.acab.invoke as (channel: string, input: unknown) => Promise<unknown>
+      const invoke = window.bigBrowser.invoke as (
+        channel: string,
+        input: unknown,
+      ) => Promise<unknown>
       await invoke(channel, input)
       await new Promise((resolve) => setTimeout(resolve, 600))
       observer.disconnect()
@@ -439,16 +453,19 @@ test('switching space draws no exiting rows', async () => {
     await openTab(page, site.url('/a'))
     await openTab(page, site.url('/b'))
     const home = await page.evaluate(() =>
-      window.acab.invoke('browser.state').then((s) => s.activeSpaceId),
+      window.bigBrowser.invoke('browser.state').then((s) => s.activeSpaceId),
     )
     const work = await page.evaluate(() =>
-      window.acab.invoke('browser.createSpace', { name: 'Work', color: '#3366ff' }),
+      window.bigBrowser.invoke('browser.createSpace', { name: 'Work', color: '#3366ff' }),
     )
     await page.evaluate(
-      ({ spaceId, input }) => window.acab.invoke('browser.openTab', { spaceId, input }),
+      ({ spaceId, input }) => window.bigBrowser.invoke('browser.openTab', { spaceId, input }),
       { spaceId: work.id, input: site.url('/c') },
     )
-    await page.evaluate((spaceId) => window.acab.invoke('browser.activateSpace', { spaceId }), home)
+    await page.evaluate(
+      (spaceId) => window.bigBrowser.invoke('browser.activateSpace', { spaceId }),
+      home,
+    )
     const today = page.getByTestId('today')
     await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
 
@@ -461,11 +478,11 @@ test('switching space draws no exiting rows', async () => {
 
 test('moving a tab draws no exiting row', async () => {
   await withBrowser(async ({ page, site }) => {
-    await page.evaluate(() => window.acab.invoke('settings.update', { autoFolders: false }))
+    await page.evaluate(() => window.bigBrowser.invoke('settings.update', { autoFolders: false }))
     const a = await openTab(page, site.url('/a'))
     const b = await openTab(page, site.url('/b'))
     const folder = await page.evaluate(() =>
-      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+      window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }),
     )
     const today = page.getByTestId('today')
     await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
@@ -504,11 +521,16 @@ test('collapsing a folder keeps its tab rows in the DOM but hides them from assi
   await withBrowser(async ({ page, site }) => {
     const tab = await openTab(page, site.url('/a'))
     const folder = await page.evaluate(() =>
-      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+      window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }),
     )
     await page.evaluate(
       ({ tabId, folderId }) =>
-        window.acab.invoke('browser.moveTab', { tabId, section: 'pinned', folderId, index: 0 }),
+        window.bigBrowser.invoke('browser.moveTab', {
+          tabId,
+          section: 'pinned',
+          folderId,
+          index: 0,
+        }),
       { tabId: tab.id, folderId: folder.id },
     )
     const folderRow = page.getByTestId('pinned').getByTestId('folder')
@@ -543,7 +565,7 @@ test('tooltips slide from row to row', async () => {
   await withBrowser(async ({ app, page, site }) => {
     await openTab(page, site.url('/b'))
     await openTab(page, site.url('/a'))
-    await page.evaluate(() => window.acab.invoke('browser.createFolder', { name: 'Reading' }))
+    await page.evaluate(() => window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }))
     const folderRow = page.getByTestId('pinned').getByRole('button', { name: 'Reading' })
     await expect(folderRow).toBeVisible()
     const today = page.getByTestId('today')

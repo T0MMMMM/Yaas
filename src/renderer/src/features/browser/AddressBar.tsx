@@ -30,7 +30,7 @@ export function AddressBar() {
   /** Whether the site menu is open in the overlay. */
   const [siteMenuOpen, setSiteMenuOpen] = useState(false)
 
-  useEffect(() => window.acab.on('overlay.closed', () => setSiteMenuOpen(false)), [])
+  useEffect(() => window.bigBrowser.on('overlay.closed', () => setSiteMenuOpen(false)), [])
 
   const startEditing = () => {
     setDraft(tab && tab.url !== BLANK ? tab.url : '')
@@ -57,12 +57,12 @@ export function AddressBar() {
     const text = draft.trim()
     setEditing(false)
     if (!text) return
-    if (tab) void window.acab.invoke('browser.navigate', { tabId: tab.id, input: text })
-    else void window.acab.invoke('browser.openTab', { input: text })
+    if (tab) void window.bigBrowser.invoke('browser.navigate', { tabId: tab.id, input: text })
+    else void window.bigBrowser.invoke('browser.openTab', { input: text })
   }
 
   const run = (command: 'browser.goBack' | 'browser.goForward' | 'browser.reload') => {
-    if (tab) void window.acab.invoke(command, { tabId: tab.id })
+    if (tab) void window.bigBrowser.invoke(command, { tabId: tab.id })
   }
 
   return (
@@ -152,7 +152,7 @@ export function AddressBar() {
           onClick={(e) => {
             setSiteMenuOpen(true)
             // The menu floats over the page in the overlay view, under the button.
-            window.acab
+            window.bigBrowser
               .invoke('overlay.open', { kind: 'site-menu', anchor: anchorOf(e.currentTarget) })
               .catch(() => setSiteMenuOpen(false))
           }}

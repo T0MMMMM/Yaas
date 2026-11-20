@@ -17,4 +17,5 @@ anything they cover.
 | [0003](0003-handoff.md) | Handoff: full transcript first, hybrid later | Accepted (cross-account validation pending) |
 | [0004](0004-crew-mode.md) | Crew mode: in-process MCP tool + manual runs | Accepted |
 | [0005](0005-sqlite-builtin.md) | SQLite through Node's built-in `node:sqlite` | Accepted (supersedes part of 0001) |
-| [0006](0006-pivot-to-acab-browser.md) | Pivot: YAAS becomes ACAB, an AI-customizable browser | Accepted |
+| [0006](0006-pivot-to-big-browser.md) | Pivot: YAAS becomes an AI-customizable browser (named ACAB) | Accepted (name → 0007) |
+| [0007](0007-rename-to-big-browser.md) | Rename: ACAB becomes Big Browser | Accepted |

@@ -22,9 +22,9 @@ describe('openDatabase', () => {
   })
 
   it('is idempotent when reopened', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'acab-db-'))
+    const dir = mkdtempSync(join(tmpdir(), 'big-browser-db-'))
     dirs.push(dir)
-    const file = join(dir, 'acab.db')
+    const file = join(dir, 'big-browser.db')
     openDatabase(file).close()
     const db = openDatabase(file)
     expect(db.prepare('PRAGMA user_version').get()).toEqual({ user_version: SCHEMA_VERSION })

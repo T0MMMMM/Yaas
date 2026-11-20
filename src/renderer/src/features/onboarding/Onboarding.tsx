@@ -38,13 +38,13 @@ export function Onboarding() {
       <button
         className={`${styles.logo} no-drag`}
         onClick={() => stage === 'intro' && setStage('visual')}
-        aria-label="ACAB"
+        aria-label="Big Browser"
         tabIndex={stage === 'intro' ? 0 : -1}
       >
         <Logo />
       </button>
 
-      <p className={styles.tagline}>AI Custom Another Browser.</p>
+      <p className={styles.tagline}>A web browser you customize with your own AI.</p>
 
       <div className={styles.content}>{stage === 'visual' && <VisualSetup />}</div>
     </div>

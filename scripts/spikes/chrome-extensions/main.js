@@ -7,7 +7,7 @@ const { ElectronBlocker } = require('@ghostery/adblocker-electron')
 const fetch = require('cross-fetch')
 
 const UI_HEIGHT = 84
-const PARTITION = 'persist:acab'
+const PARTITION = 'persist:big-browser'
 
 /** @type {BrowserWindow} */ let win
 /** @type {ElectronChromeExtensions} */ let extensions
@@ -90,7 +90,7 @@ app.whenReady().then(async () => {
   const ua = ses
     .getUserAgent()
     .replace(/\sElectron\/\S+/, '')
-    .replace(/\sacab-spike\/\S+/, '')
+    .replace(/\sbig-browser-spike\/\S+/, '')
   ses.setUserAgent(ua)
   app.userAgentFallback = ua
 
@@ -165,7 +165,7 @@ app.whenReady().then(async () => {
   win = new BrowserWindow({
     width: 1300,
     height: 850,
-    title: 'ACAB spike',
+    title: 'Big Browser spike',
     webPreferences: {
       preload: path.join(__dirname, 'ui.preload.js'),
       sandbox: false,

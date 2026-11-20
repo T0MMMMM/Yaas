@@ -1,4 +1,4 @@
-# ACAB organisation — implementation plan (step 1, plan 3 of 6)
+# Big Browser organisation — implementation plan (step 1, plan 3 of 6)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
@@ -17,13 +17,13 @@ same-site folders, which are **derived, never stored** — in the workspace modu
 
 **Tech stack:** Electron 45, React 19 + Zustand, `node:sqlite`, zod, Vitest, Playwright.
 
-**Spec:** [`docs/superpowers/specs/2026-11-20-acab-design.md`](../specs/2026-11-20-acab-design.md)
+**Spec:** [`docs/superpowers/specs/2026-11-20-big-browser-design.md`](../specs/2026-11-20-big-browser-design.md)
 (§5.1 day-one list, "Browser chrome", "Menus and settings" → + menu, "Added by the owner" →
 automatic folders, icon-only sidebar). Plan 1 deferred real favicons here. Also obey `CLAUDE.md`.
 
 ## Global constraints
 
-- Branch `feat/acab-organisation` cut from `feat/acab-extensions`. Claude never pushes.
+- Branch `feat/big-browser-organisation` cut from `feat/big-browser-extensions`. Claude never pushes.
 - `npm run check` after every task; UI tasks also `npm run test:e2e`.
 - Layering and IPC rules of `CLAUDE.md` (rules 2, 3); renderer components get spaces, tabs,
   folders and the sidebar tree only from `useWorkspace()` (rule 7).

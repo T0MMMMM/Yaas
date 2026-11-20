@@ -7,7 +7,7 @@ import { finishOnboarding, launchApp, uiPage } from './helpers'
 
 type Site = Awaited<ReturnType<typeof startSite>>
 
-const EXTENSION_NAME = 'ACAB Test Action'
+const EXTENSION_NAME = 'Big Browser Test Action'
 const EXTENSION_PATH = join(__dirname, 'fixtures/extension')
 
 /** A fresh app with the test extension, showing the fixture page /a in a tab of the first space. */
@@ -19,19 +19,19 @@ async function withExtension(
     spaceId: string
   }) => Promise<void>,
 ): Promise<void> {
-  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
   const site = await startSite()
-  const app = await launchApp(userData, { ACAB_TEST_EXTENSION: EXTENSION_PATH })
+  const app = await launchApp(userData, { BIG_BROWSER_TEST_EXTENSION: EXTENSION_PATH })
   try {
     const page = await uiPage(app)
     await finishOnboarding(page)
     // A space's session (and its extensions) is set up when its first tab view is created.
     await page.evaluate(
-      (url) => window.acab.invoke('browser.openTab', { input: url }),
+      (url) => window.bigBrowser.invoke('browser.openTab', { input: url }),
       site.url('/a'),
     )
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
-    const { activeSpaceId } = await page.evaluate(() => window.acab.invoke('browser.state'))
+    const { activeSpaceId } = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
     await run({ app, page, site, spaceId: activeSpaceId })
   } finally {
     await app.close().catch(() => undefined)
@@ -57,7 +57,7 @@ const windowCount = (app: ElectronApplication) =>
 /**
  * Loads the fixture's `page.html?<query>` in a bare web contents of the space session: an
  * extension page that is not a tab (like a popup). Loaded from main because tabs never navigate to
- * chrome-extension:// themselves. The view is kept on `globalThis.acabExtensionPage`.
+ * chrome-extension:// themselves. The view is kept on `globalThis.bigBrowserExtensionPage`.
  */
 async function openExtensionPage(
   app: ElectronApplication,
@@ -74,7 +74,7 @@ async function openExtensionPage(
         webPreferences: { session: ses, sandbox: true, contextIsolation: true },
       })
       // Held so the unattached view is not garbage-collected (which closes its page).
-      Object.assign(globalThis, { acabExtensionPage: view })
+      Object.assign(globalThis, { bigBrowserExtensionPage: view })
       void view.webContents.loadURL(`chrome-extension://${extension.id}/page.html?${query}`)
     },
     { partition: `persist:space-${spaceId}`, name: EXTENSION_NAME, query },
@@ -93,7 +93,7 @@ test('window.open from an extension page opens a tab', async () => {
     await openExtensionPage(app, spaceId, `open=${encodeURIComponent(target)}`)
 
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
-    const { tabs } = await page.evaluate(() => window.acab.invoke('browser.state'))
+    const { tabs } = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
     expect(tabs.find((t) => t.url === target)?.spaceId).toBe(spaceId)
     expect(await windowCount(app)).toBe(1)
   })
@@ -109,11 +109,11 @@ test('chrome.windows.remove closes the created tab, never the browser window', a
         app.evaluate(() =>
           (
             globalThis as unknown as {
-              acabExtensionPage: {
+              bigBrowserExtensionPage: {
                 webContents: { executeJavaScript: (code: string) => Promise<string> }
               }
             }
-          ).acabExtensionPage.webContents.executeJavaScript('removeCreated()'),
+          ).bigBrowserExtensionPage.webContents.executeJavaScript('removeCreated()'),
         ),
       )
       .toBe('removed')
@@ -126,10 +126,10 @@ test('a second space gets its own extensions', async () => {
   await withExtension(async ({ app, page, site, spaceId }) => {
     const work = await page.evaluate(
       (url) =>
-        window.acab
+        window.bigBrowser
           .invoke('browser.createSpace', { name: 'Work', color: '#3366ff' })
           .then(async (space) => {
-            await window.acab.invoke('browser.openTab', { spaceId: space.id, input: url })
+            await window.bigBrowser.invoke('browser.openTab', { spaceId: space.id, input: url })
             return space
           }),
       site.url('/c'),

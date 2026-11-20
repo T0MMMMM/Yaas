@@ -27,7 +27,7 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
     if (cancelled.current) return
     const next = value.trim().slice(0, NAME_MAX)
     if (next && next !== name) {
-      void window.acab.invoke('browser.renameFolder', { folderId, name: next })
+      void window.bigBrowser.invoke('browser.renameFolder', { folderId, name: next })
     }
     done(null)
   }
@@ -86,7 +86,7 @@ export function FolderRow({
   const toggle = (): void => {
     if (node.kind === 'auto-folder') toggleHost(node.host)
     else {
-      void window.acab.invoke('browser.setFolderCollapsed', {
+      void window.bigBrowser.invoke('browser.setFolderCollapsed', {
         folderId: node.folder.id,
         collapsed: !collapsed,
       })

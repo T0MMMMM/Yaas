@@ -1,8 +1,8 @@
-# ADR-0006 — Pivot: YAAS becomes ACAB, an AI-customizable browser
+# ADR-0006 — Pivot: YAAS becomes an AI-customizable browser (named ACAB, now Big Browser)
 
 - **Status:** Accepted (2026-11-20)
 - **Evidence:** [Chrome extensions spike](../spikes/2026-11-20-chrome-extensions-electron.md)
-- **Design:** [ACAB design](../superpowers/specs/2026-11-20-acab-design.md)
+- **Design:** [Big Browser design](../superpowers/specs/2026-11-20-big-browser-design.md)
 
 ## Context
 
@@ -17,7 +17,7 @@ depends on (1Password first). The spike showed it can, with two small fixes.
 
 ## Decision
 
-- The product is renamed **ACAB — "AI Custom Another Browser"**.
+- The product is renamed **ACAB — "AI Custom Another Browser"** (renamed **Big Browser** on 2026-11-20, ADR-0007).
 - It is a **web browser** first: tabs, spaces, extensions, sync between macOS and Windows.
 - **Stay on Electron** (ADR-0001 stands): Chromium via `WebContentsView`, Chrome extensions via
   `electron-chrome-extensions` + `electron-chrome-web-store`, built-in ad blocking via the

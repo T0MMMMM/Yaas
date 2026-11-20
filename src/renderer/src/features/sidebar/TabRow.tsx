@@ -65,7 +65,7 @@ export function TabRow({
         {...TOOLTIP_ROW}
         onPointerEnter={(e) => enterTooltip(e.currentTarget, tab.title, tab.host)}
         onPointerDown={drag.onPointerDown}
-        onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
+        onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
       >
         <Favicon tab={tab} className={styles.favicon} />
         <span className={styles.title}>{tab.title}</span>
@@ -75,7 +75,7 @@ export function TabRow({
         data-active={active}
         aria-label="Close tab"
         title="Close tab (⌘W)"
-        onClick={() => void window.acab.invoke('browser.closeTab', { tabId: tab.id })}
+        onClick={() => void window.bigBrowser.invoke('browser.closeTab', { tabId: tab.id })}
       >
         <X size={13} weight="bold" />
       </button>

@@ -51,7 +51,7 @@ export function Overlay() {
 
   useEffect(
     () =>
-      window.acab.on('overlay.opened', (next) => {
+      window.bigBrowser.on('overlay.opened', (next) => {
         // e.g. the + menu's New tab, which opens the command field as the menu closes.
         cancelExit()
         // The menu wins: a tooltip never stays drawn under or over it.
@@ -63,7 +63,7 @@ export function Overlay() {
   )
   useEffect(
     () =>
-      window.acab.on('overlay.tooltip', (next) => {
+      window.bigBrowser.on('overlay.tooltip', (next) => {
         clearTooltipFade()
         if (next) {
           setTooltip({ tooltip: next, closing: false })
@@ -84,14 +84,14 @@ export function Overlay() {
   const tooltipShown = tooltip !== null && !request
   useEffect(() => {
     if (!tooltipShown) return
-    const leave = (): void => void window.acab.invoke('overlay.tooltip', null)
+    const leave = (): void => void window.bigBrowser.invoke('overlay.tooltip', null)
     window.addEventListener('pointermove', leave)
     return () => window.removeEventListener('pointermove', leave)
   }, [tooltipShown])
   // Main can hide the view itself (⌘L): nothing left to animate.
   useEffect(
     () =>
-      window.acab.on('overlay.closed', () => {
+      window.bigBrowser.on('overlay.closed', () => {
         cancelExit()
         setRequest(null)
       }),
@@ -111,7 +111,7 @@ export function Overlay() {
       exit.current = null
       setClosing(false)
       setRequest(null)
-      void window.acab.invoke('overlay.close')
+      void window.bigBrowser.invoke('overlay.close')
     }, EXIT_MS)
   }, [])
 
@@ -138,16 +138,16 @@ export function Overlay() {
       icon: Plus,
       shortcut: '⌘T',
       // Swaps this menu for the command field (⌘T), which creates the tab on submit.
-      onSelect: () => void window.acab.invoke('overlay.open', { kind: 'command' }),
+      onSelect: () => void window.bigBrowser.invoke('overlay.open', { kind: 'command' }),
     },
     {
       id: 'new-folder',
       label: 'New folder',
       icon: FolderSimplePlus,
       onSelect: () => {
-        void window.acab
+        void window.bigBrowser
           .invoke('browser.createFolder', { name: NEW_FOLDER_NAME })
-          .then((folder) => window.acab.invoke('ui.renameFolder', { folderId: folder.id }))
+          .then((folder) => window.bigBrowser.invoke('ui.renameFolder', { folderId: folder.id }))
       },
     },
     {
@@ -156,7 +156,7 @@ export function Overlay() {
       icon: SquaresFour,
       onSelect: () => {
         if (!workspace || !accent) return
-        void window.acab.invoke('browser.createSpace', {
+        void window.bigBrowser.invoke('browser.createSpace', {
           name: `Space ${workspace.spaces.length + 1}`,
           color: accent,
         })
@@ -168,7 +168,7 @@ export function Overlay() {
       label: 'Settings',
       icon: GearSix,
       shortcut: '⌘,',
-      onSelect: () => void window.acab.invoke('ui.openSettings'),
+      onSelect: () => void window.bigBrowser.invoke('ui.openSettings'),
     },
   ]
   return (

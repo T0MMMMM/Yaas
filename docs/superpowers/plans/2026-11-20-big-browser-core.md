@@ -1,23 +1,23 @@
-# ACAB browser core — implementation plan (step 1, plan 1 of 6)
+# Big Browser browser core — implementation plan (step 1, plan 1 of 6)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** turn the YAAS shell into a working browser: spaces and tabs that persist, one
-`WebContentsView` per tab, a yab-style address bar tinted to the site, and the app renamed to ACAB.
+`WebContentsView` per tab, a yab-style address bar tinted to the site, and the app renamed to Big Browser.
 
 **Architecture:** the tab model (spaces, tabs, order, active tab) lives in `src/core/browser/`
 on SQLite and knows nothing of Electron. `src/main/browser/` turns that model into one
 `WebContentsView` per tab, placed over the page card whose rectangle the renderer reports. The
 renderer only draws the chrome (sidebar, address bar) from a `browser.changed` snapshot and sends
-commands through `window.acab`. Shortcuts are application-menu accelerators in main, because a
+commands through `window.bigBrowser`. Shortcuts are application-menu accelerators in main, because a
 focused web page swallows renderer key events.
 
 **Tech stack:** Electron 45 (`WebContentsView`, `session.fromPartition`), React 19 + Zustand,
 `node:sqlite`, zod, Vitest, Playwright `_electron`.
 
-**Spec:** [`docs/superpowers/specs/2026-11-20-acab-design.md`](../specs/2026-11-20-acab-design.md)
+**Spec:** [`docs/superpowers/specs/2026-11-20-big-browser-design.md`](../specs/2026-11-20-big-browser-design.md)
 (§4 tab hosting, §5.1 step 1, browser chrome). Also obey `CLAUDE.md`.
 
 ## Where this fits — step 1 is split into six plans
@@ -41,7 +41,7 @@ written when the previous one is merged.
 
 ## Global constraints
 
-- Work on a branch `feat/acab-browser-core` cut from `style/visual-pass`. Claude never pushes.
+- Work on a branch `feat/big-browser-core` cut from `style/visual-pass`. Claude never pushes.
 - `npm run check` passes after every task; tasks touching UI also pass `npm run test:e2e`.
 - Layering (`CLAUDE.md` rule 2): `src/core` and `src/shared` never import `electron` or `react`;
   the renderer never imports Node, `electron` or `@core/*`.
@@ -69,7 +69,7 @@ written when the previous one is merged.
 
 ---
 
-### Task 1: Rename YAAS → ACAB
+### Task 1: Rename YAAS → Big Browser
 
 **Files:**
 - Modify: `package.json`, `electron-builder.yml`, `src/renderer/index.html`,
@@ -79,23 +79,23 @@ written when the previous one is merged.
   `README.md`, `CLAUDE.md`
 
 **Interfaces:**
-- Produces: the bridge is `window.acab` of type `AcabBridge` (was `window.yaas` / `YaasBridge`);
-  env vars `ACAB_USER_DATA`, `ACAB_ONBOARDING`; database file `acab.db`.
+- Produces: the bridge is `window.bigBrowser` of type `BigBrowserBridge` (was `window.yaas` / `YaasBridge`);
+  env vars `BIG_BROWSER_USER_DATA`, `BIG_BROWSER_ONBOARDING`; database file `big-browser.db`.
 
-- [ ] **Step 1:** In `tests/e2e/launch.spec.ts`, rename env vars to `ACAB_USER_DATA` and drop
-  `YAAS_PROVIDER` (nothing reads it), change the temp prefix to `acab-e2e-`, the button to
-  `Open ACAB`, and the isolation check to `globalThis.acab?.invoke` with key `acab`.
+- [ ] **Step 1:** In `tests/e2e/launch.spec.ts`, rename env vars to `BIG_BROWSER_USER_DATA` and drop
+  `YAAS_PROVIDER` (nothing reads it), change the temp prefix to `big-browser-e2e-`, the button to
+  `Open Big Browser`, and the isolation check to `globalThis.acab?.invoke` with key `acab`.
 - [ ] **Step 2:** Run `npm run test:e2e` — expected FAIL (bridge and button still YAAS).
 - [ ] **Step 3:** Rename everywhere listed above:
-  - `package.json`: `"name": "acab"`, `"productName": "ACAB"`,
+  - `package.json`: `"name": "acab"`, `"productName": "Big Browser"`,
     `"description": "AI Custom Another Browser — a web browser you customize with your own AI."`,
-    script `dev:onboarding` sets `ACAB_ONBOARDING=1`.
-  - `electron-builder.yml`: `appId: dev.acab.app`, `productName: ACAB`, copyright
-    `ACAB contributors`, mac `category: public.app-category.productivity`.
-  - window `title: 'ACAB'`, `<title>ACAB</title>`, db file `acab.db`, env var names, bridge name
-    and type, the onboarding button `Open ACAB`.
-  - `README.md` and `CLAUDE.md`: product name and one-line description become ACAB; rule 2 and 3
-    say `window.acab`; keep the YAAS docs as the AI-tabs reference (ADR-0006).
+    script `dev:onboarding` sets `BIG_BROWSER_ONBOARDING=1`.
+  - `electron-builder.yml`: `appId: dev.bigbrowser.app`, `productName: Big Browser`, copyright
+    `Big Browser contributors`, mac `category: public.app-category.productivity`.
+  - window `title: 'Big Browser'`, `<title>Big Browser</title>`, db file `big-browser.db`, env var names, bridge name
+    and type, the onboarding button `Open Big Browser`.
+  - `README.md` and `CLAUDE.md`: product name and one-line description become Big Browser; rule 2 and 3
+    say `window.bigBrowser`; keep the YAAS docs as the AI-tabs reference (ADR-0006).
 - [ ] **Step 4:** Run `grep -rniI yaas src tests package.json electron-builder.yml README.md` —
   expected: no hits except comments that point to YAAS docs on purpose.
 - [ ] **Step 5:** Run `npm run check && npm run test:e2e` — expected PASS.
@@ -282,7 +282,7 @@ export interface PageBounds { x: number; y: number; width: number; height: numbe
 - Consumes: `BrowserStore` (Task 3), contract (Task 4), `resolveInput` (Task 2).
 - Produces:
   - `chromeUserAgent(electronUa: string): string` — removes the `Electron/x.y.z` and
-    `ACAB/x.y.z` tokens, nothing else.
+    `Big Browser/x.y.z` tokens, nothing else.
   - `class TabViews` — `constructor(win: BrowserWindow, store: BrowserStore, onRuntime: () => void)`;
     `sync(snapshot: BrowserSnapshot): void`; `setBounds(b: PageBounds): void`;
     `setVisible(visible: boolean): void`; `navigate(tabId: string, url: string): void`;
@@ -312,11 +312,11 @@ Behaviour of `TabViews` (decided):
   `browser.createSpace` from the UI uses the given name and colour.
 
 - [ ] **Step 1:** Write `userAgent.test.ts`:
-  `chromeUserAgent('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) ACAB/0.0.1 Chrome/140.0.0.0 Electron/45.4.1 Safari/537.36')`
+  `chromeUserAgent('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Big Browser/0.0.1 Chrome/140.0.0.0 Electron/45.4.1 Safari/537.36')`
   → `'Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'`.
 - [ ] **Step 2:** Write `tests/e2e/browser.spec.ts` test `a page opens, navigates and reports
   back`. The UI comes in Task 7, so after finishing onboarding it calls the bridge from the UI
-  page with `page.evaluate(() => window.acab.invoke(...))`:
+  page with `page.evaluate(() => window.bigBrowser.invoke(...))`:
   `openTab({ input: site.url('/a') })` → poll `browser.state` until the tab title is `Page A`
   and `runtime[tabId].themeColor === '#123456'`; `navigate` to `/b` → title `Page B`,
   `canGoBack: true`; `goBack` → `Page A`. Then the **popup** case: click `#pop` inside the page with
@@ -478,7 +478,7 @@ Added by the owner during execution (spec, "Added by the owner on 2026-11-20").
   `src/renderer/src/features/settings/catalog.tsx`, `src/renderer/src/features/settings/panels.tsx`,
   `src/main/index.ts`, `tests/e2e/launch.spec.ts`
 
-Decided: the onboarding is intro → visual setup, whose button becomes "Open ACAB" and finishes
+Decided: the onboarding is intro → visual setup, whose button becomes "Open Big Browser" and finishes
 (`onboardingDone: true`). `TechnicalSetup.tsx`, `SessionView`, `ContextBar`, meters and the
 accounts code stay in the repo, unreferenced by the UI (spec: hidden until step 3). The
 `accounts.*` and `claude.detect` IPC commands stay registered. Settings sections shown: General,
@@ -487,7 +487,7 @@ the space-switcher style row are removed (spaces are always dots, spec). Setting
 rebuilt in plan 5.
 
 - [ ] **Step 1:** Rewrite `launch.spec.ts`: `first launch shows onboarding, then the browser`
-  (intro → visual → pick `#2BB673` → "Open ACAB" → `sidebar`, `address-bar`, `empty-state`;
+  (intro → visual → pick `#2BB673` → "Open Big Browser" → `sidebar`, `address-bar`, `empty-state`;
   resizer minimum 200 px; isolation check) and `settings survive a relaunch` (accent kept, no
   onboarding). Settings test: the section list has exactly the six labels above.
 - [ ] **Step 2:** Run — FAIL. **Step 3:** Implement. Remove `technical` from `Stage` and its

@@ -3,10 +3,10 @@
 
 /** Pin, favourites, folders, copy, close. */
 export function showTabMenu(tabId: string): void {
-  void window.acab.invoke('browser.showTabMenu', { tabId })
+  void window.bigBrowser.invoke('browser.showTabMenu', { tabId })
 }
 
 /** Rename, delete. */
 export function showFolderMenu(folderId: string): void {
-  void window.acab.invoke('browser.showFolderMenu', { folderId })
+  void window.bigBrowser.invoke('browser.showFolderMenu', { folderId })
 }

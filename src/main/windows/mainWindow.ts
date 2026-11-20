@@ -2,7 +2,7 @@ import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { BrowserWindow, shell } from 'electron'
 
-/** The app preload: exposes `window.acab` to the UI and the overlay, nothing else. */
+/** The app preload: exposes `window.bigBrowser` to the UI and the overlay, nothing else. */
 export const PRELOAD_PATH = join(__dirname, '../preload/index.js')
 
 /** Where the renderer loads from: the dev server, or the built file. */
@@ -51,7 +51,7 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
     minWidth: 760,
     minHeight: 520,
     show: false,
-    title: 'ACAB',
+    title: 'Big Browser',
     // Transparent so native material shows through; opaque fallback is set by CSS tokens.
     backgroundColor: glass ? '#00000000' : '#f3f2f5',
     // macOS: a transparent window is what lets the desktop show through in `clear` mode.

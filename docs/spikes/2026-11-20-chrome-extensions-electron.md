@@ -3,7 +3,7 @@
 - **Date:** 2026-11-20
 - **Environment:** Windows 11, Electron `45.4.1`, `electron-chrome-extensions` `4.10.0`,
   `electron-chrome-web-store` `0.13.0`, `@ghostery/adblocker-electron` `2.20.3`
-- **Question:** can ACAB stay on Electron (ADR-0001) and still be a daily-driver browser where
+- **Question:** can Big Browser stay on Electron (ADR-0001) and still be a daily-driver browser where
   Chrome extensions work — first of all **1Password**, plus an ad blocker?
 - **Code:** [`scripts/spikes/chrome-extensions/`](../../scripts/spikes/chrome-extensions/)
   (throwaway; `npm install && npx electron .` inside that folder)
@@ -44,7 +44,7 @@ extension picks it up.
 
 `main/browser/spaceSessions.ts` applies both fixes to every space session. `ElectronChromeExtensions`
 4.10.0 takes no `license` option (checked against its README), so none is passed. The Web Store's
-auto-update is turned off under test (`ACAB_USER_DATA`), so the e2e never touches the network.
+auto-update is turned off under test (`BIG_BROWSER_USER_DATA`), so the e2e never touches the network.
 
 ## Other things learned
 

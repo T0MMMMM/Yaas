@@ -28,18 +28,18 @@ export function Shell() {
   // Icon-only: the traffic lights go (they would not fit); the top-left corner brings them back
   // while the pointer is on it. Leaving icon-only shows them again.
   useEffect(() => {
-    void window.acab.invoke('window.setControlsVisible', { visible: !resize.compact })
+    void window.bigBrowser.invoke('window.setControlsVisible', { visible: !resize.compact })
   }, [resize.compact])
 
   // Shortcuts pressed while a page has focus arrive from main's menu.
   useEffect(
     () =>
-      window.acab.on('browser.shortcut', (shortcut) => {
+      window.bigBrowser.on('browser.shortcut', (shortcut) => {
         const ui = useUi.getState()
         if (shortcut.kind === 'focus-address') ui.focusAddress()
         else if (shortcut.kind === 'settings') ui.openSettings()
         else if (shortcut.kind === 'rename-folder') ui.renameFolder(shortcut.folderId)
-        else void window.acab.invoke('overlay.open', { kind: shortcut.kind })
+        else void window.bigBrowser.invoke('overlay.open', { kind: shortcut.kind })
       }),
     [],
   )
@@ -51,7 +51,7 @@ export function Shell() {
       if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return
       if (isTextField(document.activeElement)) return
       e.preventDefault()
-      void window.acab.invoke('browser.reopenClosed')
+      void window.bigBrowser.invoke('browser.reopenClosed')
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -69,10 +69,10 @@ export function Shell() {
             className={styles.controlsZone}
             data-testid="controls-zone"
             onPointerEnter={() =>
-              void window.acab.invoke('window.setControlsVisible', { visible: true })
+              void window.bigBrowser.invoke('window.setControlsVisible', { visible: true })
             }
             onPointerLeave={() =>
-              void window.acab.invoke('window.setControlsVisible', { visible: false })
+              void window.bigBrowser.invoke('window.setControlsVisible', { visible: false })
             }
           />
         )}

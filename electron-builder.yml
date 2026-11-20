@@ -1,7 +1,7 @@
 # Packaging — see docs/ARCHITECTURE.md §1. Unsigned for now (personal project).
-appId: dev.acab.app
-productName: ACAB
-copyright: Copyright © 2026 ACAB contributors
+appId: dev.bigbrowser.app
+productName: Big Browser
+copyright: Copyright © 2026 Big Browser contributors
 
 directories:
   output: release/${version}

@@ -330,8 +330,8 @@ export type EventPayload<E extends EventChannel> = z.output<(typeof events)[E]>
 export type IpcResult<T> =
   { ok: true; data: T } | { ok: false; error: { code: string; message: string } }
 
-/** Shape of `window.acab`, implemented by the preload. */
-export interface AcabBridge {
+/** Shape of `window.bigBrowser`, implemented by the preload. */
+export interface BigBrowserBridge {
   invoke<C extends CommandChannel>(
     channel: C,
     ...args: undefined extends CommandInput<C> ? [] : [input: CommandInput<C>]
