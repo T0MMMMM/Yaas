@@ -1,6 +1,6 @@
 // Shortcuts live in the application menu: a focused web page (a WebContentsView) swallows key
 // events before the UI renderer sees them, but menu accelerators still fire.
-import { Menu, type MenuItemConstructorOptions } from 'electron'
+import { app, Menu, type MenuItemConstructorOptions } from 'electron'
 
 export interface MenuActions {
   newTab(): void
@@ -82,6 +82,10 @@ export function buildAppMenu(actions: MenuActions): Menu {
         { type: 'separator' },
         item('nextTab', 'Next Tab', 'Ctrl+Tab'),
         item('previousTab', 'Previous Tab', 'Ctrl+Shift+Tab'),
+        // DevTools on the UI itself, for development only.
+        ...(app.isPackaged
+          ? []
+          : [{ type: 'separator' } as const, { role: 'toggleDevTools' } as const]),
       ],
     },
   ]
