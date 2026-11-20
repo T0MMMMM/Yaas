@@ -279,6 +279,29 @@ test('spaces keep their own tabs', async () => {
   })
 })
 
+test('magnetic buttons follow the setting', async () => {
+  await withBrowser(async ({ page }) => {
+    const dot = page.getByRole('tablist', { name: 'Spaces' }).getByRole('tab').first()
+    const box = await dot.boundingBox()
+    if (!box) throw new Error('space dot has no box')
+    const hover = async () => {
+      await page.mouse.move(0, 0)
+      await page.mouse.move(box.x + box.width / 2 + 3, box.y + box.height / 2 + 3)
+    }
+    await hover()
+    await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.translate)).not.toBe('')
+    await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.scale)).toBe('1.08')
+
+    await page.evaluate(() => window.acab.invoke('settings.update', { magneticButtons: false }))
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.dataset['magnetic']))
+      .toBe('off')
+    await hover()
+    await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.translate)).toBe('')
+    await expect.poll(() => dot.evaluate((el) => (el as HTMLElement).style.scale)).toBe('')
+  })
+})
+
 test('tabs survive a relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const site = await startSite()

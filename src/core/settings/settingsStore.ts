@@ -9,6 +9,7 @@ export const DEFAULT_SETTINGS: Settings = {
   spaceSwitcherStyle: 'emoji',
   metersPlacement: 'contextbar',
   askewCards: true,
+  magneticButtons: true,
   autoFolders: true,
   contextBarStyle: 'card',
   sidebarWidth: 248,

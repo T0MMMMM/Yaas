@@ -23,6 +23,7 @@ export function applyTheme(settings: Settings, info: AppInfo | null): void {
   root.style.setProperty('--transparency', String(transparency))
   root.style.setProperty('--grain', String(settings.grain))
   root.dataset['askew'] = settings.askewCards ? 'on' : 'off'
+  root.dataset['magnetic'] = settings.magneticButtons ? 'on' : 'off'
   root.dataset['contextbar'] = settings.contextBarStyle
   if (info) root.dataset['platform'] = info.platform
 

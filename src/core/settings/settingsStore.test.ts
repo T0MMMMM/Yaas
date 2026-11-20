@@ -37,4 +37,13 @@ describe('SettingsStore', () => {
     expect(settings.accent).toBe('#2BB673')
     expect(settings).not.toHaveProperty('removedOption')
   })
+
+  it('defaults magneticButtons to true for a stored document without it', () => {
+    const db = openDatabase(':memory:')
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(
+      'app',
+      JSON.stringify({ accent: '#2BB673' }),
+    )
+    expect(new SettingsStore(db).get().magneticButtons).toBe(true)
+  })
 })

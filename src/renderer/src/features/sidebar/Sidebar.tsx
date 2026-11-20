@@ -55,7 +55,7 @@ function Rows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | nu
  */
 export function Sidebar({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspace()
-  const magnet = useMagnetic<HTMLButtonElement>(0.4)
+  const magnet = useMagnetic<HTMLButtonElement>()
   /** Whether the + menu is open in the overlay. */
   const [menuOpen, setMenuOpen] = useState(false)
 

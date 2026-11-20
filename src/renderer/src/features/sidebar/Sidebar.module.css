@@ -37,7 +37,8 @@
   transition:
     color var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce),
-    translate var(--dur-spring) var(--ease-bounce);
+    translate var(--dur-spring) var(--ease-bounce),
+    scale var(--dur-spring) var(--ease-bounce);
 }
 
 .iconButton:hover {
@@ -246,7 +247,8 @@ kbd {
   transition:
     opacity var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce),
-    translate var(--dur-spring) var(--ease-bounce);
+    translate var(--dur-spring) var(--ease-bounce),
+    scale var(--dur-spring) var(--ease-bounce);
 }
 
 .space:hover {

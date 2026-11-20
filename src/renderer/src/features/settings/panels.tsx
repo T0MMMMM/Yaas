@@ -75,6 +75,16 @@ export function Appearance() {
           />
         </SettingRow>
         <SettingRow
+          label="Magnetic buttons"
+          description="Buttons lean toward the pointer and grow slightly while hovered."
+        >
+          <Switch
+            label="Magnetic buttons"
+            checked={settings.magneticButtons}
+            onChange={(magneticButtons) => void update({ magneticButtons })}
+          />
+        </SettingRow>
+        <SettingRow
           label="Automatic folders"
           description="Three or more of today's tabs from one site are grouped in a folder named after it."
         >

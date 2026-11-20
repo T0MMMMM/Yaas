@@ -307,6 +307,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Account switcher | Emoji · First letter · Dots | MVP ✅ |
 | | Meters (context + usage) | Context bar · Sidebar | MVP ✅ |
 | | Askew cards | On · Off | ✅ |
+| | Magnetic buttons (lean toward the pointer, scale 1.08) | **On** · Off | ✅ |
 | | Automatic folders (3+ today tabs of one site grouped) | **On** · Off | ✅ |
 | | Address bar | Own card · Attached to the page (separator line) | ✅ |
 | | Interface density | Comfortable · Compact | v1 |
