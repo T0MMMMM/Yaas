@@ -274,18 +274,17 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 
 | Action | Shortcut |
 |---|---|
-| Command palette | `Mod+K` |
-| New session (active space) | `Mod+T` |
-| Close tab (stops the live process, keeps the session) | `Mod+W` |
-| Reopen last closed | `Mod+Shift+T` |
-| Switch to space 1…9 | `Mod+1…9` |
-| Next / previous session | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
-| Search in session / all sessions | `Mod+F` / `Mod+Shift+F` |
-| Interrupt Claude | `Esc` (in composer) or `Mod+.` |
-| Approval: allow once / always for project / deny | `⏎` / `Mod+⏎` / `Esc` |
-| Pin / unpin session or environment | `Mod+D` |
+| New tab (active space) | `Mod+T` |
+| Close tab | `Mod+W` |
+| Focus the address bar | `Mod+L` |
+| Reload | `Mod+R` |
+| Back / forward | `Mod+[` / `Mod+]` |
+| Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Settings | `Mod+,` |
-| New space (add account) | `Mod+Shift+N` |
+
+Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
+web page swallows renderer key events. Command palette (`Mod+K`), reopen closed tab (`Mod+Z`),
+split view and new window (`Mod+N`) arrive in plans 3–4.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.

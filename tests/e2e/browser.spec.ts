@@ -58,3 +58,44 @@ test('a page opens, navigates and reports back', async () => {
     rmSync(userData, { recursive: true, force: true })
   }
 })
+
+test('shortcuts work while a page has focus', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const site = await startSite()
+  const app = await launchApp(userData)
+
+  try {
+    const page = await app.firstWindow()
+    await finishOnboarding(page)
+    const state = () => page.evaluate(() => window.acab.invoke('browser.state'))
+    const clickMenu = (id: string) =>
+      app.evaluate(
+        ({ Menu }, itemId) => Menu.getApplicationMenu()?.getMenuItemById(itemId)?.click(),
+        id,
+      )
+
+    await page.evaluate((input) => window.acab.invoke('browser.openTab', { input }), site.url('/a'))
+    await expect.poll(async () => (await state()).tabs[0]?.title).toBe('Page A')
+
+    // Give the page focus, as a user would after clicking into it.
+    await app.evaluate(({ webContents }) =>
+      webContents
+        .getAllWebContents()
+        .find((w) => w.getURL().endsWith('/a'))
+        ?.executeJavaScript('document.body.focus()'),
+    )
+
+    await clickMenu('newTab')
+    await expect.poll(async () => (await state()).tabs.length).toBe(2)
+    const opened = await state()
+    const activeId = opened.activeTabIds[opened.activeSpaceId]
+    expect(opened.tabs.find((t) => t.id === activeId)?.url).toBe('about:blank')
+
+    await clickMenu('closeTab')
+    await expect.poll(async () => (await state()).tabs.length).toBe(1)
+  } finally {
+    await app.close()
+    await site.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})

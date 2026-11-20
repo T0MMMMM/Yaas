@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, type WebContents } from 'electron'
+import { app, BrowserWindow, Menu, type WebContents } from 'electron'
 import { Accounts } from '@core/accounts/accounts'
 import { BrowserStore } from '@core/browser/browserStore'
 import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli'
@@ -9,6 +9,7 @@ import type { BrowserState } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
+import { buildAppMenu } from './menu'
 import { applyMaterial, createMainWindow, glassSupported, materialFor } from './windows/mainWindow'
 
 // Tests and parallel dev profiles can point ACAB at a throwaway data dir.
@@ -55,6 +56,47 @@ function browserState(): BrowserState {
 function views(): TabViews {
   if (!tabViews) throw new Error('No browser window')
   return tabViews
+}
+
+function activeTabId(): string | null {
+  const snapshot = browser.snapshot()
+  return snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
+}
+
+/** Activates the neighbour of the active tab in its space, wrapping around. */
+function cycleTab(step: 1 | -1): void {
+  const snapshot = browser.snapshot()
+  const tabs = snapshot.tabs.filter((t) => t.spaceId === snapshot.activeSpaceId)
+  const index = tabs.findIndex((t) => t.id === activeTabId())
+  const next = tabs[(index + step + tabs.length) % tabs.length]
+  if (tabs.length > 1 && next) browser.activateTab(next.id)
+}
+
+function emitShortcut(shortcut: 'focus-address' | 'settings'): void {
+  if (mainWindow) emit(mainWindow.webContents, 'browser.shortcut', shortcut)
+}
+
+function setupMenu(): void {
+  const withActive = (run: (tabId: string) => void) => (): void => {
+    const id = activeTabId()
+    if (id) run(id)
+  }
+  Menu.setApplicationMenu(
+    buildAppMenu({
+      newTab: () => {
+        browser.openTab(browser.snapshot().activeSpaceId, 'about:blank')
+        emitShortcut('focus-address')
+      },
+      closeTab: withActive((id) => browser.closeTab(id)),
+      focusAddress: () => emitShortcut('focus-address'),
+      reload: withActive((id) => tabViews?.reload(id)),
+      back: withActive((id) => tabViews?.goBack(id)),
+      forward: withActive((id) => tabViews?.goForward(id)),
+      nextTab: () => cycleTab(1),
+      previousTab: () => cycleTab(-1),
+      settings: () => emitShortcut('settings'),
+    }),
+  )
 }
 
 function openMainWindow(): void {
@@ -134,6 +176,7 @@ app.on('window-all-closed', () => {
 })
 
 void app.whenReady().then(() => {
+  setupMenu()
   openMainWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openMainWindow()
