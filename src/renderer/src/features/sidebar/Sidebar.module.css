@@ -51,28 +51,6 @@
   transform: rotate(45deg) scale(1.08);
 }
 
-/* ---------- search: no outline, just a soft field ---------- */
-
-.search {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--row-h);
-  padding: 0 var(--space-3);
-  border: none;
-  border-radius: var(--radius-lg);
-  background: var(--hover-fill);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
-}
-
-.search:hover {
-  background: var(--selected-fill);
-  color: var(--text);
-}
-
-.search span,
 .newTab span {
   flex: 1;
   text-align: left;
@@ -84,7 +62,7 @@
   align-items: center;
   gap: var(--space-2);
   min-height: var(--row-h);
-  margin-top: var(--space-1);
+  margin-bottom: 1px;
   padding: 0 var(--space-2);
   border: none;
   border-radius: var(--radius-md);
@@ -174,7 +152,16 @@ kbd {
   color: var(--text-faint);
   font-size: var(--text-xs);
   cursor: pointer;
-  transition: color var(--dur-fast) var(--ease);
+  opacity: 0;
+  transition:
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
+}
+
+/* Shown only while the separator is hovered or Clear has keyboard focus. */
+.separator:hover .clear,
+.clear:focus-visible {
+  opacity: 1;
 }
 
 .clear:hover {
@@ -328,14 +315,11 @@ kbd {
   padding: 0 var(--space-1) 6px;
 }
 
-.sidebar[data-compact='true'] .search,
 .sidebar[data-compact='true'] .newTab {
   justify-content: center;
   padding: 0;
 }
 
-.sidebar[data-compact='true'] .search span,
-.sidebar[data-compact='true'] .search kbd,
 .sidebar[data-compact='true'] .newTab span,
 .sidebar[data-compact='true'] .newTab kbd,
 .sidebar[data-compact='true'] .clear,

@@ -270,3 +270,97 @@ test("Clear closes today's tabs without loading any, ⌘⇧T reopens the last on
     rmSync(userData, { recursive: true, force: true })
   }
 })
+
+test("a tab's close button only shows on hover", async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    const row = page.getByTestId('today').getByTestId('tab').first()
+    const close = row.getByRole('button', { name: 'Close tab' })
+    await expect(close).toHaveCSS('opacity', '0')
+    await row.hover()
+    await expect(close).toHaveCSS('opacity', '1')
+  })
+})
+
+test('long titles fade instead of ellipsing', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/long'))
+    const title = page.getByTestId('today').getByTestId('tab').first().locator('span').last()
+    await expect(title).toHaveText(/^A very long page title/)
+    await expect(title).toHaveCSS('text-overflow', 'clip')
+    const mask = await title.evaluate((el) => getComputedStyle(el).maskImage)
+    expect(mask).not.toBe('none')
+  })
+})
+
+test('New tab sits right under the separator', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    const header = await page.getByTestId('today-header').boundingBox()
+    const newTab = await page.getByTestId('new-tab').boundingBox()
+    const firstRow = await page.getByTestId('today').getByTestId('tab').first().boundingBox()
+    if (!header || !newTab || !firstRow) throw new Error('Missing sidebar element')
+    expect(newTab.y).toBeGreaterThan(header.y + header.height - 1)
+    expect(newTab.y).toBeLessThan(firstRow.y)
+  })
+})
+
+test('Clear only shows while the separator is hovered', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    const clear = page.getByRole('button', { name: 'Clear' })
+    await expect(clear).toHaveCSS('opacity', '0')
+    await page.getByTestId('today-header').hover()
+    await expect(clear).toHaveCSS('opacity', '1')
+  })
+})
+
+test('favourite tiles fill the width and wrap', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const urls = ['/a', '/b', '/c', '/long', '/with-icon']
+    const ids: string[] = []
+    for (const path of urls) {
+      ids.push((await openTab(page, site.url(path))).id)
+    }
+    const tiles = page.getByTestId('favorites').getByTestId('favorite')
+    const tops = async () =>
+      (await tiles.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()))).map((r) => ({
+        top: Math.round(r.top),
+        left: r.left,
+        width: r.width,
+        right: r.right,
+      }))
+
+    const moveToFavorites = async (tabIds: string[]) => {
+      for (const tabId of tabIds) {
+        await page.evaluate(
+          (id) =>
+            window.acab.invoke('browser.moveTab', { tabId: id, section: 'favorites', index: 0 }),
+          tabId,
+        )
+      }
+    }
+    await moveToFavorites(ids.slice(0, 3))
+    await expect(tiles).toHaveCount(3)
+    const three = await tops()
+    expect(new Set(three.map((t) => t.top)).size).toBe(1)
+    const widths = three.map((t) => t.width)
+    expect(Math.max(...widths) - Math.min(...widths)).toBeLessThanOrEqual(1)
+    const grid = await page.getByTestId('favorites').boundingBox()
+    if (!grid) throw new Error('No favourites grid')
+    const span = Math.max(...three.map((t) => t.right)) - Math.min(...three.map((t) => t.left))
+    expect(span).toBeGreaterThanOrEqual(grid.width * 0.9)
+
+    await moveToFavorites(ids.slice(3))
+    await expect(tiles).toHaveCount(5)
+    expect(new Set((await tops()).map((t) => t.top)).size).toBe(2)
+  })
+})
+
+test('no Search button at the top of the sidebar', async () => {
+  await withBrowser(async ({ page }) => {
+    await expect(page.getByTestId('sidebar').getByRole('button', { name: 'Search' })).toHaveCount(0)
+  })
+})

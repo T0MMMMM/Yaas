@@ -37,7 +37,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
 }
 
 /**
- * The space's favourites: a 4-column grid of large favicons, above the pinned list. A tab
+ * The space's favourites: a grid of large favicons filling the width, above the pinned list. A tab
  * dropped on the grid becomes the last favourite; while a tab is dragged and there are none
  * yet, an empty grid is drawn to drop it on.
  */

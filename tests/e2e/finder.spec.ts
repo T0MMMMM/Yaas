@@ -67,15 +67,6 @@ test('⌘K finds a tab by part of its title and activates it', async () => {
   })
 })
 
-test('the sidebar’s Search button opens the tab finder', async () => {
-  await withTabs(async ({ page, overlay }) => {
-    await page.getByRole('button', { name: 'Search' }).click()
-    await expect(overlay.getByLabel('Find a tab')).toBeFocused()
-    await overlay.getByLabel('Find a tab').press('Escape')
-    await expect(overlay.getByTestId('finder')).toHaveCount(0)
-  })
-})
-
 test('⌘T opens what is typed in a new tab, Escape opens none', async () => {
   await withTabs(async ({ app, page, overlay, site }) => {
     await clickMenu(app, 'newTab')

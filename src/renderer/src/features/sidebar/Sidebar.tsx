@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
@@ -80,17 +80,6 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
         >
           <div className={`${styles.titlebar} drag`} />
 
-          <button
-            className={`${styles.search} no-drag`}
-            aria-label="Search"
-            title={compact ? 'Search (⌘K)' : undefined}
-            onClick={() => void window.acab.invoke('overlay.open', { kind: 'tab-finder' })}
-          >
-            <MagnifyingGlass size={15} weight="bold" />
-            <span>Search</span>
-            <kbd>⌘K</kbd>
-          </button>
-
           <div className={styles.scroll} ref={scroll}>
             {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
 
@@ -123,6 +112,18 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
               )}
             </div>
 
+            <button
+              className={styles.newTab}
+              onClick={() => void newTab()}
+              data-testid="new-tab"
+              aria-label="New tab"
+              title={compact ? 'New tab (⌘T)' : undefined}
+            >
+              <Plus size={13} weight="bold" />
+              <span>New tab</span>
+              <kbd>⌘T</kbd>
+            </button>
+
             <ul
               className={styles.list}
               aria-label="Today"
@@ -141,18 +142,6 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                 aria-hidden="true"
               />
             )}
-
-            <button
-              className={styles.newTab}
-              onClick={() => void newTab()}
-              data-testid="new-tab"
-              aria-label="New tab"
-              title={compact ? 'New tab (⌘T)' : undefined}
-            >
-              <Plus size={13} weight="bold" />
-              <span>New tab</span>
-              <kbd>⌘T</kbd>
-            </button>
           </div>
 
           <div className={styles.bottom}>

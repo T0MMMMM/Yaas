@@ -86,17 +86,21 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 - **Icon-only mode**: dragging the sidebar narrower than 160 px (`SIDEBAR_COMPACT_FROM`) snaps it
   to 56 px (`SIDEBAR_COMPACT`; `SIDEBAR_MIN` is 56 too) and sets `data-compact="true"` on it.
   Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
-  (tabs stay listed under them, unindented), spaces stack as dots, Search and New tab are icons.
+  (tabs stay listed under them, unindented), spaces stack as dots, New tab is an icon.
   Tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
   past 160 px restores the normal layout.
-- **Favourites**: no header. A 4-column grid of tiles (`--tile-h` 44, favicon
+- **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 44, favicon
   `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
   opens and closes on click; a closed folder shows its tab count on the right. Its tabs are listed
   one `--space-3` indent below. "New Folder…" and "Rename" (native menus) put its name in an
   inline field: Enter or leaving it saves, Esc cancels.
-- **Separator**: a hairline, with **Clear** on the right when today has tabs — it closes all of
-  today's tabs (children first), and ⌘⇧T reopens them one by one.
+- **Separator**: a hairline, with **Clear** on the right when today has tabs — shown only while
+  the separator is hovered or Clear has keyboard focus. It closes all of today's tabs (children
+  first), and ⌘⇧T reopens them one by one. **New tab** sits right under it, above today's rows.
+- **Tab titles** never ellipse: the end fades out (`--title-fade`, widening to `--title-fade-hover`
+  on hover or focus inside the row), and the × appears in that room (hover or focus only).
+  There is no Search button at the top of the sidebar (⌘K opens the finder).
 - **Today**: tabs opened from another tab are indented under it, `--space-3` per level (max 3).
   **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a
   folder named after the host, where the first of them was; open/closed per host for the session
@@ -122,7 +126,7 @@ at once), New space, Settings.
 
 **Tab finder and command field** (`features/finder`) — the same glass card, `--finder-w` 560 wide,
 centred `--finder-top` (20 % of the window) from the top, in the overlay: a field over a list,
-↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`, the sidebar's Search)
+↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`)
 ranks the tabs of every space — every word must be in the title or the host and path; a title
 that starts with the query first, then title matches, then URL matches — and activates the one
 picked, switching space; an empty query lists the space's tabs. The command field (`Mod+T`)
@@ -347,7 +351,7 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 | Action | Shortcut |
 |---|---|
 | New tab: the command field over the page (a URL or a search; a tab opens on Enter) | `Mod+T` |
-| Find a tab, in any space (the tab finder; also the sidebar's Search) | `Mod+K` |
+| Find a tab, in any space (the tab finder) | `Mod+K` |
 | Close tab (a favourite or pinned tab is unloaded) | `Mod+W` |
 | Reopen closed tab | `Mod+Shift+T` |
 | Reopen closed tab, while the UI has focus and no text field does (else the text undo) | `Mod+Z` |
