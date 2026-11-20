@@ -4,6 +4,7 @@ import { PageSlot } from '../features/browser/PageSlot'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { useBrowser } from '../stores/browser'
+import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
 import { useSidebarResize } from './useSidebarResize'
 import styles from './Shell.module.css'
@@ -19,6 +20,8 @@ export function Shell() {
   const view = useUi((s) => s.view)
   const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
+  // Only macOS has traffic lights to bring back; elsewhere the corner keeps dragging the window.
+  const mac = useSettings((s) => s.info?.platform === 'mac')
 
   useEffect(() => initBrowser(), [initBrowser])
 
@@ -61,7 +64,7 @@ export function Shell() {
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
       <div className={styles.sidebarSlot}>
-        {resize.compact && (
+        {resize.compact && mac && (
           <div
             className={styles.controlsZone}
             data-testid="controls-zone"

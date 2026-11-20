@@ -264,6 +264,9 @@ test('icon-only mode hides the window buttons and marks filed tabs', async () =>
       page.getByTestId('today').getByTestId('tab').getByTestId('folder-bar'),
     ).toHaveCount(0)
 
+    // The hover zone exists on macOS only: elsewhere the top of the sidebar still drags the window.
+    await expect(page.getByTestId('controls-zone')).toHaveCount(mac ? 1 : 0)
+
     // The top-left corner shows them while hovered.
     await page.mouse.move(20, 20)
     if (mac) await expect.poll(lastCall).toBe(true)
