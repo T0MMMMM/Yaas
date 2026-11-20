@@ -8,7 +8,7 @@ import { Picker, type PickerRow } from './Picker'
  * ⌘K: finds an open tab of any space by its title or URL and activates it (switching space).
  * An empty query lists the active space's tabs.
  */
-export function TabFinder({ onClose }: { onClose(): void }) {
+export function TabFinder({ closing, onClose }: { closing?: boolean; onClose(): void }) {
   const workspace = useWorkspace()
   const [query, setQuery] = useState('')
 
@@ -37,6 +37,7 @@ export function TabFinder({ onClose }: { onClose(): void }) {
       onQuery={setQuery}
       rows={rows}
       onRun={(row) => void window.acab.invoke('browser.activateTab', { tabId: row.key })}
+      closing={closing}
       onClose={onClose}
       testId="finder"
     />

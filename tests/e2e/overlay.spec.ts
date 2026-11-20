@@ -96,3 +96,40 @@ test('the overlay follows a resize', async () => {
       .toBe(true)
   })
 })
+
+test('the + menu is joined to its button', async () => {
+  await withPage(async ({ page, overlay }) => {
+    await plusButton(page).click()
+    const connector = overlay.getByTestId('connector')
+    await expect(connector).toBeVisible()
+    // Past the menu's open animation and the button's transitions, so both boxes are at rest.
+    await overlay.waitForFunction(
+      () => document.querySelector('[data-testid="menu"]')?.getAnimations().length === 0,
+    )
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[aria-label="New tab, space or settings"]')
+          ?.getAnimations({ subtree: true }).length === 0,
+    )
+
+    const neck = await connector.boundingBox()
+    const button = await plusButton(page).boundingBox()
+    if (!neck || !button) throw new Error('connector or + button not found')
+    expect(Math.abs(neck.x + neck.width / 2 - (button.x + button.width / 2))).toBeLessThanOrEqual(2)
+    expect(Math.abs(neck.y + neck.height - button.y)).toBeLessThanOrEqual(1)
+  })
+})
+
+test('menus animate out', async () => {
+  await withPage(async ({ page, overlay }) => {
+    await plusButton(page).click()
+    const menu = overlay.getByTestId('menu')
+    await expect(menu).toBeVisible()
+
+    await overlay.keyboard.press('Escape')
+    await expect(menu).toHaveAttribute('data-state', 'closing')
+    await expect(menu).toHaveCount(0)
+    await expect(plusButton(page)).toHaveAttribute('aria-expanded', 'false')
+  })
+})

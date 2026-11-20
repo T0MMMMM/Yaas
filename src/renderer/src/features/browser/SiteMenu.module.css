@@ -1,5 +1,5 @@
 /* The site menu: yab's grouped popover (quick actions, sections with a title and an action, rows
-   with an icon, a title and a status line, a footer) on the shared glass card. Opens downwards,
+   with an icon, a title and a status line, a footer) on the shared opaque card. Opens downwards,
    right-aligned under the address bar button. */
 .card {
   composes: card from '../../ui/Popover.module.css';
@@ -36,7 +36,7 @@
 .quickAction:hover,
 .quickAction:focus-visible {
   outline: none;
-  background: var(--fill-raised-hover);
+  background: var(--bg-menu-hover);
   color: var(--text);
 }
 
@@ -95,7 +95,7 @@
 .iconButton:hover,
 .iconButton:focus-visible {
   outline: none;
-  background: var(--fill-raised-hover);
+  background: var(--bg-menu-hover);
   color: var(--text);
 }
 
@@ -149,7 +149,7 @@
 }
 
 .actionList::part(action):hover {
-  background-color: var(--fill-raised-hover);
+  background-color: var(--bg-menu-hover);
 }
 
 .actionList::part(badge) {
@@ -187,7 +187,7 @@ button.row {
 button.row:hover,
 button.row:focus-visible {
   outline: none;
-  background: var(--fill-raised-hover);
+  background: var(--bg-menu-hover);
 }
 
 .rowIcon {

@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
 import type { PageBounds } from '@shared/ipc/contract'
 import { POPOVER_GAP as GAP } from './anchor'
+import { useConnector } from './connector'
 import { useDismiss } from './useDismiss'
 import styles from './Menu.module.css'
+import popover from './Popover.module.css'
 
 export type MenuItem =
   { id: string; label: string; icon: Icon; shortcut?: string; onSelect(): void } | 'separator'
@@ -17,6 +19,8 @@ interface MenuProps {
   items: MenuItem[]
   /** A field at the top that narrows the items to those whose label has what is typed. */
   filter?: boolean
+  /** Plays the exit animation (the overlay hides it once done). */
+  closing?: boolean
   onClose(): void
 }
 
@@ -28,11 +32,18 @@ function filtered(items: MenuItem[], query: string): MenuItem[] {
 }
 
 /**
- * A yab-shaped popover (spec, "Menus and settings"): a rounded glass card with rows of icon,
- * label and shortcut. Closes on Escape, a click outside or a choice. With `filter`, typing narrows
- * the rows and Enter in the field picks the first one.
+ * A yab-shaped popover (spec, "Menus and settings"): a rounded opaque card joined to its button,
+ * with rows of icon, label and shortcut. Closes on Escape, a click outside or a choice. With
+ * `filter`, typing narrows the rows and Enter in the field picks the first one.
  */
-export function Menu({ anchor, placement, items, filter = false, onClose }: MenuProps) {
+export function Menu({
+  anchor,
+  placement,
+  items,
+  filter = false,
+  closing = false,
+  onClose,
+}: MenuProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
   const shown = filtered(items, query)
@@ -42,10 +53,12 @@ export function Menu({ anchor, placement, items, filter = false, onClose }: Menu
   }, [])
 
   useDismiss(ref, onClose)
+  const connector = useConnector(anchor)
 
+  // The action first: the exit animation only delays hiding the menu.
   const choose = (item: Exclude<MenuItem, 'separator'>) => {
-    onClose()
     item.onSelect()
+    onClose()
   }
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -75,10 +88,18 @@ export function Menu({ anchor, placement, items, filter = false, onClose }: Menu
       className={`${styles.menu} no-drag`}
       style={place}
       data-placement={placement}
+      data-state={closing ? 'closing' : 'open'}
       role="menu"
       onKeyDown={onKeyDown}
       data-testid="menu"
     >
+      <span
+        ref={connector}
+        className={popover.connector}
+        data-side={placement === 'above' ? 'bottom' : 'top'}
+        aria-hidden
+        data-testid="connector"
+      />
       {filter && (
         <input
           className={styles.filter}

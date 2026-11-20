@@ -4,6 +4,8 @@ import type { PageBounds } from '@shared/ipc/contract'
 import { spacePartition } from '@shared/spaces'
 import { useSettings } from '../../stores/settings'
 import { POPOVER_GAP } from '../../ui/anchor'
+import { useConnector } from '../../ui/connector'
+import popover from '../../ui/Popover.module.css'
 import { Switch } from '../../ui/Switch'
 import { useDismiss } from '../../ui/useDismiss'
 import { useWorkspace } from '../workspace/useWorkspace'
@@ -13,6 +15,8 @@ import styles from './SiteMenu.module.css'
 interface SiteMenuProps {
   /** Rect of the address bar button it opens from; the card opens below it, right-aligned. */
   anchor: PageBounds
+  /** Plays the exit animation (the overlay hides it once done). */
+  closing?: boolean
   onClose(): void
 }
 
@@ -39,7 +43,7 @@ function useActionCount(list: HTMLElement | null): number {
  * tab's extension actions, this site's settings and the connection. Pages that are not web pages
  * (about:blank) only get the extensions.
  */
-export function SiteMenu({ anchor, onClose }: SiteMenuProps) {
+export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [actionList, setActionList] = useState<HTMLElement | null>(null)
   const actionCount = useActionCount(actionList)
@@ -47,14 +51,15 @@ export function SiteMenu({ anchor, onClose }: SiteMenuProps) {
   const adBlock = useSettings((s) => s.settings?.adBlock)
   const updateSettings = useSettings((s) => s.update)
   useDismiss(ref, onClose)
+  const connector = useConnector(anchor)
 
   const tab = workspace?.activeTab ?? null
   const site = tab?.siteHost ?? null
 
   /** Runs a command on the tab and closes the menu: it opens something else (a menu, a window). */
   const act = (command: 'browser.share' | 'browser.toggleDevTools') => () => {
-    onClose()
     if (tab) void window.acab.invoke(command, { tabId: tab.id })
+    onClose()
   }
 
   const place: CSSProperties = {
@@ -67,10 +72,18 @@ export function SiteMenu({ anchor, onClose }: SiteMenuProps) {
       ref={ref}
       className={`${styles.card} no-drag`}
       style={place}
+      data-state={closing ? 'closing' : 'open'}
       role="dialog"
       aria-label="Site menu"
       data-testid="site-menu"
     >
+      <span
+        ref={connector}
+        className={popover.connector}
+        data-side="top"
+        aria-hidden
+        data-testid="connector"
+      />
       {site && (
         <div className={styles.quickActions}>
           <button
@@ -95,8 +108,8 @@ export function SiteMenu({ anchor, onClose }: SiteMenuProps) {
             aria-label="Add extensions"
             title="Chrome Web Store"
             onClick={() => {
-              onClose()
               void window.acab.invoke('browser.openWebStore')
+              onClose()
             }}
           >
             <Plus size={14} weight="bold" />

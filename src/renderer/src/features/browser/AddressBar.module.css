@@ -81,6 +81,12 @@
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
+/* Open site menu: the menu's fill, which the menu's connector joins. */
+.button[aria-expanded='true']:not(:disabled) {
+  opacity: 1;
+  background: var(--bg-menu);
+}
+
 .button:active:not(:disabled) {
   transform: scale(0.9);
 }

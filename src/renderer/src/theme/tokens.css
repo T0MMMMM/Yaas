@@ -56,7 +56,7 @@
   --tile-icon-size: 22px; /* the favicon of a favourite tile */
   --titlebar-overlay-w: 0px; /* Windows caption buttons */
   --tile-min-w: 64px; /* narrowest favourite tile before the grid drops a column */
-  --connector-w: 14px; /* the nesting connector of child tabs */
+  --connector-w: 14px; /* the nesting connector of child tabs; a popover's neck */
   --title-fade: 24px; /* the tab title's fade-out at the row end */
   --title-fade-hover: 44px; /* the same, widened when the row's buttons show */
   --controls-zone-w: 80px; /* hover zone that brings the traffic lights back (icon-only) */

@@ -1,5 +1,6 @@
-/* The opaque card every yab-shaped popover is drawn on (ui/Menu, the site menu): compose it with
-   `composes: card from '…/ui/Popover.module.css'`, then add the popover's own layout. */
+/* The opaque card every yab-shaped popover is drawn on (ui/Menu, the site menu, the tab finder and
+   the command field): compose it with `composes: card from '…/ui/Popover.module.css'`, then add the
+   popover's own layout. */
 .card {
   position: fixed;
   z-index: 20;
@@ -11,9 +12,45 @@
   animation: open var(--dur-base) var(--ease-bounce);
 }
 
+/* The exit: the open keyframes played backwards, while the overlay waits to hide. */
+.card[data-state='closing'] {
+  pointer-events: none;
+  animation: close var(--dur-fast) var(--ease) forwards;
+}
+
 @keyframes open {
   from {
     opacity: 0;
     transform: translateY(var(--space-1)) scale(0.96);
   }
+}
+
+@keyframes close {
+  to {
+    opacity: 0;
+    transform: translateY(var(--space-1)) scale(0.96);
+  }
+}
+
+/* The neck joining a card to the button it opens from: the card's fill and border, open on the
+   card's side so it covers that stretch of the card's border. Its left is set at runtime
+   (ui/connector.ts); its height is the gap plus the card's border. */
+.connector {
+  position: absolute;
+  box-sizing: border-box;
+  width: var(--connector-w);
+  border: 1px solid var(--border-menu);
+  background: var(--bg-menu);
+}
+
+.connector[data-side='bottom'] {
+  top: 100%;
+  border-top: none;
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+.connector[data-side='top'] {
+  bottom: 100%;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
 }

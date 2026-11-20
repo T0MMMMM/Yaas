@@ -36,6 +36,7 @@
   cursor: pointer;
   transition:
     color var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
     transform var(--dur-base) var(--ease-bounce),
     translate var(--dur-spring) var(--ease-bounce),
     scale var(--dur-spring) var(--ease-bounce);
@@ -46,10 +47,22 @@
   transform: rotate(30deg) scale(1.08);
 }
 
-/* Open menu: the + turns into a ×. */
+/* Open menu: the button rests on the menu's fill, where the menu's connector meets it, and its +
+   turns into a ×. `!important` overrides the magnetic lean (inline styles, ui/useMagnetic). */
 .iconButton[aria-expanded='true'] {
+  background: var(--bg-menu);
   color: var(--text);
-  transform: rotate(45deg) scale(1.08);
+  transform: none;
+  translate: none !important;
+  scale: none !important;
+}
+
+.iconButton svg {
+  transition: rotate var(--dur-base) var(--ease-bounce);
+}
+
+.iconButton[aria-expanded='true'] svg {
+  rotate: 45deg;
 }
 
 .newTab span {

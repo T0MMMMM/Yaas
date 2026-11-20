@@ -17,8 +17,10 @@ interface PickerProps {
   query: string
   onQuery(query: string): void
   rows: PickerRow[]
-  /** Runs a row (Enter or a click); the picker is closed first. */
+  /** Runs a row (Enter or a click); the picker closes after. */
   onRun(row: PickerRow): void
+  /** Plays the exit animation (the overlay hides it once done). */
+  closing?: boolean
   onClose(): void
   testId: string
 }
@@ -28,7 +30,16 @@ interface PickerProps {
  * the window, in the overlay. ↑/↓ move the selection, Enter runs it, Escape or a click outside
  * closes.
  */
-export function Picker({ label, query, onQuery, rows, onRun, onClose, testId }: PickerProps) {
+export function Picker({
+  label,
+  query,
+  onQuery,
+  rows,
+  onRun,
+  closing = false,
+  onClose,
+  testId,
+}: PickerProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(0)
   useDismiss(ref, onClose)
@@ -37,14 +48,20 @@ export function Picker({ label, query, onQuery, rows, onRun, onClose, testId }: 
 
   const run = (row: PickerRow | undefined) => {
     if (!row) return
-    onClose()
+    // The action first: the exit animation only delays hiding the card.
     onRun(row)
+    onClose()
   }
 
   const optionId = (i: number) => `${testId}-option-${i}`
 
   return createPortal(
-    <div ref={ref} className={`${styles.card} no-drag`} data-testid={testId}>
+    <div
+      ref={ref}
+      className={`${styles.card} no-drag`}
+      data-state={closing ? 'closing' : 'open'}
+      data-testid={testId}
+    >
       <input
         className={styles.field}
         role="combobox"

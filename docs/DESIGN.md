@@ -125,11 +125,17 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   tab itself, or of a favourite on the favourites, is no move. Esc cancels.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
-glass card (`ui/Popover.module.css`, composed by each popover's own CSS module). The + menu has a
+opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-menu`,
+`--border-menu`, `--shadow-menu`, rows hovered with `--bg-menu-hover`). A connector joins the card
+to its button: a `--connector-w` neck, the gap tall, in the card's fill and border, centred on the
+button but kept clear of the card's rounded corners (`ui/connector.ts`); the button takes the
+`--bg-menu` fill while open, at rest (no hover tilt or magnetic lean). Closing plays the open
+animation backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
+a chosen item's action runs first, never after the animation. The + menu has a
 filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
 at once), New space, Settings.
 
-**Tab finder and command field** (`features/finder`) — the same glass card, `--finder-w` 560 wide,
+**Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w` 560 wide,
 centred `--finder-top` (20 % of the window) from the top, in the overlay: a field over a list,
 ↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`)
 ranks the tabs of every space — every word must be in the title or the host and path; a title
@@ -254,7 +260,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (child-tab connector) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (open-folder bar) · `--controls-zone-w` 80 (icon-only: hover zone for the traffic lights) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (child-tab connector, popover neck) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (open-folder bar) · `--controls-zone-w` 80 (icon-only: hover zone for the traffic lights) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |

@@ -1,4 +1,4 @@
-/* The tab finder and the command field: a glass card centred near the top of the window, in the
+/* The tab finder and the command field: an opaque card centred near the top of the window, in the
    overlay view (over the page). */
 .card {
   composes: card from '../../ui/Popover.module.css';
@@ -55,7 +55,7 @@
 }
 
 .row[aria-selected='true'] {
-  background: var(--fill-raised-hover);
+  background: var(--bg-menu-hover);
 }
 
 .icon {

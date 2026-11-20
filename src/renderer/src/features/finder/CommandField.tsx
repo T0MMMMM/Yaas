@@ -12,7 +12,7 @@ const OPEN = 'open'
  * ⌘T: what to open, over the page. Submitting opens it in a new tab (a URL, else a search), or
  * switches to the open tab picked. Escape opens nothing.
  */
-export function CommandField({ onClose }: { onClose(): void }) {
+export function CommandField({ closing, onClose }: { closing?: boolean; onClose(): void }) {
   const workspace = useWorkspace()
   const [query, setQuery] = useState('')
 
@@ -41,6 +41,7 @@ export function CommandField({ onClose }: { onClose(): void }) {
       onQuery={setQuery}
       rows={rows}
       onRun={run}
+      closing={closing}
       onClose={onClose}
       testId="command-field"
     />
