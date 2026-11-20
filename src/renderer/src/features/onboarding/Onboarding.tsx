@@ -44,7 +44,7 @@ export function Onboarding() {
         <Logo />
       </button>
 
-      <p className={styles.tagline}>Yeah, An Account Switcher.</p>
+      <p className={styles.tagline}>AI Custom Another Browser.</p>
 
       <div className={styles.content}>{stage === 'visual' && <VisualSetup />}</div>
     </div>
