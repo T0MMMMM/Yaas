@@ -6,6 +6,7 @@ import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
 import { isPermissionGranted } from '@core/browser/permissions'
 import { chromeUserAgent } from '@core/browser/userAgent'
+import type { AdBlocker } from './adBlocker'
 
 /** What extensions may do to the browser: tabs and windows are ACAB's tabs and its one window. */
 export interface ExtensionHost {
@@ -32,6 +33,9 @@ export class SpaceSessions {
   private readonly spaces = new Map<Session, string>()
   /** Per space, the tabs opened by `chrome.windows.create` (what `windows.remove` closes). */
   private readonly windowTabs = new Map<string, Set<WebContents>>()
+  /** Null until the blocker has loaded (it loads after the window opens), or if it failed. */
+  private adBlocker: AdBlocker | null = null
+  private adBlockEnabled = true
 
   constructor(private readonly opts: SpaceSessionsOptions) {}
 
@@ -58,8 +62,16 @@ export class SpaceSessions {
       })
     }
 
+    this.applyAdBlocking(ses)
     void this.loadExtensions(spaceId, ses)
     return ses
+  }
+
+  /** Blocks ads (or stops) in every space session, now and in those set up later. */
+  setAdBlocking(blocker: AdBlocker | null, enabled: boolean): void {
+    this.adBlocker = blocker
+    this.adBlockEnabled = enabled
+    for (const ses of this.spaces.keys()) this.applyAdBlocking(ses)
   }
 
   extensionsFor(spaceId: string): ElectronChromeExtensions | null {
@@ -69,6 +81,11 @@ export class SpaceSessions {
   /** The space whose session this is, or null for any other session (the UI's, the default). */
   spaceOf(ses: Session): string | null {
     return this.spaces.get(ses) ?? null
+  }
+
+  private applyAdBlocking(ses: Session): void {
+    if (this.adBlockEnabled) this.adBlocker?.enable(ses)
+    else this.adBlocker?.disable(ses)
   }
 
   private createExtensions(spaceId: string, ses: Session): ElectronChromeExtensions {

@@ -1,12 +1,14 @@
 import { join } from 'node:path'
 import { app, BrowserWindow, Menu, type WebContents } from 'electron'
 import { Accounts } from '@core/accounts/accounts'
+import { diffHosts } from '@core/browser/adblock'
 import { BrowserStore } from '@core/browser/browserStore'
 import { authStatus, cliVersion, findCli } from '@core/providers/claude-code/cli'
 import { SettingsStore } from '@core/settings/settingsStore'
 import { openDatabase } from '@core/store/database'
-import type { BrowserState } from '@shared/ipc/contract'
+import type { BrowserState, Settings } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
+import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
@@ -117,6 +119,28 @@ const spaceSessions = new SpaceSessions({
   // Tests run on a throwaway data dir and never touch the network.
   autoUpdate: !userDataOverride,
 })
+
+let adBlocker: AdBlocker | null = null
+
+function applyAdBlock({ enabled, allowedHosts }: Settings['adBlock']): void {
+  adBlocker?.setAllowedHosts(allowedHosts)
+  spaceSessions.setAdBlocking(adBlocker, enabled)
+}
+
+// Loaded without holding up the window: sessions set up before it arrives get it then. Under test
+// (`ACAB_USER_DATA`) the lists are never downloaded: a local list or no blocker at all.
+const adBlockFilters = process.env['ACAB_ADBLOCK_FILTERS']
+if (userDataOverride && !adBlockFilters) {
+  console.warn('Ad blocker skipped: ACAB_USER_DATA is set without ACAB_ADBLOCK_FILTERS')
+} else {
+  void AdBlocker.load({
+    cachePath: join(app.getPath('userData'), 'adblock-engine.bin'),
+    ...(adBlockFilters ? { filtersFile: adBlockFilters } : {}),
+  }).then((loaded) => {
+    adBlocker = loaded
+    applyAdBlock(settings.get().adBlock)
+  })
+}
 
 // Spike fix 2: window.open from an extension page (popup, background) opens a tab of its space,
 // like Chrome, instead of a window that steals focus and closes the popup. Tab views, the UI and
@@ -230,7 +254,17 @@ registerCommands(
 // The native material only changes at the thresholds (0 and liquid); how see-through the frame is
 // in between is CSS. Re-applying vibrancy on every tick of a slider flickers.
 let appliedMaterial = materialFor(settings.get().transparency)
+let appliedAdBlock = settings.get().adBlock
 settings.subscribe((next) => {
+  if (next.adBlock !== appliedAdBlock) {
+    const { added, removed } = diffHosts(appliedAdBlock.allowedHosts, next.adBlock.allowedHosts)
+    appliedAdBlock = next.adBlock
+    applyAdBlock(next.adBlock)
+    // A page whose site was just allowed (or no longer is) shows the change at once.
+    for (const tabId of tabViews?.tabIdsOnHosts([...added, ...removed]) ?? []) {
+      tabViews?.reload(tabId)
+    }
+  }
   if (!mainWindow) return
   const material = materialFor(next.transparency)
   if (material !== appliedMaterial) {

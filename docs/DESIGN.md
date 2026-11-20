@@ -265,6 +265,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Sound | Off | v1 |
 | **Shortcuts** | List of all shortcuts (read-only); remapping | — | MVP / later |
 | **Privacy & data** | Data folder (reveal), export settings, rebuild search index | — | v1 |
+| | Block ads (default on) — per-site toggle in the site menu | On · Off | plan 5 (Privacy panel) |
 | | Statement: no telemetry, no hidden model calls | — | MVP |
 | **Advanced** | Claude Code CLI: bundled · system (path + version) | Bundled | MVP |
 | | Open logs folder, developer tools | — | MVP |

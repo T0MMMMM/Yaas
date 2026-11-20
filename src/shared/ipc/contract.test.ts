@@ -24,6 +24,14 @@ describe('IPC contract', () => {
     expect(input.safeParse({ nodeIntegration: true }).success).toBe(false)
   })
 
+  it('accepts the ad blocker settings only with their allowed hosts', () => {
+    const input = commands['settings.update'].input
+    expect(input.safeParse({ adBlock: { enabled: false, allowedHosts: ['a.com'] } }).success).toBe(
+      true,
+    )
+    expect(input.safeParse({ adBlock: { enabled: true } }).success).toBe(false)
+  })
+
   it('rejects a negative page bound', () => {
     const input = commands['browser.setPageBounds'].input
     expect(input.safeParse({ x: 0, y: 0, width: 800, height: 600 }).success).toBe(true)

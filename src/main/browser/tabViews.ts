@@ -9,6 +9,7 @@ import {
   type MenuItemConstructorOptions,
   type WebContents,
 } from 'electron'
+import { hostOf } from '@core/browser/adblock'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
@@ -99,6 +100,16 @@ export class TabViews {
   tabIdOf(contents: WebContents): string | null {
     for (const [tabId, { view }] of this.views) if (view.webContents === contents) return tabId
     return null
+  }
+
+  /** Tabs whose view shows a page of one of `hosts`. */
+  tabIdsOnHosts(hosts: string[]): string[] {
+    return [...this.views]
+      .filter(([, { view }]) => {
+        const host = hostOf(view.webContents.getURL())
+        return host !== null && hosts.includes(host)
+      })
+      .map(([tabId]) => tabId)
   }
 
   setBounds(bounds: PageBounds): void {

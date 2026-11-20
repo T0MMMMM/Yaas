@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sidebarWidth: 248,
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
+  adBlock: { enabled: true, allowedHosts: [] },
 }
 
 type Listener = (settings: Settings) => void

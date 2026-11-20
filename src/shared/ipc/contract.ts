@@ -33,6 +33,8 @@ export const settingsSchema = z.object({
     afterDays: z.number().int().min(1).max(365),
   }),
   onboardingDone: z.boolean(),
+  /** Built-in ad and tracker blocking; `allowedHosts` are the sites where it is turned off. */
+  adBlock: z.object({ enabled: z.boolean(), allowedHosts: z.array(z.string()) }),
 })
 export type Settings = z.infer<typeof settingsSchema>
 

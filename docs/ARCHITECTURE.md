@@ -438,6 +438,21 @@ results come back to the lead as a short summary + branch name, never the full c
   that space and deny the window (tab views, the UI and the overlay replace it with their own
   handler). The three packages stay external in the main build so they resolve their own preload
   files. E2E loads an unpacked fixture through `ACAB_TEST_EXTENSION` (no network).
+- **Ad blocker.** Built in and on by default (spec §8): Ghostery's engine
+  (`@ghostery/adblocker-electron`, `main/browser/adBlocker.ts`) blocks ads and trackers in every
+  space session. It loads once at startup without holding up the window
+  (`fromPrebuiltAdsAndTracking`, cached at `<userData>/adblock-engine.bin`); `SpaceSessions`
+  enables it on the sessions set up before it arrives and on every later one. If it fails
+  (offline, first launch) it logs and the app browses without it (`loadEngine` in
+  `core/browser/adblock.ts`). Settings: `adBlock: { enabled, allowedHosts }`. The per-site toggle
+  adds exception filters to the engine in place (`updateFromDiff`): `@@*$domain=<host>` (every
+  request made by the host's pages) and `@@||<host>^$elemhide` (their element hiding) — Ghostery's
+  `$document` only matches the page request itself. Ghostery matches the page by the request's
+  referrer, so a page sent with `no-referrer` is still filtered. When a host is allowed or no
+  longer allowed, main reloads the tabs showing it. Ghostery's cosmetic preload is a second script
+  on space sessions; it talks to main over two `ipcMain` handlers and exposes nothing to pages.
+  E2E loads a local list through `ACAB_ADBLOCK_FILTERS`; with `ACAB_USER_DATA` set and no list, the
+  blocker is skipped (never a download in tests).
 - **Permissions.** Every space session denies page permissions except
   `clipboard-sanitized-write`, `fullscreen` and `pointerLock` (`core/browser/permissions.ts`):
   no camera, microphone, location, notifications or `openExternal` until a per-site prompt exists.

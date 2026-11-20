@@ -8,7 +8,15 @@ const pages: Record<string, string> = {
   '/b': `<!doctype html><html><head><title>Page B</title>
 <meta name="theme-color" content="#f5f5f0"></head><body>B</body></html>`,
   '/c': `<!doctype html><html><head><title>Page C</title></head><body>C</body></html>`,
+  '/with-ad': `<!doctype html><html><head><title>With Ad</title></head>
+<body><img id="ad" src="/ads/banner.png" alt=""></body></html>`,
 }
+
+/** A transparent 1×1 PNG: the "ad" of `/with-ad` (blocked by `fixtures/ads.txt`). */
+const BANNER_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+  'base64',
+)
 
 /** A tiny local site for the browser e2e tests (no network). */
 export async function startSite(): Promise<{
@@ -16,6 +24,10 @@ export async function startSite(): Promise<{
   close: () => Promise<void>
 }> {
   const server = createServer((req, res) => {
+    if (req.url === '/ads/banner.png') {
+      res.writeHead(200, { 'content-type': 'image/png' }).end(BANNER_PNG)
+      return
+    }
     const body = pages[req.url ?? '']
     if (body === undefined) {
       res.writeHead(404).end()
