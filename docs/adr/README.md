@@ -16,3 +16,4 @@ anything they cover.
 | [0002](0002-account-isolation.md) | Account isolation with one `CLAUDE_CONFIG_DIR` per account | Accepted |
 | [0003](0003-handoff.md) | Handoff: full transcript first, hybrid later | Accepted (cross-account validation pending) |
 | [0004](0004-crew-mode.md) | Crew mode: in-process MCP tool + manual runs | Accepted |
+| [0005](0005-pivot-to-acab-browser.md) | Pivot: YAAS becomes ACAB, an AI-customizable browser | Accepted |
