@@ -1,23 +1,15 @@
-import { useEffect, useState, type CSSProperties } from 'react'
-import { Globe, MagnifyingGlass, Plus, X } from '@phosphor-icons/react'
+import { useEffect, useState } from 'react'
+import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
-import type { TabView } from '../workspace/workspace'
+import { tabsOf, type SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
-import { hashUnit } from './hash'
+import { FavoriteTiles } from './FavoriteTiles'
+import { FolderRow } from './FolderRow'
+import { TabRow } from './TabRow'
+import { tilt } from './tilt'
 import styles from './Sidebar.module.css'
-
-/**
- * Each card gets its own tilt, stable per id, so a list never moves in lockstep:
- * hover −0.3…−1.1° or +0.3…+1.1°, selected a little more.
- */
-function tilt(id: string): CSSProperties {
-  const sign = hashUnit(id, 7) < 0.5 ? -1 : 1
-  const hover = sign * (0.3 + hashUnit(id, 1) * 0.8)
-  const selected = sign * (0.6 + hashUnit(id, 2) * 0.9)
-  return { '--tilt-hover': `${hover}deg`, '--tilt-selected': `${selected}deg` } as CSSProperties
-}
 
 /** Opens a blank tab in the active space, then puts the address bar in edit mode. */
 async function newTab(): Promise<void> {
@@ -30,15 +22,39 @@ function openNewMenu(button: HTMLElement): Promise<void> {
   return window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
-/** Only inline images: a remote favicon would load in the UI's own session, outside the space. */
-function Favicon({ tab }: { tab: TabView }) {
-  if (tab.faviconUrl?.startsWith('data:')) {
-    return <img className={styles.favicon} src={tab.faviconUrl} alt="" />
+/**
+ * Closes every today tab, deepest and lowest first: ⌘⇧T then reopens them one by one, top-down,
+ * each back under its parent.
+ */
+async function clearToday(nodes: SidebarNode[]): Promise<void> {
+  for (const tab of tabsOf(nodes).reverse()) {
+    await window.acab.invoke('browser.closeTab', { tabId: tab.id })
   }
-  return <Globe size={16} className={styles.favicon} />
 }
 
-/** Arc-style vertical sidebar: the active space's tabs and the spaces. No data logic here. */
+function Rows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | null }) {
+  return nodes.map((node) =>
+    node.kind === 'tab' ? (
+      <TabRow
+        key={node.tab.id}
+        tab={node.tab}
+        depth={node.depth}
+        active={node.tab.id === activeId}
+      />
+    ) : (
+      <FolderRow
+        key={node.kind === 'folder' ? node.folder.id : `auto:${node.host}`}
+        node={node}
+        activeId={activeId}
+      />
+    ),
+  )
+}
+
+/**
+ * Arc-style vertical sidebar: favourite tiles, pinned tabs and folders, a separator, today's tabs,
+ * then the spaces. No data logic here — the tree comes from the workspace.
+ */
 export function Sidebar() {
   const workspace = useWorkspace()
   const magnet = useMagnetic<HTMLButtonElement>(0.4)
@@ -46,6 +62,9 @@ export function Sidebar() {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => window.acab.on('overlay.closed', () => setMenuOpen(false)), [])
+
+  const sections = workspace?.sections
+  const activeId = workspace?.activeTab?.id ?? null
 
   return (
     <nav className={styles.sidebar} aria-label="Spaces and tabs" data-testid="sidebar">
@@ -58,34 +77,29 @@ export function Sidebar() {
       </button>
 
       <div className={styles.scroll}>
-        <ul className={styles.list} aria-label="Tabs">
-          {workspace?.tabs.map((tab) => {
-            const active = tab.id === workspace.activeTab?.id
-            return (
-              <li key={tab.id} className={styles.item} style={tilt(tab.id)} data-testid="tab">
-                <button
-                  className={styles.row}
-                  data-active={active}
-                  data-loaded={tab.loaded}
-                  aria-current={active ? 'page' : undefined}
-                  title={tab.url}
-                  onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
-                >
-                  <Favicon tab={tab} />
-                  <span className={styles.rowTitle}>{tab.title}</span>
-                </button>
-                <button
-                  className={styles.close}
-                  data-active={active}
-                  aria-label="Close tab"
-                  title="Close tab (⌘W)"
-                  onClick={() => void window.acab.invoke('browser.closeTab', { tabId: tab.id })}
-                >
-                  <X size={13} weight="bold" />
-                </button>
-              </li>
-            )
-          })}
+        {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
+
+        {sections && sections.pinned.length > 0 && (
+          <ul className={styles.list} aria-label="Pinned" data-testid="pinned">
+            <Rows nodes={sections.pinned} activeId={activeId} />
+          </ul>
+        )}
+
+        <div className={styles.separator} data-testid="today-header">
+          <span className={styles.rule} />
+          {sections && sections.today.length > 0 && (
+            <button
+              className={styles.clear}
+              title="Close today's tabs (⌘⇧T reopens them one by one)"
+              onClick={() => void clearToday(sections.today)}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        <ul className={styles.list} aria-label="Today" data-testid="today">
+          {sections && <Rows nodes={sections.today} activeId={activeId} />}
         </ul>
 
         <button className={styles.newTab} onClick={() => void newTab()} data-testid="new-tab">

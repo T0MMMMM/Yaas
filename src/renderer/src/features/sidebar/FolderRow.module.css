@@ -1,0 +1,58 @@
+/* A folder: a header row with the tab row's card motion, its tabs listed one indent below. */
+
+.folder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.header {
+  composes: item from './TabRow.module.css';
+}
+
+.row {
+  composes: row from './TabRow.module.css';
+  color: var(--text-muted);
+}
+
+.row:hover {
+  color: var(--text);
+}
+
+.title {
+  composes: title from './TabRow.module.css';
+}
+
+.icon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+/* Tabs in a closed folder: shown where the × of a tab row would be. */
+.count {
+  position: absolute;
+  right: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.children {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}

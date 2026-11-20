@@ -75,6 +75,16 @@ export function Appearance() {
           />
         </SettingRow>
         <SettingRow
+          label="Automatic folders"
+          description="Three or more of today's tabs from one site are grouped in a folder named after it."
+        >
+          <Switch
+            label="Automatic folders"
+            checked={settings.autoFolders}
+            onChange={(autoFolders) => void update({ autoFolders })}
+          />
+        </SettingRow>
+        <SettingRow
           label="Address bar"
           description="In its own card above the page, or attached to the page with a separator."
         >

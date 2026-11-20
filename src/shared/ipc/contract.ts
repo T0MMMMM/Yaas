@@ -26,6 +26,8 @@ export const settingsSchema = z.object({
   metersPlacement: z.enum(['contextbar', 'sidebar']),
   /** Hovered and selected cards tilt slightly, each at its own angle (DESIGN.md §2). */
   askewCards: z.boolean(),
+  /** 3+ today tabs of one site are drawn as a folder named after it (derived, never stored). */
+  autoFolders: z.boolean(),
   /** The bar above the page: its own card, or attached to the page with a separator line. */
   contextBarStyle: z.enum(['card', 'attached']),
   /** Sidebar width in px, resizable by drag (DESIGN.md §2). */

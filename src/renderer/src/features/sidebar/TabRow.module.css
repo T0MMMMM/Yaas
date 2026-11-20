@@ -1,0 +1,118 @@
+/* A tab row: a card layer behind the text tilts on hover and when active (askew cards). The
+   hover / selected fills come from the sidebar (Sidebar.module.css). */
+
+.item {
+  position: relative;
+  /* Nested under its parent tab (depth 0…3, from the workspace). */
+  margin-left: calc(var(--depth, 0) * var(--space-3));
+}
+
+.row {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--row-h);
+  padding: 7px var(--space-2);
+  /* Leaves room for the close button. */
+  padding-right: var(--control-size);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The card is a layer behind the text: only it tilts (angle per item, see tilt()). */
+.row::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.row:hover::before,
+.item:hover .row::before {
+  background: var(--hover-fill);
+  transform: rotate(var(--tilt-hover));
+}
+
+.row[data-active='true']::before,
+.item:hover .row[data-active='true']::before {
+  background: var(--selected-fill);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 4px 14px rgb(0 0 0 / 0.06);
+  transform: rotate(var(--tilt-selected));
+}
+
+.row[data-loaded='false'] {
+  opacity: var(--opacity-unloaded);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.row[data-loaded='false'][data-active='true'],
+.item:hover .row[data-loaded='false'],
+.row[data-loaded='false']:focus-visible {
+  opacity: 1;
+}
+
+.row[data-active='true'] .title {
+  font-weight: 600;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.favicon {
+  flex: none;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  color: var(--text-muted);
+}
+
+/* × on hover and on the active tab. */
+.close {
+  position: absolute;
+  top: calc((var(--row-h) - var(--control-size-xs)) / 2);
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--control-size-xs);
+  height: var(--control-size-xs);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  opacity: 0;
+  transform: scale(0.8);
+  cursor: pointer;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.item:hover .close,
+.close[data-active='true'],
+.close:focus-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.close:hover {
+  color: var(--text);
+  background: var(--hover-fill);
+}

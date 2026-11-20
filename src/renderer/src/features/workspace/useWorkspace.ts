@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useAccounts } from '../../stores/accounts'
 import { useBrowser } from '../../stores/browser'
+import { useSettings } from '../../stores/settings'
 import { DEMO_SPACES } from './demoData'
 import {
   browserView,
@@ -13,12 +14,15 @@ import {
 } from './workspace'
 
 /**
- * The single entry point for workspace data in the renderer: the spaces, the active space's tabs
- * and the active tab. null until the first browser state arrives from main.
+ * The single entry point for workspace data in the renderer: the spaces, the active space's tabs,
+ * its sidebar (favourites, pinned, today) and the active tab. null until the first browser state
+ * arrives from main.
  */
 export function useWorkspace(): BrowserView | null {
   const state = useBrowser((s) => s.state)
-  return useMemo(() => (state ? browserView(state) : null), [state])
+  // Before the settings load (and in the overlay, which never loads them): the default, on.
+  const autoFolders = useSettings((s) => s.settings?.autoFolders ?? true)
+  return useMemo(() => (state ? browserView(state, { autoFolders }) : null), [state, autoFolders])
 }
 
 // ---------- sessions: hidden until AI tabs (step 3) ----------

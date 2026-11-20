@@ -80,6 +80,25 @@ caption buttons.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
 
+**Browser sidebar (ACAB, top → bottom of the scroll area)** — the tree comes from
+`sidebarSections` in `features/workspace` (same order as the store's `visibleOrder`); the rows
+are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
+- **Favourites**: no header. A 4-column grid of tiles (`--tile-h` 44, favicon
+  `--tile-icon-size` 22) on a soft card; the active tile is lifted and askew like a selected row.
+- **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
+  opens and closes on click; a closed folder shows its tab count on the right. Its tabs are listed
+  one `--space-3` indent below. "New Folder…" and "Rename" (native menus) put its name in an
+  inline field: Enter or leaving it saves, Esc cancels.
+- **Separator**: a hairline, with **Clear** on the right when today has tabs — it closes all of
+  today's tabs (children first), and ⌘⇧T reopens them one by one.
+- **Today**: tabs opened from another tab are indented under it, `--space-3` per level (max 3).
+  **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a
+  folder named after the host, where the first of them was; open/closed per host for the session
+  (UI store), never stored. Settings → Appearance → Automatic folders turns them off.
+- Every row and tile: right-click opens its native menu (tab: pin, favourites, folders, copy,
+  close; folder: rename, delete). A tab whose page is not loaded is dimmed
+  (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
+
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 glass card (`ui/Popover.module.css`, composed by each popover's own CSS module).
 
@@ -198,8 +217,8 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) |
-| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) · `--tile-h` 44 (favourite tiles) |
+| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
@@ -255,6 +274,7 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | | Account switcher | Emoji · First letter · Dots | MVP ✅ |
 | | Meters (context + usage) | Context bar · Sidebar | MVP ✅ |
 | | Askew cards | On · Off | ✅ |
+| | Automatic folders (3+ today tabs of one site grouped) | **On** · Off | ✅ |
 | | Address bar | Own card · Attached to the page (separator line) | ✅ |
 | | Interface density | Comfortable · Compact | v1 |
 | | Transcript font size | 12 · 13 · 14 · 15 | v1 |

@@ -2,7 +2,7 @@
 // environments and sessions), as ready-to-render views. Components never read the raw data or
 // re-derive these rules themselves.
 import type { BrowserState, TabRuntime } from '@shared/ipc/contract'
-import type { BrowserSpace, BrowserTab, SessionStatus } from '@shared/model'
+import type { BrowserFolder, BrowserSpace, BrowserTab, SessionStatus } from '@shared/model'
 import { displayUrl, hostOf } from '@shared/url'
 import type { DemoEnvironment, DemoSession, DemoSpace, DemoUsage } from './demoData'
 
@@ -37,12 +37,39 @@ export interface TabView {
   loaded: boolean
 }
 
+/** A row of the sidebar's pinned or today list. */
+export type SidebarNode =
+  | {
+      kind: 'tab'
+      tab: TabView
+      /** Indent under its parent tab: 0 at the top level, capped at MAX_DEPTH. */
+      depth: number
+    }
+  | { kind: 'folder'; folder: BrowserFolder; children: SidebarNode[] }
+  /** 3+ top-level today tabs of one host, drawn as a folder named after it. Never stored. */
+  | { kind: 'auto-folder'; host: string; children: SidebarNode[] }
+
+export interface SidebarSections {
+  /** The favourite tiles, by position. */
+  favorites: TabView[]
+  /** Pinned tabs and folders, by their shared position. */
+  pinned: SidebarNode[]
+  /** The rest, depth-first by parent, with automatic folders when on. */
+  today: SidebarNode[]
+}
+
+export interface SidebarOptions {
+  autoFolders: boolean
+}
+
 export interface BrowserView {
   spaces: SpaceSummary[]
   space: SpaceSummary
-  /** The active space's tabs, by position. */
+  /** The active space's tabs in drawn order (favourites, pinned, today depth-first). */
   tabs: TabView[]
   activeTab: TabView | null
+  /** The active space's sidebar. */
+  sections: SidebarSections
 }
 
 /** A tab without a view (never shown since launch, or unloaded) has no live state. */
@@ -78,19 +105,155 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
   }
 }
 
-/** The browser as the chrome shows it: the active space, its tabs in order and the active tab. */
-export function browserView(state: BrowserState): BrowserView {
+/** Deepest indent of a nested tab. */
+export const MAX_DEPTH = 3
+
+/** Top-level today tabs of one host from which they are drawn as an automatic folder. */
+export const AUTO_FOLDER_MIN = 3
+
+const byPosition = (a: { position: number }, b: { position: number }): number =>
+  a.position - b.position
+
+/** The host automatic folders group by: lower-cased, without `www.`; null for non-web pages. */
+function groupHost(url: string): string | null {
+  return hostOf(url)?.replace(/^www\./, '') ?? null
+}
+
+/** Today's tabs as root subtrees (by position), each flattened depth-first like the store. */
+function todayTrees(tabs: BrowserTab[], view: (t: BrowserTab) => TabView): SidebarNode[][] {
+  const ids = new Set(tabs.map((t) => t.id))
+  const children = new Map<string | null, BrowserTab[]>()
+  for (const tab of [...tabs].sort(byPosition)) {
+    const parent = tab.parentId !== null && ids.has(tab.parentId) ? tab.parentId : null
+    children.set(parent, [...(children.get(parent) ?? []), tab])
+  }
+  const flatten = (tab: BrowserTab, level: number): SidebarNode[] => [
+    { kind: 'tab', tab: view(tab), depth: Math.min(level, MAX_DEPTH) },
+    ...(children.get(tab.id) ?? []).flatMap((child) => flatten(child, level + 1)),
+  ]
+  return (children.get(null) ?? []).map((root) => flatten(root, 0))
+}
+
+/** Root subtrees of a host with AUTO_FOLDER_MIN+ roots become one folder at the first one. */
+function withAutoFolders(trees: SidebarNode[][]): SidebarNode[] {
+  const hostOfTree = (tree: SidebarNode[]): string | null => {
+    const root = tree[0]
+    return root?.kind === 'tab' ? groupHost(root.tab.url) : null
+  }
+  const counts = new Map<string, number>()
+  for (const tree of trees) {
+    const host = hostOfTree(tree)
+    if (host !== null) counts.set(host, (counts.get(host) ?? 0) + 1)
+  }
+  const folders = new Map<string, SidebarNode & { kind: 'auto-folder' }>()
+  const nodes: SidebarNode[] = []
+  for (const tree of trees) {
+    const host = hostOfTree(tree)
+    if (host === null || (counts.get(host) ?? 0) < AUTO_FOLDER_MIN) {
+      nodes.push(...tree)
+      continue
+    }
+    let folder = folders.get(host)
+    if (!folder) {
+      folder = { kind: 'auto-folder', host, children: [] }
+      folders.set(host, folder)
+      nodes.push(folder)
+    }
+    folder.children.push(...tree)
+  }
+  return nodes
+}
+
+function sectionsOf(
+  tabs: BrowserTab[],
+  folders: BrowserFolder[],
+  view: (t: BrowserTab) => TabView,
+  opts: SidebarOptions,
+): SidebarSections {
+  const favorites = tabs
+    .filter((t) => t.section === 'favorites')
+    .sort(byPosition)
+    .map(view)
+
+  const pinned = tabs.filter((t) => t.section === 'pinned').sort(byPosition)
+  const folderIds = new Set(folders.map((f) => f.id))
+  const pinnedItems: { position: number; node: SidebarNode }[] = [
+    ...folders.map((folder) => ({
+      position: folder.position,
+      node: {
+        kind: 'folder' as const,
+        folder,
+        children: pinned
+          .filter((t) => t.folderId === folder.id)
+          .map((t): SidebarNode => ({ kind: 'tab', tab: view(t), depth: 0 })),
+      },
+    })),
+    ...pinned
+      .filter((t) => t.folderId === null || !folderIds.has(t.folderId))
+      .map((t) => ({
+        position: t.position,
+        node: { kind: 'tab' as const, tab: view(t), depth: 0 },
+      })),
+  ]
+
+  const trees = todayTrees(
+    tabs.filter((t) => t.section === 'today'),
+    view,
+  )
+  return {
+    favorites,
+    pinned: pinnedItems.sort(byPosition).map((item) => item.node),
+    today: opts.autoFolders ? withAutoFolders(trees) : trees.flat(),
+  }
+}
+
+/**
+ * A space's sidebar: favourite tiles, the pinned list and today. Same order as the store's
+ * `visibleOrder`, except that automatic folders regroup today's tabs of a busy host.
+ */
+export function sidebarSections(
+  state: BrowserState,
+  spaceId: string,
+  opts: SidebarOptions,
+): SidebarSections {
+  return sectionsOf(
+    state.tabs.filter((t) => t.spaceId === spaceId),
+    [...state.folders.filter((f) => f.spaceId === spaceId)].sort(byPosition),
+    (t) => toTab(t, state.runtime[t.id]),
+    opts,
+  )
+}
+
+/** The tabs of a pinned or today list, in drawn order (folders' tabs included). */
+export function tabsOf(nodes: SidebarNode[]): TabView[] {
+  return nodes.flatMap((n) => (n.kind === 'tab' ? [n.tab] : tabsOf(n.children)))
+}
+
+/** Tabs of the sections in drawn order (automatic folders keep their tabs together). */
+function drawnTabs(sections: SidebarSections): TabView[] {
+  return [...sections.favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)]
+}
+
+/** The browser as the chrome shows it: the active space, its sidebar and the active tab. */
+export function browserView(
+  state: BrowserState,
+  opts: SidebarOptions = { autoFolders: true },
+): BrowserView {
   const spaces = state.spaces.map(toSpace)
   const space = spaces.find((s) => s.id === state.activeSpaceId) ?? spaces[0]
   // Main always keeps at least one space.
   if (!space) throw new Error('Browser state has no space')
 
-  const tabs = state.tabs
-    .filter((t) => t.spaceId === space.id)
-    .sort((a, b) => a.position - b.position)
-    .map((t) => toTab(t, state.runtime[t.id]))
+  const sections = sidebarSections(state, space.id, opts)
+  const tabs = drawnTabs(sections)
   const activeId = state.activeTabIds[space.id] ?? null
-  return { spaces, space, tabs, activeTab: tabs.find((t) => t.id === activeId) ?? null }
+  return {
+    spaces,
+    space,
+    tabs,
+    activeTab: tabs.find((t) => t.id === activeId) ?? null,
+    sections,
+  }
 }
 
 // ---------- sessions (hidden until AI tabs) ----------

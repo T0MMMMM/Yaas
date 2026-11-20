@@ -23,7 +23,7 @@ export function Shell() {
         const ui = useUi.getState()
         if (shortcut.kind === 'focus-address') ui.focusAddress()
         else if (shortcut.kind === 'settings') ui.openSettings()
-        // 'rename-folder' is handled by the sidebar's folders.
+        else ui.renameFolder(shortcut.folderId)
       }),
     [],
   )

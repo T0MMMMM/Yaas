@@ -148,121 +148,35 @@ kbd {
   gap: 1px;
 }
 
-.item {
-  position: relative;
-}
-
-.row {
-  position: relative;
-  isolation: isolate;
-  width: 100%;
+/* Between pinned and today: a hairline, with "Clear" (closes today's tabs) on the right. */
+.separator {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--row-h);
-  padding: 7px var(--space-2);
-  border: none;
-  border-radius: var(--radius-lg);
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
+  min-height: var(--control-size-xs);
+  margin: var(--space-1) 0;
+  padding: 0 var(--space-2);
 }
 
-/* The card is a layer behind the text: only it tilts (angle per item, see tilt() in Sidebar). */
-.row::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  border-radius: inherit;
-  background: transparent;
-  transition:
-    background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
-}
-
-.row:hover::before,
-.item:hover .row::before {
-  background: var(--hover-fill);
-  transform: rotate(var(--tilt-hover));
-}
-
-.row[data-active='true']::before,
-.item:hover .row[data-active='true']::before {
-  background: var(--selected-fill);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.06),
-    0 4px 14px rgb(0 0 0 / 0.06);
-  transform: rotate(var(--tilt-selected));
-}
-
-.row[data-loaded='false'] {
-  opacity: var(--opacity-unloaded);
-  transition: opacity var(--dur-fast) var(--ease);
-}
-
-.row[data-loaded='false'][data-active='true'],
-.item:hover .row[data-loaded='false'],
-.row[data-loaded='false']:focus-visible {
-  opacity: 1;
-}
-
-.row[data-active='true'] .rowTitle {
-  font-weight: 600;
-}
-
-.rowTitle {
+.rule {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  height: 1px;
+  background: var(--border);
 }
 
-.favicon {
-  flex: none;
-  width: var(--icon-size);
-  height: var(--icon-size);
-  color: var(--text-muted);
-}
-
-/* Leaves room for the close button. */
-.row {
-  padding-right: var(--control-size);
-}
-
-/* × on hover and on the active tab. */
-.close {
-  position: absolute;
-  top: calc((var(--row-h) - var(--control-size-xs)) / 2);
-  right: var(--space-1);
-  display: grid;
-  place-items: center;
-  width: var(--control-size-xs);
-  height: var(--control-size-xs);
+.clear {
+  padding: 0 var(--space-1);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-muted);
-  opacity: 0;
-  transform: scale(0.8);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
   cursor: pointer;
-  transition:
-    opacity var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+  transition: color var(--dur-fast) var(--ease);
 }
 
-.item:hover .close,
-.close[data-active='true'],
-.close:focus-visible {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.close:hover {
+.clear:hover {
   color: var(--text);
-  background: var(--hover-fill);
 }
 
 /* ---------- status dots ---------- */

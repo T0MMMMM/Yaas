@@ -1,0 +1,71 @@
+/* Favourite tiles: four per row, a large favicon on a soft card; the active one is lifted. */
+
+.tiles {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.item {
+  min-width: 0;
+}
+
+.tile {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: var(--tile-h);
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--radius-lg);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* Like a tab row, only the card layer tilts. */
+.tile::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--hover-fill);
+  transition:
+    background var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.tile:hover::before {
+  background: var(--selected-fill);
+  transform: rotate(var(--tilt-hover));
+}
+
+.tile[data-active='true']::before {
+  background: var(--selected-fill);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.06),
+    0 4px 14px rgb(0 0 0 / 0.06),
+    inset 0 0 0 1.5px var(--accent-soft);
+  transform: rotate(var(--tilt-selected));
+}
+
+.tile[data-loaded='false'] .favicon {
+  opacity: var(--opacity-unloaded);
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.tile[data-loaded='false']:hover .favicon,
+.tile[data-loaded='false'][data-active='true'] .favicon {
+  opacity: 1;
+}
+
+.favicon {
+  width: var(--tile-icon-size);
+  height: var(--tile-icon-size);
+  color: var(--text-muted);
+}

@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import type { BrowserState } from '@shared/ipc/contract'
-import type { BrowserTab } from '@shared/model'
+import type { BrowserFolder, BrowserTab } from '@shared/model'
 import type { DemoSpace } from './demoData'
-import { browserView, CONTEXT_LIMIT, openSession, sidebarTree, usageView } from './workspace'
+import {
+  browserView,
+  CONTEXT_LIMIT,
+  openSession,
+  sidebarSections,
+  sidebarTree,
+  usageView,
+  type SidebarNode,
+} from './workspace'
 
 const session = (id: string, pinned = false) => ({
   id,
@@ -203,5 +211,182 @@ describe('browserView', () => {
     const empty = browserView({ ...browser, tabs: [], activeTabIds: { s1: null, s2: null } })
     expect(empty.tabs).toEqual([])
     expect(empty.activeTab).toBeNull()
+  })
+})
+
+// ---------- sidebar sections ----------
+
+const at = (
+  id: string,
+  position: number,
+  extra: Partial<BrowserTab> = {},
+  url = `https://${id}.test/`,
+): BrowserTab => ({ ...tab(id, 's1', position, url), ...extra })
+
+const folder = (id: string, position: number, collapsed = false): BrowserFolder => ({
+  id,
+  spaceId: 's1',
+  name: id,
+  position,
+  collapsed,
+})
+
+const stateOf = (tabs: BrowserTab[], folders: BrowserFolder[] = []): BrowserState => ({
+  ...browser,
+  tabs: [...tabs, tab('x', 's2', 0)],
+  folders,
+  runtime: {},
+})
+
+/** A node as a short readable shape: tab id with its depth, or a folder with its children. */
+type Shape = string | { [name: string]: Shape[] }
+const shape = (node: SidebarNode): Shape => {
+  if (node.kind === 'tab') return `${node.tab.id}@${node.depth}`
+  const name = node.kind === 'folder' ? node.folder.id : `auto:${node.host}`
+  return { [name]: node.children.map(shape) }
+}
+
+describe('sidebarSections', () => {
+  const on = { autoFolders: true }
+
+  it('lists the favourites by position, then pinned and today', () => {
+    const sections = sidebarSections(
+      stateOf([
+        at('t1', 0),
+        at('f2', 1, { section: 'favorites' }),
+        at('f1', 0, { section: 'favorites' }),
+        at('p1', 0, { section: 'pinned' }),
+      ]),
+      's1',
+      on,
+    )
+    expect(sections.favorites.map((t) => t.id)).toEqual(['f1', 'f2'])
+    expect(sections.pinned.map(shape)).toEqual(['p1@0'])
+    expect(sections.today.map(shape)).toEqual(['t1@0'])
+  })
+
+  it("orders folders and pinned tabs by their shared position, each folder's tabs in order", () => {
+    const sections = sidebarSections(
+      stateOf(
+        [
+          at('p1', 0, { section: 'pinned' }),
+          at('in2', 1, { section: 'pinned', folderId: 'fo' }),
+          at('in1', 0, { section: 'pinned', folderId: 'fo' }),
+          at('p2', 2, { section: 'pinned' }),
+        ],
+        [folder('fo', 1)],
+      ),
+      's1',
+      on,
+    )
+    expect(sections.pinned.map(shape)).toEqual(['p1@0', { fo: ['in1@0', 'in2@0'] }, 'p2@0'])
+  })
+
+  it('draws today depth-first under parents, indent capped at 3', () => {
+    const sections = sidebarSections(
+      stateOf([
+        at('a', 0),
+        at('b', 1, { parentId: 'a' }),
+        at('c', 2, { parentId: 'b' }),
+        at('d', 3, { parentId: 'c' }),
+        at('e', 4, { parentId: 'd' }),
+        at('f', 5),
+        at('g', 6, { parentId: 'missing' }),
+      ]),
+      's1',
+      on,
+    )
+    expect(sections.today.map(shape)).toEqual(['a@0', 'b@1', 'c@2', 'd@3', 'e@3', 'f@0', 'g@0'])
+  })
+
+  it('agrees with the drawn order of browserView', () => {
+    const state = stateOf(
+      [
+        at('t2', 1, { parentId: 't1' }),
+        at('t1', 0),
+        at('p1', 0, { section: 'pinned', folderId: 'fo' }),
+        at('f1', 0, { section: 'favorites' }),
+      ],
+      [folder('fo', 0)],
+    )
+    expect(browserView(state).tabs.map((t) => t.id)).toEqual(['f1', 'p1', 't1', 't2'])
+  })
+
+  it('groups 3 top-level today tabs of one host into an automatic folder, 2 stay apart', () => {
+    const three = sidebarSections(
+      stateOf([
+        at('a1', 0, {}, 'https://a.com/1'),
+        at('a2', 1, {}, 'https://a.com/2'),
+        at('a3', 2, {}, 'https://a.com/3'),
+      ]),
+      's1',
+      on,
+    )
+    expect(three.today.map(shape)).toEqual([{ 'auto:a.com': ['a1@0', 'a2@0', 'a3@0'] }])
+
+    const two = sidebarSections(
+      stateOf([at('a1', 0, {}, 'https://a.com/1'), at('a2', 1, {}, 'https://a.com/2')]),
+      's1',
+      on,
+    )
+    expect(two.today.map(shape)).toEqual(['a1@0', 'a2@0'])
+  })
+
+  it('groups www.a.com with a.com', () => {
+    const sections = sidebarSections(
+      stateOf([
+        at('a1', 0, {}, 'https://www.a.com/1'),
+        at('a2', 1, {}, 'https://a.com/2'),
+        at('a3', 2, {}, 'https://WWW.A.com/3'),
+      ]),
+      's1',
+      on,
+    )
+    expect(sections.today.map(shape)).toEqual([{ 'auto:a.com': ['a1@0', 'a2@0', 'a3@0'] }])
+  })
+
+  it('puts the automatic folder where its first tab was, children keep their nesting', () => {
+    const sections = sidebarSections(
+      stateOf([
+        at('x1', 0, {}, 'https://x.com/'),
+        at('a1', 1, {}, 'https://a.com/1'),
+        at('kid', 2, { parentId: 'a1' }, 'https://b.com/'),
+        at('y1', 3, {}, 'https://y.com/'),
+        at('a2', 4, {}, 'https://a.com/2'),
+        at('a3', 5, {}, 'https://a.com/3'),
+      ]),
+      's1',
+      on,
+    )
+    expect(sections.today.map(shape)).toEqual([
+      'x1@0',
+      { 'auto:a.com': ['a1@0', 'kid@1', 'a2@0', 'a3@0'] },
+      'y1@0',
+    ])
+  })
+
+  it('makes no automatic folder when the setting is off, nor for pages without a host', () => {
+    const tabs = [
+      at('a1', 0, {}, 'https://a.com/1'),
+      at('a2', 1, {}, 'https://a.com/2'),
+      at('a3', 2, {}, 'https://a.com/3'),
+    ]
+    expect(sidebarSections(stateOf(tabs), 's1', { autoFolders: false }).today.map(shape)).toEqual([
+      'a1@0',
+      'a2@0',
+      'a3@0',
+    ])
+
+    const blank = [0, 1, 2].map((i) => at(`b${i}`, i, {}, 'about:blank'))
+    expect(sidebarSections(stateOf(blank), 's1', on).today.map(shape)).toEqual([
+      'b0@0',
+      'b1@0',
+      'b2@0',
+    ])
+  })
+
+  it('only looks at the given space', () => {
+    const sections = sidebarSections(stateOf([at('t1', 0)]), 's2', on)
+    expect(sections.today.map(shape)).toEqual(['x@0'])
   })
 })

@@ -53,6 +53,8 @@
   --control-size-sm: 28px; /* address bar buttons and field */
   --control-size-xs: 24px; /* in-row buttons (close tab) */
   --icon-size: 16px; /* favicons, the dots' hit width */
+  --tile-h: 44px; /* favourite tiles */
+  --tile-icon-size: 22px; /* the favicon of a favourite tile */
   --titlebar-overlay-w: 0px; /* Windows caption buttons */
 
   /* motion */
