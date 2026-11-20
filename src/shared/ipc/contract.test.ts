@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COMMAND_CHANNELS, EVENT_CHANNELS } from './channels'
-import { commands, events } from './contract'
+import { commands, events, TOOLTIP_TEXT_MAX } from './contract'
 
 describe('IPC contract', () => {
   it('declares exactly the channels listed for the preload', () => {
@@ -83,6 +83,9 @@ describe('IPC contract', () => {
     expect(input.safeParse({ anchor, title: 'A', detail: 'a.com', html: '<b>' }).success).toBe(
       false,
     )
+    const long = 'x'.repeat(TOOLTIP_TEXT_MAX + 1)
+    expect(input.safeParse({ anchor, title: long, detail: 'a.com' }).success).toBe(false)
+    expect(input.safeParse({ anchor, title: 'A', detail: long }).success).toBe(false)
   })
 
   it.each(['browser.share', 'browser.toggleDevTools'] as const)(

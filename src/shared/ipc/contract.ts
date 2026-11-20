@@ -176,8 +176,15 @@ export type OverlayRequest = z.infer<typeof overlayRequestSchema>
  * A sidebar row's tooltip, drawn in the overlay beside the row: the row's rect (window DIP; the
  * tooltip starts at its right edge and is centred on it vertically), its title and a detail line.
  */
+/** Longest tooltip title or detail; the sidebar clips longer ones before sending (clipTooltip). */
+export const TOOLTIP_TEXT_MAX = 500
+
 export const tooltipSchema = z
-  .object({ anchor: pageBoundsSchema, title: z.string(), detail: z.string() })
+  .object({
+    anchor: pageBoundsSchema,
+    title: z.string().max(TOOLTIP_TEXT_MAX),
+    detail: z.string().max(TOOLTIP_TEXT_MAX),
+  })
   .strict()
 export type Tooltip = z.infer<typeof tooltipSchema>
 

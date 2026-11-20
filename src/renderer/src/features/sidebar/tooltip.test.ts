@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import type { Tooltip } from '@shared/ipc/contract'
-import { NO_TOOLTIP, tooltipReducer, type TooltipEvent, type TooltipState } from './tooltip'
+import { commands, TOOLTIP_TEXT_MAX, type Tooltip } from '@shared/ipc/contract'
+import {
+  clipTooltip,
+  NO_TOOLTIP,
+  tooltipReducer,
+  type TooltipEvent,
+  type TooltipState,
+} from './tooltip'
 
 const tip = (title: string, y = 0): Tooltip => ({
   anchor: { x: 0, y, width: 240, height: 38 },
@@ -48,5 +54,22 @@ describe('tooltipReducer', () => {
     expect(run({ type: 'enter', tooltip: a }, { type: 'press' }, { type: 'delay' })).toEqual(
       NO_TOOLTIP,
     )
+  })
+})
+
+describe('clipTooltip', () => {
+  const anchor = { x: 0, y: 0, width: 240, height: 38 }
+
+  it('keeps short texts as they are', () => {
+    expect(clipTooltip(anchor, 'A', 'a.com')).toEqual({ anchor, title: 'A', detail: 'a.com' })
+  })
+
+  it('clips a huge title or URL so the contract still takes it', () => {
+    const huge = 'x'.repeat(TOOLTIP_TEXT_MAX * 4)
+    const tip = clipTooltip(anchor, huge, huge)
+    expect(tip.title).toHaveLength(TOOLTIP_TEXT_MAX)
+    expect(tip.title.endsWith('…')).toBe(true)
+    expect(tip.detail).toHaveLength(TOOLTIP_TEXT_MAX)
+    expect(commands['overlay.tooltip'].input.safeParse(tip).success).toBe(true)
   })
 })

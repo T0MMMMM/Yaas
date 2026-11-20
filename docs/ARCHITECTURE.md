@@ -547,7 +547,9 @@ results come back to the lead as a short summary + branch name, never the full c
   or favourite tile's height, across to the sidebar's right edge) shows the view as a strip
   `TOOLTIP_STRIP_W` (320) wide from the anchor's right edge, full height, clamped to the window
   (`tooltipBounds`), **never focused**, and forwards the tooltip to the overlay with the
-  `overlay.tooltip` event; the overlay draws one card that slides from row to row.
+  `overlay.tooltip` event; the overlay draws one card that slides from row to row. `title` and
+  `detail` are at most `TOOLTIP_TEXT_MAX` (500) characters: the sidebar clips longer ones before
+  sending (`clipTooltip`), and the card clamps them to 3 and 2 lines.
   `overlay.tooltip(null)` from the UI sends `null` (the card fades) and hides the strip
   `TOOLTIP_FADE_MS` (150) later unless a tooltip or popover came meanwhile; from the overlay itself
   (sent on a `pointermove`: the pointer is on the strip) it hides at once, so the page under it gets

@@ -9,7 +9,13 @@ import {
 } from 'react'
 import type { Tooltip } from '@shared/ipc/contract'
 import { anchorOf } from '../../ui/anchor'
-import { NO_TOOLTIP, TOOLTIP_DELAY_MS, TOOLTIP_GRACE_MS, tooltipReducer } from './tooltip'
+import {
+  clipTooltip,
+  NO_TOOLTIP,
+  TOOLTIP_DELAY_MS,
+  TOOLTIP_GRACE_MS,
+  tooltipReducer,
+} from './tooltip'
 
 /** What a row calls when the pointer enters it: its tooltip shows beside it, over the page. */
 export type EnterRow = (row: HTMLElement, title: string, detail: string) => void
@@ -82,7 +88,7 @@ export function useTooltip(
       const rest = anchorOf(row)
       const right = Math.round(nav.getBoundingClientRect().right)
       const anchor = { ...rest, width: Math.max(0, right - rest.x) }
-      dispatch({ type: 'enter', tooltip: { anchor, title, detail } })
+      dispatch({ type: 'enter', tooltip: clipTooltip(anchor, title, detail) })
       // The delay runs from the first row entered; later rows only change what it will show.
       delay.current ??= window.setTimeout(() => {
         delay.current = null

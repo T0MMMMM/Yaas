@@ -623,3 +623,19 @@ test('tooltips slide from row to row', async () => {
     expect((await overlayView(app)).bounds?.x).toBe(0)
   })
 })
+
+test('a huge page title keeps its tooltip small', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(page, site.url('/huge'))
+    const row = page.getByTestId('today').getByTestId('tab').getByRole('button').first()
+    await expect(row).toHaveAccessibleName(/^Huge title/)
+    const overlay = await overlayPage(app)
+    const tooltip = overlay.getByTestId('tooltip')
+    await row.hover()
+    await expect(tooltip).toContainText('Huge title')
+    // Three lines of title and two of detail at most, far from the window's height.
+    const box = await tooltip.boundingBox()
+    if (!box) throw new Error('tooltip has no box')
+    expect(box.height).toBeLessThan(150)
+  })
+})

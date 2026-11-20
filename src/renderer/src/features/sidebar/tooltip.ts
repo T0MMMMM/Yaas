@@ -1,4 +1,4 @@
-import type { Tooltip } from '@shared/ipc/contract'
+import { TOOLTIP_TEXT_MAX, type PageBounds, type Tooltip } from '@shared/ipc/contract'
 
 /** How long the pointer rests on a row before its tooltip shows. */
 export const TOOLTIP_DELAY_MS = 500
@@ -43,4 +43,12 @@ export function tooltipReducer(state: TooltipState, event: TooltipEvent): Toolti
     case 'press':
       return NO_TOOLTIP
   }
+}
+
+const clip = (text: string): string =>
+  text.length > TOOLTIP_TEXT_MAX ? `${text.slice(0, TOOLTIP_TEXT_MAX - 1)}…` : text
+
+/** A row's tooltip, its texts clipped to what the contract takes (a page title can be huge). */
+export function clipTooltip(anchor: PageBounds, title: string, detail: string): Tooltip {
+  return { anchor, title: clip(title), detail: clip(detail) }
 }

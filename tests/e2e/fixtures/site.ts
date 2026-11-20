@@ -9,6 +9,7 @@ const pages: Record<string, string> = {
 <meta name="theme-color" content="#f5f5f0"></head><body>B</body></html>`,
   '/c': `<!doctype html><html><head><title>Page C</title></head><body>C</body></html>`,
   '/long': `<!doctype html><html><head><title>${'A very long page title '.repeat(4).slice(0, 80)}</title></head><body>Long</body></html>`,
+  '/huge': `<!doctype html><html><head><title>${'Huge title '.repeat(300)}</title></head><body>Huge</body></html>`,
   '/with-ad': `<!doctype html><html><head><title>With Ad</title></head>
 <body><img id="ad" src="/ads/banner.png" alt=""></body></html>`,
   '/with-icon': `<!doctype html><html><head><title>With Icon</title>
