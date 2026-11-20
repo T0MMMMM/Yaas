@@ -9,7 +9,7 @@
   to turn it into **ACAB — "AI Custom Another Browser"**: a real web browser, customizable by an
   AI on the user's own account, with removable feature modules, a workshop, and AI tabs that keep
   the YAAS scope. See [ADR-0006](docs/adr/0006-pivot-to-acab-browser.md).
-- The design is a **draft, not approved**:
+- The design is **approved for step 1** (2026-11-20):
   [docs/superpowers/specs/2026-11-20-acab-design.md](docs/superpowers/specs/2026-11-20-acab-design.md).
   Its legend marks what the owner decided vs what Claude proposed.
 - A throwaway spike proved Chrome extensions (1Password) work in Electron with two fixes:
@@ -34,12 +34,10 @@
 
 ## Next steps (in order)
 
-1. **Resume the brainstorming** (superpowers:brainstorming) with the open question the owner had
-   not answered yet: *which yab features are needed on day one* vs later modules (list in §6 of
-   the design). Then the other open questions in §7, one at a time.
-2. Update the design doc with the answers, run the builder check, get the owner's **approval**.
-3. Only then: superpowers:writing-plans for **step 1 (daily-driver browser)**.
-4. Rename YAAS → ACAB in code, package, README and `CLAUDE.md` as part of step 1.
+1. ~~Brainstorming and design approval~~ — done 2026-11-20.
+2. Write and follow the plan for **step 1 (daily-driver browser)**:
+   `docs/superpowers/plans/` (superpowers:writing-plans).
+3. Rename YAAS → ACAB in code, package, README and `CLAUDE.md` as part of step 1.
 
 ## Gotchas
 

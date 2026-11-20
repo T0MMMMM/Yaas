@@ -8,11 +8,11 @@ Personal project, pre-alpha.
 
 > **Pivot in progress (2026-11-20):** YAAS is becoming **ACAB**, an AI-customizable browser.
 > Start with `HANDOFF.md` (if present), then ADR-0006 and
-> `docs/superpowers/specs/2026-11-20-acab-design.md` (draft, not approved).
+> `docs/superpowers/specs/2026-11-20-acab-design.md` (approved for step 1).
 
 | When you touch… | Read |
 |---|---|
-| anything | `HANDOFF.md`, `docs/adr/0006-pivot-to-acab-browser.md`, the ACAB design draft |
+| anything | `HANDOFF.md`, `docs/adr/0006-pivot-to-acab-browser.md`, the ACAB design |
 | AI tabs (the former YAAS scope) | `docs/FEATURES.md` (scope, roadmap, **guiding principles**) |
 | main / core / IPC / data | `docs/ARCHITECTURE.md` |
 | UI, CSS, shortcuts | `docs/DESIGN.md` |
