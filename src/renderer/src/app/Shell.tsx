@@ -8,6 +8,12 @@ import { useUi } from '../stores/ui'
 import { useSidebarResize } from './useSidebarResize'
 import styles from './Shell.module.css'
 
+/** Whether ⌘Z in `el` is a text undo: an input, a text area or editable content. */
+function isTextField(el: Element | null): boolean {
+  if (!(el instanceof HTMLElement)) return false
+  return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.isContentEditable
+}
+
 /** Main layout: sidebar | address bar over the page card (spec, "Browser chrome"). */
 export function Shell() {
   const view = useUi((s) => s.view)
@@ -23,10 +29,24 @@ export function Shell() {
         const ui = useUi.getState()
         if (shortcut.kind === 'focus-address') ui.focusAddress()
         else if (shortcut.kind === 'settings') ui.openSettings()
-        else ui.renameFolder(shortcut.folderId)
+        else if (shortcut.kind === 'rename-folder') ui.renameFolder(shortcut.folderId)
+        else void window.acab.invoke('overlay.open', { kind: shortcut.kind })
       }),
     [],
   )
+
+  // ⌘Z reopens the last closed tab while the UI has focus — never in a text field, where it stays
+  // the text undo (a page's own keys never reach this window).
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== 'z') return
+      if (isTextField(document.activeElement)) return
+      e.preventDefault()
+      void window.acab.invoke('browser.reopenClosed')
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <div

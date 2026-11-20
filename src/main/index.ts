@@ -215,10 +215,9 @@ function setupMenu(): void {
   }
   Menu.setApplicationMenu(
     buildAppMenu({
-      newTab: () => {
-        browser.openTab(browser.snapshot().activeSpaceId, 'about:blank')
-        emitShortcut({ kind: 'focus-address' })
-      },
+      // The command field: a tab is created only when what is typed in it is submitted.
+      newTab: () => emitShortcut({ kind: 'command' }),
+      findTab: () => emitShortcut({ kind: 'tab-finder' }),
       closeTab: withActive(closeTab),
       reopenClosed: () => {
         browser.reopenClosed()
@@ -297,10 +296,11 @@ registerCommands(
     'browser.openWebStore': () => {
       browser.openTab(browser.snapshot().activeSpaceId, CHROME_WEB_STORE)
     },
-    'overlay.open': ({ kind, anchor }) => overlayView().open(kind, anchor),
+    'overlay.open': (request) => overlayView().open(request),
     'overlay.close': () => overlayView().close(),
     'ui.openSettings': () => emitShortcut({ kind: 'settings' }),
     'ui.focusAddress': () => emitShortcut({ kind: 'focus-address' }),
+    'ui.renameFolder': ({ folderId }) => emitShortcut({ kind: 'rename-folder', folderId }),
   },
   isTrustedSender,
 )

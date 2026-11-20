@@ -80,7 +80,12 @@ export interface BrowserView {
   activeTab: TabView | null
   /** The active space's sidebar. */
   sections: SidebarSections
+  /** Every space's tabs, space by space, each space's in drawn order (the tab finder, ⌘K). */
+  allTabs: SpaceTab[]
 }
+
+/** A tab with the space it belongs to. */
+export type SpaceTab = TabView & { space: SpaceSummary }
 
 /** A tab without a view (never shown since launch, or unloaded) has no live state. */
 const IDLE: TabRuntime = {
@@ -291,12 +296,19 @@ export function browserView(
   const sections = sidebarSections(state, space.id, opts)
   const tabs = drawnTabs(sections)
   const activeId = state.activeTabIds[space.id] ?? null
+  const allTabs = spaces.flatMap((s) =>
+    (s.id === space.id ? tabs : drawnTabs(sidebarSections(state, s.id, opts))).map((t) => ({
+      ...t,
+      space: s,
+    })),
+  )
   return {
     spaces,
     space,
     tabs,
     activeTab: tabs.find((t) => t.id === activeId) ?? null,
     sections,
+    allTabs,
   }
 }
 

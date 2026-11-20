@@ -116,7 +116,18 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   tab itself, or of a favourite on the favourites, is no move. Esc cancels.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
-glass card (`ui/Popover.module.css`, composed by each popover's own CSS module).
+glass card (`ui/Popover.module.css`, composed by each popover's own CSS module). The + menu has a
+filter field at the top (Enter picks the first match) and New tab, New folder (its name is edited
+at once), New space, Settings.
+
+**Tab finder and command field** (`features/finder`) — the same glass card, `--finder-w` 560 wide,
+centred `--finder-top` (20 % of the window) from the top, in the overlay: a field over a list,
+↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`, the sidebar's Search)
+ranks the tabs of every space — every word must be in the title or the host and path; a title
+that starts with the query first, then title matches, then URL matches — and activates the one
+picked, switching space; an empty query lists the space's tabs. The command field (`Mod+T`)
+offers "Go to <url>" when the text is a URL, else "Search Google for "…"", then up to six open
+tabs it matches ("Switch to tab"); no tab is created until Enter.
 
 **Site menu** — the sliders button at the right of the address bar opens it, right-aligned under
 the button (`features/browser/SiteMenu`). yab's shape, top to bottom:
@@ -233,7 +244,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) · `--tile-h` 44 (favourite tiles) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
@@ -334,9 +345,11 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 
 | Action | Shortcut |
 |---|---|
-| New tab (active space) | `Mod+T` |
+| New tab: the command field over the page (a URL or a search; a tab opens on Enter) | `Mod+T` |
+| Find a tab, in any space (the tab finder; also the sidebar's Search) | `Mod+K` |
 | Close tab (a favourite or pinned tab is unloaded) | `Mod+W` |
 | Reopen closed tab | `Mod+Shift+T` |
+| Reopen closed tab, while the UI has focus and no text field does (else the text undo) | `Mod+Z` |
 | Focus the address bar | `Mod+L` |
 | Reload | `Mod+R` |
 | Back / forward | `Mod+[` / `Mod+]` |
@@ -344,8 +357,9 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 | Settings | `Mod+,` |
 
 Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
-web page swallows renderer key events. Command palette (`Mod+K`), reopen closed tab from the UI
-(`Mod+Z`), split view and new window (`Mod+N`) arrive in plans 3–4.
+web page swallows renderer key events. `Mod+Z` is the exception: a keydown handler of the UI
+(`app/Shell.tsx`), so in a page or a field it stays the normal undo. Split view and new window
+(`Mod+N`) arrive in plan 4.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.

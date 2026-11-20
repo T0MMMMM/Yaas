@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
-import { GearSix, Plus, SquaresFour } from '@phosphor-icons/react'
+import { FolderSimplePlus, GearSix, Plus, SquaresFour } from '@phosphor-icons/react'
 import type { OverlayRequest } from '@shared/ipc/contract'
 import { SiteMenu } from '../features/browser/SiteMenu'
+import { CommandField } from '../features/finder/CommandField'
+import { TabFinder } from '../features/finder/TabFinder'
 import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { Menu, type MenuItem } from '../ui/Menu'
 
+/** Name of a folder made from the + menu; the sidebar then edits it. */
+const NEW_FOLDER_NAME = 'New Folder'
+
 /**
- * What the overlay view renders (`#overlay`): one popover at a time, floating over the page.
+ * What the overlay view renders (`#overlay`): one popover or card at a time, floating over the page.
  * Main shows the view and says which popover with `overlay.opened`; any dismissal hides it again
  * with `overlay.close`.
  */
@@ -33,6 +38,14 @@ export function Overlay() {
 
   if (!request) return null
 
+  // The centred cards (⌘K, ⌘T) have no anchor.
+  if (!('anchor' in request)) {
+    return request.kind === 'tab-finder' ? (
+      <TabFinder onClose={close} />
+    ) : (
+      <CommandField onClose={close} />
+    )
+  }
   if (request.kind === 'site-menu') return <SiteMenu anchor={request.anchor} onClose={close} />
 
   const newMenu: MenuItem[] = [
@@ -45,6 +58,16 @@ export function Overlay() {
         void window.acab
           .invoke('browser.openTab', {})
           .then(() => window.acab.invoke('ui.focusAddress'))
+      },
+    },
+    {
+      id: 'new-folder',
+      label: 'New folder',
+      icon: FolderSimplePlus,
+      onSelect: () => {
+        void window.acab
+          .invoke('browser.createFolder', { name: NEW_FOLDER_NAME })
+          .then((folder) => window.acab.invoke('ui.renameFolder', { folderId: folder.id }))
       },
     },
     {
@@ -68,5 +91,5 @@ export function Overlay() {
       onSelect: () => void window.acab.invoke('ui.openSettings'),
     },
   ]
-  return <Menu anchor={request.anchor} placement="above" items={newMenu} onClose={close} />
+  return <Menu anchor={request.anchor} placement="above" items={newMenu} filter onClose={close} />
 }

@@ -153,14 +153,18 @@ export const pageBoundsSchema = z
   .object({ x: bound, y: bound, width: bound, height: bound })
   .strict() satisfies z.ZodType<PageBounds>
 
-/** What the overlay view shows: the + menu, or the site menu of the address bar. */
-export const overlayKindSchema = z.enum(['new-menu', 'site-menu'])
+/**
+ * What the overlay view shows: the + menu or the site menu of the address bar (popovers anchored
+ * to a button), the tab finder (⌘K) or the command field (⌘T) (cards centred over the window).
+ */
+export const overlayKindSchema = z.enum(['new-menu', 'site-menu', 'tab-finder', 'command'])
 export type OverlayKind = z.infer<typeof overlayKindSchema>
 
-/** An overlay popover and the rect (window DIP) of the button it opens from. */
-export const overlayRequestSchema = z
-  .object({ kind: overlayKindSchema, anchor: pageBoundsSchema })
-  .strict()
+/** A popover and the rect (window DIP) of the button it opens from, or a centred card. */
+export const overlayRequestSchema = z.union([
+  z.object({ kind: z.enum(['new-menu', 'site-menu']), anchor: pageBoundsSchema }).strict(),
+  z.object({ kind: z.enum(['tab-finder', 'command']) }).strict(),
+])
 export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 
 /**
@@ -171,6 +175,10 @@ export const shortcutSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('focus-address') }).strict(),
   z.object({ kind: z.literal('settings') }).strict(),
   z.object({ kind: z.literal('rename-folder'), folderId: z.string().min(1) }).strict(),
+  /** ⌘K: open the tab finder. */
+  z.object({ kind: z.literal('tab-finder') }).strict(),
+  /** ⌘T: open the command field (a tab is created only when it is submitted). */
+  z.object({ kind: z.literal('command') }).strict(),
 ])
 export type Shortcut = z.infer<typeof shortcutSchema>
 
@@ -261,6 +269,8 @@ export const commands = {
   'ui.openSettings': { input: z.void(), output: z.void() },
   /** Asks the UI to edit the address (from the overlay): emits `browser.shortcut` `focus-address`. */
   'ui.focusAddress': { input: z.void(), output: z.void() },
+  /** Asks the UI to edit a folder's name (from the overlay): emits `browser.shortcut` `rename-folder`. */
+  'ui.renameFolder': { input: folderRef, output: z.void() },
 } as const satisfies Record<CommandChannel, { input: z.ZodType; output: z.ZodType }>
 
 export const events = {

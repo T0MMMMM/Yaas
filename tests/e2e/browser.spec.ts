@@ -327,9 +327,14 @@ test('shortcuts work while a page has focus', async () => {
         ?.executeJavaScript('document.body.focus()'),
     )
 
+    // ⌘T opens the command field over the page; the tab is created when it is submitted.
     await clickMenu(app, 'newTab')
+    const field = (await overlayPage(app)).getByLabel('Search or enter address')
+    await expect(field).toBeFocused()
+    await expect(page.getByTestId('tab')).toHaveCount(1)
+    await field.fill(site.url('/b'))
+    await field.press('Enter')
     await expect(page.getByTestId('tab')).toHaveCount(2)
-    await expect(page.getByLabel('Address')).toBeFocused()
     await expect(page.getByTestId('tab').nth(1).getByRole('button').first()).toHaveAttribute(
       'aria-current',
       'page',

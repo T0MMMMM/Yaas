@@ -4,6 +4,7 @@ import { app, Menu, type MenuItemConstructorOptions } from 'electron'
 
 export interface MenuActions {
   newTab(): void
+  findTab(): void
   closeTab(): void
   reopenClosed(): void
   focusAddress(): void
@@ -50,6 +51,7 @@ export function buildAppMenu(actions: MenuActions): Menu {
       label: 'File',
       submenu: [
         item('newTab', 'New Tab', 'CmdOrCtrl+T'),
+        item('findTab', 'Find Tab…', 'CmdOrCtrl+K'),
         item('closeTab', 'Close Tab', 'CmdOrCtrl+W'),
         item('reopenClosed', 'Reopen Closed Tab', 'CmdOrCtrl+Shift+T'),
         item('focusAddress', 'Open Location', 'CmdOrCtrl+L'),

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react'
 import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
 import type { PageBounds } from '@shared/ipc/contract'
@@ -15,26 +15,43 @@ interface MenuProps {
   /** Opens above the anchor or below it; either way it starts at the anchor's left edge. */
   placement: 'above' | 'below'
   items: MenuItem[]
+  /** A field at the top that narrows the items to those whose label has what is typed. */
+  filter?: boolean
   onClose(): void
+}
+
+/** The items whose label has `query` (any case); separators only while nothing is typed. */
+function filtered(items: MenuItem[], query: string): MenuItem[] {
+  const q = query.trim().toLowerCase()
+  if (q === '') return items
+  return items.filter((item) => item !== 'separator' && item.label.toLowerCase().includes(q))
 }
 
 /**
  * A yab-shaped popover (spec, "Menus and settings"): a rounded glass card with rows of icon,
- * label and shortcut. Closes on Escape, a click outside or a choice.
+ * label and shortcut. Closes on Escape, a click outside or a choice. With `filter`, typing narrows
+ * the rows and Enter in the field picks the first one.
  */
-export function Menu({ anchor, placement, items, onClose }: MenuProps) {
+export function Menu({ anchor, placement, items, filter = false, onClose }: MenuProps) {
   const ref = useRef<HTMLDivElement>(null)
+  const [query, setQuery] = useState('')
+  const shown = filtered(items, query)
 
   useEffect(() => {
-    ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+    ref.current?.querySelector<HTMLElement>('input, [role="menuitem"]')?.focus()
   }, [])
 
   useDismiss(ref, onClose)
 
+  const choose = (item: Exclude<MenuItem, 'separator'>) => {
+    onClose()
+    item.onSelect()
+  }
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
     e.preventDefault()
-    const rows = [...(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    const rows = [...(ref.current?.querySelectorAll<HTMLElement>('input, [role="menuitem"]') ?? [])]
     const index = rows.indexOf(document.activeElement as HTMLElement)
     const step = e.key === 'ArrowDown' ? 1 : -1
     rows[(index + step + rows.length) % rows.length]?.focus()
@@ -62,7 +79,21 @@ export function Menu({ anchor, placement, items, onClose }: MenuProps) {
       onKeyDown={onKeyDown}
       data-testid="menu"
     >
-      {items.map((item, i) =>
+      {filter && (
+        <input
+          className={styles.filter}
+          aria-label="Filter"
+          placeholder="Filter…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            const first = shown.find((item) => item !== 'separator')
+            if (e.key === 'Enter' && first) choose(first)
+          }}
+          spellCheck={false}
+        />
+      )}
+      {shown.map((item, i) =>
         item === 'separator' ? (
           <hr key={`separator-${i}`} className={styles.separator} />
         ) : (
@@ -70,10 +101,7 @@ export function Menu({ anchor, placement, items, onClose }: MenuProps) {
             key={item.id}
             role="menuitem"
             className={styles.item}
-            onClick={() => {
-              onClose()
-              item.onSelect()
-            }}
+            onClick={() => choose(item)}
           >
             <item.icon size={16} className={styles.icon} />
             <span className={styles.label}>{item.label}</span>

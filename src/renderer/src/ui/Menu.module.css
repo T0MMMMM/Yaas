@@ -61,3 +61,24 @@
   border: none;
   border-top: 1px solid var(--border);
 }
+
+/* The + menu's filter field: a borderless row above the items. */
+.filter {
+  min-height: var(--control-size);
+  margin-bottom: var(--space-1);
+  padding: 0 var(--space-2);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.filter::placeholder {
+  color: var(--text-faint);
+}
+
+.filter:focus-visible {
+  outline: none;
+}

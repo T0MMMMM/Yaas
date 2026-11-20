@@ -440,7 +440,9 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Undo.** Deleted tabs (a folder's tabs as one entry) go on an in-memory stack of 20
   (`core/browser/undoStack.ts`). `browser.reopenClosed` / `Mod+Shift+T` (menu accelerator, works
   over pages) puts the last one back where it was, or at the end of the active space's today when
-  its space or folder is gone, and activates it.
+  its space or folder is gone, and activates it. `Mod+Z` does the same from a keydown handler of
+  the UI (`app/Shell.tsx`), only when no input, text area or editable element has focus; in a page
+  or a field it stays the text undo.
 - **Sidebar menus.** `browser.showTabMenu` / `browser.showFolderMenu` pop native menus at the
   pointer (`main/browser/sidebarMenus.ts`), so they float over the page view. Tab: Pin / Unpin
   (pinned end / today top), Add to / Remove from Favourites (favourites end / today top), Move to
@@ -523,11 +525,16 @@ results come back to the lead as a short summary + branch name, never the full c
   window (content size, kept in sync on resize), always above the tab views (raised again each
   time a tab view is added), so UI popovers can float over the page. It loads the same renderer
   under `#overlay` with the app preload; `App` then renders only `Overlay` on a transparent body.
-  It is **hidden** until `overlay.open({ kind, anchor })` (anchor = the button's rect, window DIP),
+  It is **hidden** until `overlay.open({ kind, anchor })` (anchor = the button's rect, window DIP;
+  none for the centred cards),
   then shown, focused (Escape reaches it) and sent `overlay.opened`; Escape, a click on its empty
   area or a chosen item call `overlay.close`, which hides it, hands the keyboard back to the UI and
   sends `overlay.closed` to the UI (the button resets). It is a **trusted sender** exactly like the
   UI window (nothing else is) and also receives `settings.changed` and `browser.changed`. Actions
-  that belong to the UI go through main: `ui.openSettings` / `ui.focusAddress` emit
-  `browser.shortcut` (`{ kind: 'settings' }` / `{ kind: 'focus-address' }`) to the UI. Kinds: `new-menu` (the + menu, opens upward) and `site-menu`
-  (the address bar's menu, opens downward).
+  that belong to the UI go through main: `ui.openSettings` / `ui.focusAddress` /
+  `ui.renameFolder` emit `browser.shortcut` (`{ kind: 'settings' }` / `{ kind: 'focus-address' }` /
+  `{ kind: 'rename-folder', folderId }`) to the UI. Kinds: `new-menu` (the + menu, opens upward),
+  `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`,
+  the sidebar's Search) and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
+  `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
+  only when the command field is submitted (`browser.openTab { input }`).

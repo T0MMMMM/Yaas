@@ -36,6 +36,7 @@ export const COMMAND_CHANNELS = [
   'overlay.close',
   'ui.openSettings',
   'ui.focusAddress',
+  'ui.renameFolder',
 ] as const
 
 export const EVENT_CHANNELS = [

@@ -209,6 +209,17 @@ describe('browserView', () => {
     ])
   })
 
+  it('browserView lists every space’s tabs, space by space in drawn order, with their space', () => {
+    const view = browserView(browser)
+    expect(view.allTabs.map((t) => [t.id, t.space.label])).toEqual([
+      ['a', 'Personal'],
+      ['b', 'Personal'],
+      ['c', 'Personal'],
+      ['x', 'Work'],
+    ])
+    expect(view.allTabs.find((t) => t.id === 'b')).toMatchObject({ loading: true, title: 'b' })
+  })
+
   it('browserView has no active tab in an empty space', () => {
     const empty = browserView({ ...browser, tabs: [], activeTabIds: { s1: null, s2: null } })
     expect(empty.tabs).toEqual([])

@@ -63,6 +63,15 @@ describe('IPC contract', () => {
     expect(input.safeParse({ kind: 'new-menu', anchor }).success).toBe(true)
     expect(input.safeParse({ kind: 'popup', anchor }).success).toBe(false)
     expect(input.safeParse({ kind: 'site-menu', anchor, url: 'x' }).success).toBe(false)
+    expect(input.safeParse({ kind: 'site-menu' }).success).toBe(false)
+  })
+
+  it('opens the tab finder and the command field centred, without an anchor', () => {
+    const input = commands['overlay.open'].input
+    expect(input.safeParse({ kind: 'tab-finder' }).success).toBe(true)
+    expect(input.safeParse({ kind: 'command' }).success).toBe(true)
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(input.safeParse({ kind: 'command', anchor }).success).toBe(false)
   })
 
   it.each(['browser.share', 'browser.toggleDevTools'] as const)(

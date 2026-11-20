@@ -86,6 +86,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             className={`${styles.search} no-drag`}
             aria-label="Search"
             title={compact ? 'Search (⌘K)' : undefined}
+            onClick={() => void window.acab.invoke('overlay.open', { kind: 'tab-finder' })}
           >
             <MagnifyingGlass size={15} weight="bold" />
             <span>Search</span>

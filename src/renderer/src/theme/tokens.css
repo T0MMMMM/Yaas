@@ -56,6 +56,8 @@
   --tile-h: 44px; /* favourite tiles */
   --tile-icon-size: 22px; /* the favicon of a favourite tile */
   --titlebar-overlay-w: 0px; /* Windows caption buttons */
+  --finder-w: 560px; /* the tab finder (⌘K) and the command field (⌘T) */
+  --finder-top: 20vh; /* how far down the window they open */
 
   /* motion */
   --dur-fast: 120ms;

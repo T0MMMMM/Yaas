@@ -1,9 +1,9 @@
 // A transparent view over the whole window, above the tab views, so UI popovers (the + menu, the
-// site menu) can float over the page. It loads the UI renderer under `#overlay` with the app
+// site menu, the tab finder, the command field) can float over the page. It loads the UI renderer under `#overlay` with the app
 // preload, so it is a trusted sender like the UI window. Hidden while no popover is open.
 import { WebContentsView, type BrowserWindow, type WebContents } from 'electron'
 import { emit } from '../ipc/router'
-import type { OverlayKind, PageBounds } from '@shared/ipc/contract'
+import type { OverlayRequest } from '@shared/ipc/contract'
 
 export class OverlayView {
   private readonly view: WebContentsView
@@ -50,7 +50,7 @@ export class OverlayView {
     this.win.contentView.addChildView(this.view)
   }
 
-  open(kind: OverlayKind, anchor: PageBounds): void {
+  open(request: OverlayRequest): void {
     this.isOpen = true
     this.fit()
     this.raise()
@@ -63,7 +63,7 @@ export class OverlayView {
       this.pendingShow = null
       if (!this.isOpen) return
       contents.focus()
-      emit(contents, 'overlay.opened', { kind, anchor })
+      emit(contents, 'overlay.opened', request)
     }
     if (contents.isLoading()) {
       this.pendingShow = show
