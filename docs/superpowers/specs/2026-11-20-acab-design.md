@@ -187,6 +187,30 @@ step lands. **Translate** joins the list of later modules.
 - **The user can change the UI font in settings, and choosing it is an onboarding step**
   [owner]. → plan 5 (settings) and plan 6 (onboarding).
 
+#### Added by the owner on 2026-11-20 (after plan 1)
+
+- **Opening animation, in order** [owner] → plan 6 (onboarding):
+  1. the eyes (`:`) fall in from the top;
+  2. a moment later the mouth (`]`) comes up from the bottom;
+  3. the face changes once (another pair of characters) — the change is just a **jump**;
+  4. a moment later the font changes once, also with a jump;
+  5. then it swaps faces and fonts **faster and faster**, through many fonts and faces;
+  6. then the pace **slows down** until it lands back on the user's logo.
+  **A sound plays on each change**, and a **Mac-startup-like chime** plays at the end, as the
+  onboarding starts [owner]. Sound on/off and the animation itself are settings [design
+  proposed] (see "Everything is a setting" below).
+- **Slider thumb, reversed** [owner]: the thumb is **flat on its left side** and has a
+  **half-circle bulging outwards (a bump) on its right side** — the opposite of the current
+  crescent with its concave side (`docs/DESIGN.md` §3.4). → plan 5 (settings), which touches the
+  sliders; update DESIGN.md §3.4 then.
+- **Everything is a setting** [owner]: each visual behaviour can be turned on or off in Settings.
+  Named examples → plan 5:
+  - the **askew cards** with their per-item random tilt (`docs/DESIGN.md` §2) — on or off;
+  - the **context bar** (the bar above the page: address, site controls) — either **attached to
+    the page card with a separator line**, or **in its own card** apart from the page.
+  Plan 5 lists the other visual behaviours (grain, glass, animation, sounds…) and gives each a
+  setting.
+
 **What happens to the YAAS UI in step 1** [owner, 2026-11-20]: the YAAS session features (session
 view, Claude account import in the onboarding, usage meters) are **hidden until step 3**; their
 code stays. The sidebar, the onboarding and the settings become the browser's own, reusing their
