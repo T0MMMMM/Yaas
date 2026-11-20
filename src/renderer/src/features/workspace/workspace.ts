@@ -3,7 +3,7 @@
 // re-derive these rules themselves.
 import type { BrowserState, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSpace, BrowserTab, SessionStatus } from '@shared/model'
-import { displayUrl } from '@shared/url'
+import { displayUrl, hostOf } from '@shared/url'
 import type { DemoEnvironment, DemoSession, DemoSpace, DemoUsage } from './demoData'
 
 // ---------- browser ----------
@@ -23,10 +23,16 @@ export interface TabView {
   host: string
   /** From displayUrl: shown dimmed. */
   rest: string
+  /** The page's hostname as the site settings key it (ad blocking), or null for non-web pages. */
+  siteHost: string | null
+  /** https or http; null for any other scheme (about:, chrome-extension:). */
+  connection: 'secure' | 'not-secure' | null
   loading: boolean
   canGoBack: boolean
   canGoForward: boolean
   themeColor: string | null
+  /** Id of the tab's web contents in main (extension actions, developer tools), or null. */
+  webContentsId: number | null
   /** Main has a view for it: its page was loaded at least once in this run. */
   loaded: boolean
 }
@@ -50,6 +56,12 @@ const IDLE: TabRuntime = {
 
 const toSpace = (s: BrowserSpace): SpaceSummary => ({ id: s.id, label: s.name, color: s.color })
 
+function connectionOf(url: string): TabView['connection'] {
+  if (/^https:/i.test(url)) return 'secure'
+  if (/^http:/i.test(url)) return 'not-secure'
+  return null
+}
+
 function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
   const { host, rest } = displayUrl(tab.url)
   return {
@@ -59,6 +71,8 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
     faviconUrl: tab.faviconUrl,
     host,
     rest,
+    siteHost: hostOf(tab.url),
+    connection: connectionOf(tab.url),
     ...(runtime ?? IDLE),
     loaded: runtime !== undefined,
   }

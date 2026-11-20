@@ -1,6 +1,8 @@
-// The only bridge between the sandboxed renderer and main. Exposes `window.acab` and nothing else.
+// The only bridge between the sandboxed renderer and main. Exposes `window.acab`, plus the
+// extension actions' `browserAction` in the overlay (below).
 // Type-only imports from the contract: zod is never bundled here.
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron'
+import { injectBrowserAction } from 'electron-chrome-extensions/browser-action'
 import { COMMAND_CHANNELS, EVENT_CHANNELS } from '@shared/ipc/channels'
 import type { IpcResult, AcabBridge } from '@shared/ipc/contract'
 
@@ -26,3 +28,10 @@ const bridge: AcabBridge = {
 }
 
 contextBridge.exposeInMainWorld('acab', bridge)
+
+// The site menu (overlay only) lists the tab's extension actions with the library's
+// `<browser-action-list>` element; this defines it and its `browserAction` bridge, which only reads
+// and activates browser actions. The UI window never gets it.
+// (The preload is type-checked without the DOM library; `location` is the page's.)
+const { location } = globalThis as unknown as { location: { hash: string } }
+if (location.hash === '#overlay') injectBrowserAction()

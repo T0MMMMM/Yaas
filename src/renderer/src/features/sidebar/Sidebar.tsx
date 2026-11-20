@@ -3,6 +3,7 @@ import { Globe, MagnifyingGlass, Plus, X } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import type { TabView } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
+import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { hashUnit } from './hash'
 import styles from './Sidebar.module.css'
@@ -26,16 +27,7 @@ async function newTab(): Promise<void> {
 
 /** Opens the + menu in the overlay view, above the button (it floats over the page). */
 function openNewMenu(button: HTMLElement): void {
-  const box = button.getBoundingClientRect()
-  void window.acab.invoke('overlay.open', {
-    kind: 'new-menu',
-    anchor: {
-      x: Math.max(0, Math.round(box.left)),
-      y: Math.max(0, Math.round(box.top)),
-      width: Math.round(box.width),
-      height: Math.round(box.height),
-    },
-  })
+  void window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
 /** Only inline images: a remote favicon would load in the UI's own session, outside the space. */

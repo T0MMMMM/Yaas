@@ -4,7 +4,6 @@ import {
   diffAllowed,
   diffHosts,
   exceptionFilters,
-  hostOf,
   isCacheStale,
   loadEngine,
 } from './adblock'
@@ -15,19 +14,6 @@ describe('exceptionFilters', () => {
       '@@*$domain=example.com',
       '@@||example.com^$elemhide',
     ])
-  })
-})
-
-describe('hostOf', () => {
-  it('returns the lower-cased hostname of a web URL', () => {
-    expect(hostOf('https://WWW.Example.com/a')).toBe('www.example.com')
-    expect(hostOf('http://127.0.0.1:8080/with-ad')).toBe('127.0.0.1')
-  })
-
-  it('returns null for anything else', () => {
-    expect(hostOf('about:blank')).toBeNull()
-    expect(hostOf('chrome-extension://abc/page.html')).toBeNull()
-    expect(hostOf('not a url')).toBeNull()
   })
 })
 

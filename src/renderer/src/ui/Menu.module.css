@@ -1,38 +1,16 @@
 /* yab-shaped popover in the visual-pass look: a rounded glass card of rows. */
 .menu {
-  position: fixed;
-  z-index: 20;
+  composes: card from './Popover.module.css';
   min-width: 0;
   width: max-content;
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding: var(--space-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--glass-sheen), var(--bg-raised);
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    var(--shadow-raised);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  transform-origin: bottom left;
-  animation: open var(--dur-base) var(--ease-bounce);
 }
 
 .menu[data-placement='below'] {
   transform-origin: top left;
-}
-
-:root[data-glass='liquid'] .menu {
-  border-color: var(--glass-edge);
-  background: var(--glass-sheen), var(--glass-panel);
-}
-
-@keyframes open {
-  from {
-    opacity: 0;
-    transform: translateY(var(--space-1)) scale(0.96);
-  }
 }
 
 .item {

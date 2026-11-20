@@ -25,6 +25,8 @@ export default defineConfig({
   preload: {
     resolve: { alias },
     build: {
+      // A sandboxed preload can only `require('electron')`: the browser-action element is bundled.
+      externalizeDeps: { exclude: ['electron-chrome-extensions'] },
       rollupOptions: {
         input: {
           // The app preload (UI window and overlay).

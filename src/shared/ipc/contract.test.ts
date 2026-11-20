@@ -53,6 +53,22 @@ describe('IPC contract', () => {
     expect(input.safeParse({ kind: 'site-menu', anchor, url: 'x' }).success).toBe(false)
   })
 
+  it.each(['browser.share', 'browser.toggleDevTools'] as const)(
+    'accepts only a tab id on %s',
+    (channel) => {
+      const input = commands[channel].input
+      expect(input.safeParse({ tabId: 'x' }).success).toBe(true)
+      expect(input.safeParse({ tabId: 'x', url: 'https://a.com' }).success).toBe(false)
+      expect(input.safeParse({}).success).toBe(false)
+    },
+  )
+
+  it('takes no input on browser.openWebStore', () => {
+    const input = commands['browser.openWebStore'].input
+    expect(input.safeParse(undefined).success).toBe(true)
+    expect(input.safeParse({ url: 'https://a.com' }).success).toBe(false)
+  })
+
   it('rejects a bad space color', () => {
     const input = commands['browser.createSpace'].input
     expect(input.safeParse({ name: 'Work', color: '#2BB673' }).success).toBe(true)

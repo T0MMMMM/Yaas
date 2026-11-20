@@ -125,6 +125,8 @@ describe('browserView', () => {
       faviconUrl: null,
       host: 'example.com',
       rest: '/docs?q=1',
+      siteHost: 'www.example.com',
+      connection: 'secure',
       loading: true,
       canGoBack: true,
       canGoForward: false,
@@ -164,6 +166,17 @@ describe('browserView', () => {
       ],
     }
     expect(browserView(untitled).tabs.map((t) => t.title)).toEqual(['a.test', 'New tab'])
+  })
+
+  it('browserView gives web pages a site host and a connection, other pages neither', () => {
+    const pages: BrowserState = {
+      ...browser,
+      tabs: [tab('a', 's1', 0, 'http://127.0.0.1:8080/a'), tab('b', 's1', 1, 'about:blank')],
+    }
+    expect(browserView(pages).tabs.map((t) => [t.siteHost, t.connection])).toEqual([
+      ['127.0.0.1', 'not-secure'],
+      [null, null],
+    ])
   })
 
   it('browserView has no active tab in an empty space', () => {

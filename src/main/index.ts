@@ -1,5 +1,6 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, Menu, type WebContents } from 'electron'
+import { app, BrowserWindow, clipboard, Menu, session, ShareMenu, type WebContents } from 'electron'
+import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { Accounts } from '@core/accounts/accounts'
 import { diffHosts } from '@core/browser/adblock'
 import { BrowserStore } from '@core/browser/browserStore'
@@ -169,6 +170,19 @@ function cycleTab(step: 1 | -1): void {
   if (tabs.length > 1 && next) browser.activateTab(next.id)
 }
 
+/** The macOS share menu with the tab's URL, at the pointer; elsewhere the URL is copied. */
+function shareTab(tabId: string): void {
+  const tab = browser.snapshot().tabs.find((t) => t.id === tabId)
+  if (!tab) throw new Error(`Unknown tab ${tabId}`)
+  if (process.platform === 'darwin' && mainWindow) {
+    new ShareMenu({ urls: [tab.url] }).popup({ window: mainWindow })
+  } else {
+    clipboard.writeText(tab.url)
+  }
+}
+
+const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
+
 function emitShortcut(shortcut: 'focus-address' | 'settings'): void {
   if (!mainWindow) return
   // A focused page keeps the keyboard: hand it back to the UI so the user types into its field.
@@ -243,6 +257,11 @@ registerCommands(
     'browser.activateSpace': ({ spaceId }) => browser.activateSpace(spaceId),
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
+    'browser.share': ({ tabId }) => shareTab(tabId),
+    'browser.toggleDevTools': ({ tabId }) => views().toggleDevTools(tabId),
+    'browser.openWebStore': () => {
+      browser.openTab(browser.snapshot().activeSpaceId, CHROME_WEB_STORE)
+    },
     'overlay.open': ({ kind, anchor }) => overlayView().open(kind, anchor),
     'overlay.close': () => overlayView().close(),
     'ui.openSettings': () => emitShortcut('settings'),
@@ -296,6 +315,8 @@ app.on('window-all-closed', () => {
 })
 
 void app.whenReady().then(() => {
+  // The UI and the overlay (default session) show extension icons from `crx://` (site menu).
+  ElectronChromeExtensions.handleCRXProtocol(session.defaultSession)
   setupMenu()
   openMainWindow()
   app.on('activate', () => {

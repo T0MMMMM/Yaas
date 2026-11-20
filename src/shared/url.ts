@@ -55,3 +55,13 @@ export function displayUrl(url: string): { host: string; rest: string } {
   const rest = `${parsed.pathname}${parsed.search}${parsed.hash}`
   return { host, rest: rest === '/' ? '' : rest }
 }
+
+/** The lower-cased hostname of an http(s) URL, else null. */
+export function hostOf(url: string): string | null {
+  try {
+    const { protocol, hostname } = new URL(url)
+    return protocol === 'http:' || protocol === 'https:' ? hostname.toLowerCase() : null
+  } catch {
+    return null
+  }
+}

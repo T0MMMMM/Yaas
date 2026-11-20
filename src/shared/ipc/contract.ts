@@ -174,6 +174,12 @@ export const commands = {
     input: z.object({ visible: z.boolean() }).strict(),
     output: z.void(),
   },
+  /** Shares the tab's URL: the macOS share menu at the pointer, elsewhere copied to the clipboard. */
+  'browser.share': { input: tabRef, output: z.void() },
+  /** Opens or closes the developer tools of the tab's page. */
+  'browser.toggleDevTools': { input: tabRef, output: z.void() },
+  /** Opens the Chrome Web Store as a tab of the active space. */
+  'browser.openWebStore': { input: z.void(), output: z.void() },
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
   'overlay.close': { input: z.void(), output: z.void() },

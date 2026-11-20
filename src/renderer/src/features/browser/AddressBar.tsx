@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ArrowClockwise, ArrowLeft, ArrowRight } from '@phosphor-icons/react'
+import { ArrowClockwise, ArrowLeft, ArrowRight, SlidersHorizontal } from '@phosphor-icons/react'
 import { isHex, onAccentColor } from '../../theme/color'
 import { useUi } from '../../stores/ui'
+import { anchorOf } from '../../ui/anchor'
 import { useWorkspace } from '../workspace/useWorkspace'
 import styles from './AddressBar.module.css'
 
@@ -17,7 +18,8 @@ function tint(themeColor: string | null | undefined): CSSProperties | undefined 
 
 /**
  * yab-style address bar (spec, "Browser chrome"): back, forward, reload, and the URL centred with
- * the host bright and the path dimmed. Clicking the URL (or ⌘L, ⌘T) edits it. Always shown.
+ * the host bright and the path dimmed. Clicking the URL (or ⌘L, ⌘T) edits it; the button on the
+ * right opens the site menu. Always shown.
  */
 export function AddressBar() {
   const tab = useWorkspace()?.activeTab ?? null
@@ -25,6 +27,10 @@ export function AddressBar() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const input = useRef<HTMLInputElement>(null)
+  /** Whether the site menu is open in the overlay. */
+  const [siteMenuOpen, setSiteMenuOpen] = useState(false)
+
+  useEffect(() => window.acab.on('overlay.closed', () => setSiteMenuOpen(false)), [])
 
   const startEditing = () => {
     setDraft(tab && tab.url !== BLANK ? tab.url : '')
@@ -134,8 +140,27 @@ export function AddressBar() {
         </button>
       )}
 
-      {/* Keeps the URL centred; the site actions land here later (plans 2 and 4). */}
-      <div className={styles.nav} aria-hidden="true" />
+      {/* Same width as the navigation buttons, so the URL stays centred. */}
+      <div className={`${styles.nav} ${styles.actions} no-drag`}>
+        <button
+          className={styles.button}
+          aria-label="Site menu"
+          title="Site menu"
+          aria-haspopup="dialog"
+          aria-expanded={siteMenuOpen}
+          disabled={!tab}
+          onClick={(e) => {
+            setSiteMenuOpen(true)
+            // The menu floats over the page in the overlay view, under the button.
+            void window.acab.invoke('overlay.open', {
+              kind: 'site-menu',
+              anchor: anchorOf(e.currentTarget),
+            })
+          }}
+        >
+          <SlidersHorizontal size={15} weight="bold" />
+        </button>
+      </div>
     </header>
   )
 }

@@ -9,12 +9,11 @@ import {
   type MenuItemConstructorOptions,
   type WebContents,
 } from 'electron'
-import { hostOf } from '@core/browser/adblock'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
-import { DEFAULT_SEARCH } from '@shared/url'
+import { DEFAULT_SEARCH, hostOf } from '@shared/url'
 import type { SpaceSessions } from './spaceSessions'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
@@ -141,6 +140,15 @@ export class TabViews {
 
   reload(tabId: string): void {
     this.views.get(tabId)?.view.webContents.reload()
+  }
+
+  /** Opens the page's developer tools in their own window, or closes them. */
+  toggleDevTools(tabId: string): void {
+    const contents = this.views.get(tabId)?.view.webContents
+    if (!contents) return
+    // Docked tools need a BrowserWindow's own page; a tab is a view, so they open detached.
+    if (contents.isDevToolsOpened()) contents.closeDevTools()
+    else contents.openDevTools({ mode: 'detach' })
   }
 
   /** Runtime state of every tab that has a view, keyed by tab id (plain, serializable). */

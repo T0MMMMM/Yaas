@@ -6,6 +6,7 @@ import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
 import { isPermissionGranted } from '@core/browser/permissions'
 import { chromeUserAgent } from '@core/browser/userAgent'
+import { spacePartition } from '@shared/spaces'
 import type { AdBlocker } from './adBlocker'
 
 /** What extensions may do to the browser: tabs and windows are ACAB's tabs and its one window. */
@@ -40,7 +41,7 @@ export class SpaceSessions {
   constructor(private readonly opts: SpaceSessionsOptions) {}
 
   get(spaceId: string): Session {
-    const ses = session.fromPartition(`persist:space-${spaceId}`)
+    const ses = session.fromPartition(spacePartition(spaceId))
     if (this.spaces.has(ses)) return ses
     this.spaces.set(ses, spaceId)
 

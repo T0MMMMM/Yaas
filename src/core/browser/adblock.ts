@@ -9,16 +9,6 @@ export function exceptionFilters(host: string): string[] {
   return [`@@*$domain=${host}`, `@@||${host}^$elemhide`]
 }
 
-/** The lower-cased hostname of an http(s) URL, else null. */
-export function hostOf(url: string): string | null {
-  try {
-    const { protocol, hostname } = new URL(url)
-    return protocol === 'http:' || protocol === 'https:' ? hostname.toLowerCase() : null
-  } catch {
-    return null
-  }
-}
-
 /** The hosts allowed and no longer allowed when the allowed hosts go from `before` to `after`. */
 export function diffHosts(
   before: string[],

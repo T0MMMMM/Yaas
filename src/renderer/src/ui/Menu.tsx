@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties, type KeyboardEvent } from 'react
 import { createPortal } from 'react-dom'
 import type { Icon } from '@phosphor-icons/react'
 import type { PageBounds } from '@shared/ipc/contract'
+import { POPOVER_GAP as GAP } from './anchor'
 import { useDismiss } from './useDismiss'
 import styles from './Menu.module.css'
 
@@ -16,9 +17,6 @@ interface MenuProps {
   items: MenuItem[]
   onClose(): void
 }
-
-/** Gap between the anchor and the menu, and the menu's margin to the window's edges. */
-const GAP = 6
 
 /**
  * A yab-shaped popover (spec, "Menus and settings"): a rounded glass card with rows of icon,

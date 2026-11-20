@@ -80,6 +80,22 @@ caption buttons.
 - Optional (v1): a custom icon or emoji on an environment or a session replaces the default
   folder / no icon.
 
+**Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
+glass card (`ui/Popover.module.css`, composed by each popover's own CSS module).
+
+**Site menu** — the sliders button at the right of the address bar opens it, right-aligned under
+the button (`features/browser/SiteMenu`). yab's shape, top to bottom:
+
+| Part | Content | Live now |
+|---|---|---|
+| Quick actions | Icon buttons, four per row. **Share** (macOS share menu at the pointer; elsewhere copies the URL) | Share. Capture, hide an element and translate are not shown until their modules exist |
+| Extensions | Title with **Manage** (disabled, "Soon" tag — plan 5) and **+** (opens the Chrome Web Store in a tab); the tab's extension actions (`<browser-action-list>` of the space's partition, restyled through `::part(action)` / `::part(badge)`); "No extensions yet" when empty | Actions, + |
+| This site | Rows with an icon, a title and a status line: **Block ads and trackers** (switch; off = the host is in `adBlock.allowedHosts`, disabled when blocking is off everywhere), **Developer tools** (opens the page's DevTools, detached) | Both |
+| Footer | Lock + "Secure" (https) or open lock + "Not secure" (http), nothing for other schemes; the host on the right | Yes |
+
+Pages that are not web pages (about:blank) show only the extensions. Actions that open something
+else (share, DevTools, the Web Store) close the menu; the ad-block switch keeps it open.
+
 **Session status dots** (5 px, like the Claude apps): **gray, blinking** = running · **orange** = waiting
 for your action (approval, question) · **blue** = finished, not yet seen · **red** = error ·
 **orange ring** = account limited · nothing = idle / seen. Always with a tooltip + `aria-label`.

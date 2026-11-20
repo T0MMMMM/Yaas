@@ -1,19 +1,231 @@
-/* Same card as ui/Menu, opening downwards from the address bar. */
+/* The site menu: yab's grouped popover (quick actions, sections with a title and an action, rows
+   with an icon, a title and a status line, a footer) on the shared glass card. Opens downwards,
+   right-aligned under the address bar button. */
 .card {
-  position: fixed;
-  min-width: calc(var(--control-size) * 8);
-  min-height: calc(var(--control-size) * 3);
-  margin-top: var(--space-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--glass-sheen), var(--bg-raised);
-  box-shadow:
-    inset 0 1px 0 var(--glass-edge),
-    var(--shadow-raised);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  composes: card from '../../ui/Popover.module.css';
+  width: calc(var(--control-size) * 10);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  transform-origin: top right;
 }
 
-:root[data-glass='liquid'] .card {
-  border-color: var(--glass-edge);
-  background: var(--glass-sheen), var(--glass-panel);
+.quickActions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.quickAction {
+  display: grid;
+  place-items: center;
+  /* Room for the quick actions to come (capture, hide an element, translate): four per row. */
+  width: calc((100% - 3 * var(--space-1)) / 4);
+  height: calc(var(--control-size) * 1.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.quickAction:hover,
+.quickAction:focus-visible {
+  outline: none;
+  background: var(--fill-raised-hover);
+  color: var(--text);
+}
+
+.quickAction:active {
+  transform: scale(0.94);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+}
+
+.sectionTitle {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.textButton,
+.iconButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-size-xs);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.textButton {
+  padding: 0 var(--space-1);
+}
+
+.iconButton {
+  justify-content: center;
+  width: var(--control-size-xs);
+  padding: 0;
+}
+
+.textButton:hover:not(:disabled),
+.iconButton:hover,
+.iconButton:focus-visible {
+  outline: none;
+  background: var(--fill-raised-hover);
+  color: var(--text);
+}
+
+.textButton:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* Same tag as the settings rows not built yet. */
+.soon {
+  padding: 1px var(--space-1);
+  border-radius: var(--radius-pill);
+  background: var(--border);
+  color: var(--text-faint);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.group,
+.extensions {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+}
+
+.extensions {
+  display: flex;
+  align-items: center;
+  min-height: calc(var(--control-size) + 2 * var(--space-1));
+  padding: var(--space-1);
+}
+
+.actionList {
+  flex-wrap: wrap;
+  gap: var(--space-hair);
+}
+
+/* The library's action buttons (shadow DOM), restyled through their parts. */
+.actionList::part(action) {
+  width: var(--control-size);
+  height: var(--control-size);
+  border-radius: var(--radius-md);
+  background-size: var(--icon-size);
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+.actionList::part(action):hover {
+  background-color: var(--fill-raised-hover);
+}
+
+.actionList::part(badge) {
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  box-shadow: none;
+}
+
+.empty {
+  margin: 0;
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: calc(var(--control-size) * 1.4);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font: inherit;
+  color: var(--text);
+  text-align: left;
+}
+
+button.row {
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+button.row:hover,
+button.row:focus-visible {
+  outline: none;
+  background: var(--fill-raised-hover);
+}
+
+.rowIcon {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rowTitle {
+  font-size: var(--text-md);
+}
+
+.rowStatus {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.host {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-faint);
 }
