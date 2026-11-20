@@ -117,7 +117,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 glass card (`ui/Popover.module.css`, composed by each popover's own CSS module). The + menu has a
-filter field at the top (Enter picks the first match) and New tab, New folder (its name is edited
+filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
 at once), New space, Settings.
 
 **Tab finder and command field** (`features/finder`) — the same glass card, `--finder-w` 560 wide,

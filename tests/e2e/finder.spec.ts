@@ -154,6 +154,22 @@ test('the + menu filters its items and creates a folder', async () => {
   })
 })
 
+test('the New tab row and + item open the command field, not a tab', async () => {
+  await withTabs(async ({ page, overlay }) => {
+    const field = overlay.getByLabel('Search or enter address')
+    await page.getByTestId('new-tab').click()
+    await expect(field).toBeFocused()
+    await field.press('Escape')
+    await expect(overlay.getByTestId('command-field')).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    await overlay.getByRole('menuitem', { name: 'New tab' }).click()
+    await expect(field).toBeFocused()
+    await field.press('Escape')
+    await expect(page.getByTestId('tab')).toHaveCount(2)
+  })
+})
+
 test('⌘L while the command field is open closes it and edits the address', async () => {
   await withTabs(async ({ app, page, overlay }) => {
     await clickMenu(app, 'newTab')

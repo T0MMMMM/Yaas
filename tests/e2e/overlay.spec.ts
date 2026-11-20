@@ -18,9 +18,9 @@ async function withPage(
     const page = await uiPage(app)
     await finishOnboarding(page)
     await page.getByTestId('new-tab').click()
-    const address = page.getByLabel('Address')
-    await address.fill(site.url('/a'))
-    await address.press('Enter')
+    const field = (await overlayPage(app)).getByLabel('Search or enter address')
+    await field.fill(site.url('/a'))
+    await field.press('Enter')
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
     await run({ app, page, overlay: await overlayPage(app), site })
   } finally {

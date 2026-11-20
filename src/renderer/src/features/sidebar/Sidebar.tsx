@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
-import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
@@ -13,10 +12,9 @@ import { tilt } from './tilt'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import styles from './Sidebar.module.css'
 
-/** Opens a blank tab in the active space, then puts the address bar in edit mode. */
-async function newTab(): Promise<void> {
-  await window.acab.invoke('browser.openTab', {})
-  useUi.getState().focusAddress()
+/** Opens the command field (⌘T): the tab is created only when the user submits it. */
+function newTab(): Promise<void> {
+  return window.acab.invoke('overlay.open', { kind: 'command' })
 }
 
 /** Opens the + menu in the overlay view, above the button (it floats over the page). */

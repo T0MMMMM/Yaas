@@ -55,11 +55,8 @@ export function Overlay() {
       label: 'New tab',
       icon: Plus,
       shortcut: '⌘T',
-      onSelect: () => {
-        void window.acab
-          .invoke('browser.openTab', {})
-          .then(() => window.acab.invoke('ui.focusAddress'))
-      },
+      // Swaps this menu for the command field (⌘T), which creates the tab on submit.
+      onSelect: () => void window.acab.invoke('overlay.open', { kind: 'command' }),
     },
     {
       id: 'new-folder',

@@ -39,11 +39,20 @@ async function go(page: Page, url: string): Promise<void> {
   await address.press('Enter')
 }
 
-/** Opens a tab from the sidebar and loads `url` in it. */
-async function openTab(page: Page, url: string): Promise<void> {
+/** Opens a tab from the sidebar's New tab row: it shows the command field, which loads `url`. */
+async function openTab(app: ElectronApplication, page: Page, url: string): Promise<void> {
+  const tabs = await page.getByTestId('tab').count()
   await page.getByTestId('new-tab').click()
-  await expect(page.getByLabel('Address')).toBeFocused()
-  await go(page, url)
+  const field = (await overlayPage(app)).getByLabel('Search or enter address')
+  await expect(field).toBeFocused()
+  await field.fill(url)
+  await field.press('Enter')
+  await expect(page.getByTestId('tab')).toHaveCount(tabs + 1)
+}
+
+/** Opens a blank tab straight through the bridge (the UI only opens tabs with an address). */
+async function blankTab(page: Page): Promise<void> {
+  await page.evaluate(() => window.acab.invoke('browser.openTab', {}))
 }
 
 /** Bounds of the page view main currently shows, or undefined when none is visible. */
@@ -65,11 +74,11 @@ const clickMenu = (app: ElectronApplication, id: string) =>
 const browserState = (page: Page) => page.evaluate(() => window.acab.invoke('browser.state'))
 
 test('open, navigate, go back', async () => {
-  await withBrowser(async ({ page, site }) => {
+  await withBrowser(async ({ app, page, site }) => {
     const bar = page.getByTestId('address-bar')
     const port = new URL(site.url('/')).port
 
-    await openTab(page, site.url('/a'))
+    await openTab(app, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
     await expect(page.getByTestId('url-host')).toHaveText(`127.0.0.1:${port}`)
     await expect(page.getByTestId('url-rest')).toHaveText('/a')
@@ -93,7 +102,7 @@ test('open, navigate, go back', async () => {
 
 test('a popup opens as a tab in the same space', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
+    await openTab(app, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
     await app.evaluate(({ webContents }) =>
@@ -110,8 +119,8 @@ test('a popup opens as a tab in the same space', async () => {
 test('close tabs down to the empty state', async () => {
   await withBrowser(async ({ page }) => {
     await expect(page.getByTestId('empty-state')).toBeVisible()
-    await page.getByTestId('new-tab').click()
-    await page.getByTestId('new-tab').click()
+    await blankTab(page)
+    await blankTab(page)
     await expect(page.getByTestId('tab')).toHaveCount(2)
     await expect(page.getByTestId('empty-state')).toHaveCount(0)
 
@@ -125,7 +134,7 @@ test('close tabs down to the empty state', async () => {
 
 test('page follows the card', async () => {
   await withBrowser(async ({ app, page }) => {
-    await page.getByTestId('new-tab').click()
+    await blankTab(page)
     await expect.poll(() => shownView(app)).toBeTruthy()
 
     const handle = await page.getByTestId('sidebar-resizer').boundingBox()
@@ -156,7 +165,7 @@ test('page follows the card', async () => {
 
 test('the sidebar snaps to icons when dragged narrow', async () => {
   await withBrowser(async ({ app, page }) => {
-    await page.getByTestId('new-tab').click()
+    await blankTab(page)
     await expect.poll(() => shownView(app)).toBeTruthy()
     const sidebar = page.getByTestId('sidebar')
     const dragTo = async (x: number) => {
@@ -198,7 +207,7 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
 
 test('settings hide the page', async () => {
   await withBrowser(async ({ app, page }) => {
-    await page.getByTestId('new-tab').click()
+    await blankTab(page)
     await expect.poll(() => shownView(app)).toBeTruthy()
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
@@ -233,7 +242,7 @@ test('the + menu opens over the page in liquid glass', async () => {
 
 test('spaces keep their own tabs', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
+    await openTab(app, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
@@ -244,7 +253,7 @@ test('spaces keep their own tabs', async () => {
     await expect(spaces.nth(1)).toHaveAttribute('aria-selected', 'true')
     await expect(page.getByTestId('tab')).toHaveCount(0)
 
-    await openTab(page, site.url('/c'))
+    await openTab(app, page, site.url('/c'))
     await expect(page.getByTestId('tab')).toHaveText(['Page C'])
 
     await spaces.first().click()
@@ -259,9 +268,9 @@ test('tabs survive a relaunch', async () => {
     const first = await launchApp(userData)
     const page = await uiPage(first)
     await finishOnboarding(page)
-    await openTab(page, site.url('/a'))
+    await openTab(first, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
-    await openTab(page, site.url('/b'))
+    await openTab(first, page, site.url('/b'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
     await first.close()
 
@@ -290,8 +299,8 @@ test('restored tabs stay dim until visited', async () => {
     const first = await launchApp(userData)
     const page = await uiPage(first)
     await finishOnboarding(page)
-    await openTab(page, site.url('/a'))
-    await openTab(page, site.url('/b'))
+    await openTab(first, page, site.url('/a'))
+    await openTab(first, page, site.url('/b'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
     await first.close()
 
@@ -316,7 +325,7 @@ test('restored tabs stay dim until visited', async () => {
 
 test('shortcuts work while a page has focus', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
+    await openTab(app, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
     // Give the page focus, as a user would after clicking into it.
@@ -347,8 +356,8 @@ test('shortcuts work while a page has focus', async () => {
 
 test('closing a pinned tab unloads it', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
-    await openTab(page, site.url('/b'))
+    await openTab(app, page, site.url('/a'))
+    await openTab(app, page, site.url('/b'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
     const pinnedId = (await browserState(page)).tabs.find((t) => t.url.endsWith('/a'))?.id ?? ''
     await page.evaluate(async (tabId) => {
@@ -374,8 +383,8 @@ test('closing a pinned tab unloads it', async () => {
 
 test('reopen closed tab', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
-    await openTab(page, site.url('/b'))
+    await openTab(app, page, site.url('/a'))
+    await openTab(app, page, site.url('/b'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
 
     await clickMenu(app, 'closeTab')
@@ -390,7 +399,7 @@ test('reopen closed tab', async () => {
 
 test('a link opened in a new tab is nested', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    await openTab(page, site.url('/a'))
+    await openTab(app, page, site.url('/a'))
     await expect(page.getByTestId('tab')).toHaveText(['Page A'])
 
     await app.evaluate(({ webContents }) =>
@@ -408,8 +417,8 @@ test('a link opened in a new tab is nested', async () => {
 })
 
 test('favicons are fetched', async () => {
-  await withBrowser(async ({ page, site }) => {
-    await openTab(page, site.url('/with-icon'))
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/with-icon'))
     await expect(page.getByTestId('tab')).toHaveText(['With Icon'])
     await expect
       .poll(async () => (await browserState(page)).tabs[0]?.faviconUrl ?? '')
