@@ -83,9 +83,14 @@ export class SpaceSessions {
     return this.spaces.get(ses) ?? null
   }
 
+  /** A blocker failure leaves the space without blocking, never half set up. */
   private applyAdBlocking(ses: Session): void {
-    if (this.adBlockEnabled) this.adBlocker?.enable(ses)
-    else this.adBlocker?.disable(ses)
+    try {
+      if (this.adBlockEnabled) this.adBlocker?.enable(ses)
+      else this.adBlocker?.disable(ses)
+    } catch (error) {
+      console.error(`Ad blocking failed in space ${this.spaces.get(ses) ?? '?'}:`, error)
+    }
   }
 
   private createExtensions(spaceId: string, ses: Session): ElectronChromeExtensions {

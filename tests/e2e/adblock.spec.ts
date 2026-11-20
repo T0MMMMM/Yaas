@@ -43,6 +43,36 @@ test('ads are blocked by default', async () => {
   }
 })
 
+test('ads are blocked in every space', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const site = await startSite()
+  const app = await launchApp(userData, FILTERS)
+  try {
+    const page = await uiPage(app)
+    await finishOnboarding(page)
+    const first = site.url('/with-ad')
+    await openTab(page, first)
+    await expect.poll(() => adWidth(app, first)).toBe(0)
+
+    // Another host, so each tab is found by its URL; its own session, enabled second.
+    const second = first.replace('127.0.0.1', 'localhost')
+    await page.evaluate(
+      (url) =>
+        window.acab
+          .invoke('browser.createSpace', { name: 'Work', color: '#3366ff' })
+          .then((space) =>
+            window.acab.invoke('browser.openTab', { spaceId: space.id, input: url }),
+          ),
+      second,
+    )
+    await expect.poll(() => adWidth(app, second)).toBe(0)
+  } finally {
+    await app.close().catch(() => undefined)
+    await site.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})
+
 test('allowing the site shows the ad and survives a relaunch', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const site = await startSite()
