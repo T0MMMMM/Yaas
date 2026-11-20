@@ -8,6 +8,8 @@ import type { OverlayKind, PageBounds } from '@shared/ipc/contract'
 export class OverlayView {
   private readonly view: WebContentsView
   private isOpen = false
+  /** The one `did-finish-load` listener waiting to show the overlay; repeated opens replace it. */
+  private pendingShow: (() => void) | null = null
 
   constructor(
     private readonly win: BrowserWindow,
@@ -54,13 +56,19 @@ export class OverlayView {
     this.raise()
     this.view.setVisible(true)
     const contents = this.view.webContents
+    if (this.pendingShow) contents.removeListener('did-finish-load', this.pendingShow)
+    this.pendingShow = null
     // Focused so Escape reaches it; only while open, so a hidden overlay never takes the keyboard.
     const show = (): void => {
+      this.pendingShow = null
+      if (!this.isOpen) return
       contents.focus()
       emit(contents, 'overlay.opened', { kind, anchor })
     }
-    if (contents.isLoading()) contents.once('did-finish-load', show)
-    else show()
+    if (contents.isLoading()) {
+      this.pendingShow = show
+      contents.once('did-finish-load', show)
+    } else show()
   }
 
   close(): void {
