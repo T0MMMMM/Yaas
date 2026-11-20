@@ -25,7 +25,7 @@
 
 ## Decided by the owner
 
-- Name: AI Custom Another Browser. Open source. Mac + Windows **with sync**.
+- Name: AI Custom Another Browser. Open source. Mac + Windows, sync later (not a priority).
 - Approach A: Electron, in this repo (after the spike).
 - Modules can change **websites and the browser UI**.
 - Workshop installs are at the user's own risk.
@@ -35,9 +35,9 @@
 ## Next steps (in order)
 
 1. ~~Brainstorming and design approval~~ — done 2026-11-20.
-2. Write and follow the plan for **step 1 (daily-driver browser)**:
-   `docs/superpowers/plans/` (superpowers:writing-plans).
-3. Rename YAAS → ACAB in code, package, README and `CLAUDE.md` as part of step 1.
+2. ~~Plan 1 (daily-driver browser core)~~ — done: `docs/superpowers/plans/2026-11-20-acab-browser-core.md`.
+3. Write and follow **plan 2 (Extensions & site menu)** in `docs/superpowers/plans/`
+   (superpowers:writing-plans), from the design spec's roadmap.
 
 ## Gotchas
 
