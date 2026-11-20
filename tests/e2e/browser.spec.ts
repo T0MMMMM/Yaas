@@ -221,6 +221,24 @@ test('settings hide the page', async () => {
   })
 })
 
+test('the sidebar uses the system font and 38 px rows', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/a'))
+    const fontFamily = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
+    expect(fontFamily).not.toContain('Satoshi')
+    expect(fontFamily).toMatch(/^(system-ui|-apple-system)/)
+    const rowHeight = await page
+      .getByTestId('tab')
+      .evaluate((el) => el.getBoundingClientRect().height)
+    expect(rowHeight).toBe(38)
+
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    const menu = (await overlayPage(app)).getByTestId('menu')
+    await expect(menu).toBeVisible()
+    await expect(menu).toHaveCSS('backdrop-filter', 'none')
+  })
+})
+
 test('the + menu opens over the page in liquid glass', async () => {
   await withBrowser(async ({ app, page }) => {
     await page.evaluate(() => window.acab.invoke('settings.update', { transparency: 1 }))

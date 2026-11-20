@@ -22,7 +22,6 @@ the YAAS docs stay as the AI-tabs reference (ADR-0006). Personal project, pre-al
 ## Commands
 
 ```bash
-npm run setup:fonts -- <path>  # once: install Satoshi locally (not in git, see DESIGN.md §3.0)
 npm run dev         # app with hot reload
 npm run dev:onboarding  # same, but shows the onboarding on every launch
 npm run check       # typecheck + lint + format:check + unit tests — must pass before every commit

@@ -1,4 +1,4 @@
-/* yab-shaped popover in the visual-pass look: a rounded glass card of rows. */
+/* yab-shaped popover in the visual-pass look: a rounded opaque card of rows. */
 .menu {
   composes: card from './Popover.module.css';
   min-width: 0;
@@ -32,7 +32,7 @@
 .item:hover,
 .item:focus-visible {
   outline: none;
-  background: var(--fill-raised-hover);
+  background: var(--bg-menu-hover);
 }
 
 .icon {

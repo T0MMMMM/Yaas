@@ -90,7 +90,7 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   Tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
   past 160 px restores the normal layout.
 - **Favourites**: no header. A 4-column grid of tiles (`--tile-h` 44, favicon
-  `--tile-icon-size` 22) on a soft card; the active tile is lifted and askew like a selected row.
+  `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
   opens and closes on click; a closed folder shows its tab count on the right. Its tabs are listed
   one `--space-3` indent below. "New Folder…" and "Rename" (native menus) put its name in an
@@ -186,7 +186,9 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-surface` | Main pane |
 | `--bg-raised` | Cards, approval sheet, palette, menus |
 | `--fill-raised-hover` | Hovered row on a raised surface (menus) |
-| `--glass-sheen` | Lit-top gradient of glass cards (menus); stronger in liquid glass |
+| `--bg-menu` / `--bg-menu-hover` | Opaque menu and popover card (light grey; dark grey in the dark scheme) and its hovered row |
+| `--border-menu` / `--shadow-menu` | Menu card hairline and shadow |
+| `--bg-tile` | Favourite tile card |
 | `--border` / `--border-strong` | Hairlines |
 | `--text` / `--text-muted` / `--text-faint` | Text hierarchy |
 | `--ok` / `--warn` / `--danger` | Generic success / warning / error |
@@ -203,9 +205,8 @@ hex field that applies as soon as the value is valid. Drag, click or arrow keys.
 The goal: a UI that feels unique and makes you want to touch it — not a stack of buttons seen a
 thousand times.
 
-- **Type**: **Satoshi** (variable, 300–900) for the whole UI; mono only for numbers, paths and keys.
-  The font files are not in git (ITF Free Font License forbids redistribution through a
-  repository): `npm run setup:fonts -- <path to Satoshi_Complete>` installs them locally.
+- **Type**: the platform's UI font (`system-ui`) for the whole UI; mono only for numbers, paths
+  and keys. A font setting comes in plan 5.
 - **Icons**: **Phosphor**, **duotone** by default (`IconContext` in `App.tsx`), 15–18 px. Folders
   are **illustrated glyphs** (two-tone folder, paper peeking out when open), colored per folder name;
   sessions get a small chat-bubble glyph.
@@ -244,8 +245,8 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 34 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
-| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (child-tab connector) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (open-folder bar) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
+| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
 | Drag and drop | `--drop-line-w` 2 (the `--accent` insertion line of a tab dragged in the sidebar) |

@@ -28,6 +28,3 @@ Thumbs.db
 !.vscode/extensions.json
 .idea/
 *.log
-
-# Satoshi font: license forbids redistribution through a repository (npm run setup:fonts)
-src/renderer/public/fonts/

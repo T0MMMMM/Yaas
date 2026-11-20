@@ -33,7 +33,7 @@
   z-index: -1;
   inset: 0;
   border-radius: inherit;
-  background: var(--hover-fill);
+  background: var(--bg-tile);
   transition:
     background var(--dur-fast) var(--ease),
     box-shadow var(--dur-fast) var(--ease),

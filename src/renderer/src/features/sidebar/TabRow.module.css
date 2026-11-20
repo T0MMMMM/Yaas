@@ -79,8 +79,8 @@
 
 .favicon {
   flex: none;
-  width: var(--icon-size);
-  height: var(--icon-size);
+  width: var(--favicon-size);
+  height: var(--favicon-size);
   color: var(--text-muted);
 }
 

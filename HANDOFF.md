@@ -17,7 +17,7 @@
   code in `scripts/spikes/chrome-extensions/`.
 - Code in `src/` is the YAAS MVP, not just the skeleton: workspace module (`useWorkspace()`),
   persistent settings, account import, SQLite through `node:sqlite` (ADR-0005), session view and
-  the visual pass (Satoshi, liquid glass, grain, drawn controls, colour picker). The pivot was
+  the visual pass (liquid glass, grain, drawn controls, colour picker). The pivot was
   written on another machine before this work was merged in; it was reconciled on 2026-11-20 and
   the pivot ADR renumbered to 0006. Nothing has been renamed yet.
 - Reference browser: **yab** — https://github.com/yetanotherbrowser/yab (Apache-2.0, Swift, macOS).
@@ -49,4 +49,3 @@
   `node node_modules/electron/install.js` if `npm run dev` complains.
 - Claude never pushes (`CLAUDE.md`); never commit or rewrite history unless the owner asks in that
   session.
-- Fonts: Satoshi is not in git; run `npm run setup:fonts -- <path>` once (`docs/DESIGN.md` §3.0).

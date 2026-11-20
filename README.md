@@ -28,7 +28,6 @@ roadmap is in [`docs/FEATURES.md`](docs/FEATURES.md).
 
 ```bash
 npm install
-npm run setup:fonts -- ~/Downloads/Satoshi_Complete   # Satoshi from fontshare.com, not in git
 npm run dev        # launch the app with hot reload
 npm run lint
 npm run typecheck

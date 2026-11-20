@@ -24,7 +24,6 @@
     "dist:mac": "electron-vite build && electron-builder --mac",
     "dist:win": "electron-vite build && electron-builder --win",
     "postinstall": "electron-builder install-app-deps",
-    "setup:fonts": "node scripts/setup-fonts.mjs",
     "dev:onboarding": "ACAB_ONBOARDING=1 electron-vite dev"
   },
   "dependencies": {
