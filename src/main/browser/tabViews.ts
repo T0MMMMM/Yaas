@@ -1,11 +1,22 @@
 // One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
 // mirrors it: creates views lazily, shows the active one, and reports what the pages do.
-import { session, WebContentsView, type BrowserWindow, type Session } from 'electron'
+import {
+  clipboard,
+  Menu,
+  session,
+  WebContentsView,
+  type BrowserWindow,
+  type MenuItemConstructorOptions,
+  type Session,
+  type WebContents,
+} from 'electron'
+import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import { isPermissionGranted } from '@core/browser/permissions'
 import { chromeUserAgent } from '@core/browser/userAgent'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
+import { DEFAULT_SEARCH } from '@shared/url'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
 export const PAGE_RADIUS = 9
@@ -13,6 +24,23 @@ export const PAGE_RADIUS = 9
 interface TabView {
   view: WebContentsView
   spaceId: string
+}
+
+const PAGE_MENU_LABELS: Record<PageMenuId, string> = {
+  openLinkInNewTab: 'Open Link in New Tab',
+  copyLink: 'Copy Link',
+  openImageInNewTab: 'Open Image in New Tab',
+  copyImage: 'Copy Image',
+  copyImageAddress: 'Copy Image Address',
+  cut: 'Cut',
+  copy: 'Copy',
+  paste: 'Paste',
+  selectAll: 'Select All',
+  searchSelection: 'Search Google',
+  back: 'Back',
+  forward: 'Forward',
+  reload: 'Reload',
+  inspect: 'Inspect',
 }
 
 const isWebUrl = (url: string): boolean => {
@@ -195,5 +223,53 @@ export class TabViews {
     contents.on('will-navigate', (event, url) => {
       if (!isWebUrl(url)) event.preventDefault()
     })
+    contents.on('context-menu', (_event, params) => this.showPageMenu(tabId, contents, params))
+  }
+
+  /** Right-click on a page: Electron shows nothing by default. */
+  private showPageMenu(
+    tabId: string,
+    contents: WebContents,
+    params: Electron.ContextMenuParams,
+  ): void {
+    const openInTab = (url: string): void => {
+      const entry = this.views.get(tabId)
+      if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url)
+    }
+    const run: Record<PageMenuId, () => void> = {
+      openLinkInNewTab: () => openInTab(params.linkURL),
+      copyLink: () => clipboard.writeText(params.linkURL),
+      openImageInNewTab: () => openInTab(params.srcURL),
+      copyImage: () => contents.copyImageAt(params.x, params.y),
+      copyImageAddress: () => clipboard.writeText(params.srcURL),
+      cut: () => contents.cut(),
+      copy: () => contents.copy(),
+      paste: () => contents.paste(),
+      selectAll: () => contents.selectAll(),
+      searchSelection: () =>
+        openInTab(DEFAULT_SEARCH.replace('%s', encodeURIComponent(params.selectionText.trim()))),
+      back: () => this.goBack(tabId),
+      forward: () => this.goForward(tabId),
+      reload: () => this.reload(tabId),
+      inspect: () => contents.inspectElement(params.x, params.y),
+    }
+    const entries = pageMenu({
+      linkURL: params.linkURL,
+      srcURL: params.srcURL,
+      mediaType: params.mediaType,
+      selectionText: params.selectionText,
+      isEditable: params.isEditable,
+      canCut: params.editFlags.canCut,
+      canCopy: params.editFlags.canCopy,
+      canPaste: params.editFlags.canPaste,
+      canGoBack: contents.navigationHistory.canGoBack(),
+      canGoForward: contents.navigationHistory.canGoForward(),
+    })
+    const template = entries.map((entry): MenuItemConstructorOptions =>
+      entry === 'separator'
+        ? { type: 'separator' }
+        : { label: PAGE_MENU_LABELS[entry.id], enabled: entry.enabled, click: run[entry.id] },
+    )
+    Menu.buildFromTemplate(template).popup({ window: this.win })
   }
 }
