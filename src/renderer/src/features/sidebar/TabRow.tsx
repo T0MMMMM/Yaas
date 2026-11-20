@@ -1,8 +1,9 @@
-import type { CSSProperties } from 'react'
+import { useContext, type CSSProperties } from 'react'
 import { X } from '@phosphor-icons/react'
 import type { TabView } from '../workspace/workspace'
 import { Favicon } from './Favicon'
 import { useCompact } from './CompactContext'
+import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
 import { useTabDragHandle } from './useTabDrag'
@@ -15,6 +16,7 @@ import styles from './TabRow.module.css'
 export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; active: boolean }) {
   const drag = useTabDragHandle(tab.id)
   const compact = useCompact()
+  const trail = useContext(FolderTrailContext)
   return (
     <li
       className={styles.item}
@@ -28,6 +30,16 @@ export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; ac
         showTabMenu(tab.id)
       }}
     >
+      {compact &&
+        trail.map((hue, index) => (
+          <span
+            key={index}
+            className={styles.folderBar}
+            style={{ '--bar-hue': hue, '--bar-index': index } as CSSProperties}
+            data-testid="folder-bar"
+            aria-hidden="true"
+          />
+        ))}
       <button
         className={styles.row}
         data-active={active}

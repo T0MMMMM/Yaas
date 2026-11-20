@@ -142,3 +142,14 @@
 :global([data-compact='true']) .close {
   display: none;
 }
+
+/* One bar per folder the tab sits in, outermost first, in that folder's hue (FolderRow). */
+.folderBar {
+  position: absolute;
+  top: var(--space-1);
+  bottom: var(--space-1);
+  left: calc(var(--bar-index) * (var(--folder-bar-w) + var(--space-1)));
+  width: var(--folder-bar-w);
+  border-radius: var(--folder-bar-w);
+  background: hsl(var(--bar-hue) 70% 48%);
+}

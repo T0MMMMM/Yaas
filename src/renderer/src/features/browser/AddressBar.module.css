@@ -20,6 +20,13 @@
     color var(--dur-base) var(--ease);
 }
 
+:root[data-platform='windows'] .bar {
+  padding-right: calc(
+    var(--space-1) + 100vw - env(titlebar-area-x, 0px) -
+      env(titlebar-area-width, calc(100vw - var(--titlebar-overlay-w)))
+  );
+}
+
 :root[data-glass='liquid'] .bar {
   border-color: var(--glass-edge);
 }

@@ -4,10 +4,13 @@ import { z } from 'zod'
 import type { Account, BrowserFolder, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
 import type { CommandChannel, EventChannel } from './channels'
 
-export const SIDEBAR_MIN = 56
-/** The icon-only width, and the width under which a dragged sidebar snaps to it. */
+export const SIDEBAR_MIN = 48
+/** Icon-only mode: a dragged width under `SIDEBAR_COMPACT_FROM` settles in 48…72 px. */
+export const SIDEBAR_COMPACT_MIN = 48
+export const SIDEBAR_COMPACT_MAX = 72
+/** The default icon-only width. */
 export const SIDEBAR_COMPACT = 56
-export const SIDEBAR_COMPACT_FROM = 160
+export const SIDEBAR_COMPACT_FROM = 120
 export const SIDEBAR_MAX = 440
 export const SIDEBAR_DEFAULT = 248
 
@@ -262,6 +265,11 @@ export const commands = {
   'browser.share': { input: tabRef, output: z.void() },
   /** Opens or closes the developer tools of the tab's page. */
   'browser.toggleDevTools': { input: tabRef, output: z.void() },
+  /** Shows or hides the window's traffic lights (macOS; no-op elsewhere): hidden in icon-only mode. */
+  'window.setControlsVisible': {
+    input: z.object({ visible: z.boolean() }).strict(),
+    output: z.void(),
+  },
   /** Opens the Chrome Web Store as a tab of the active space. */
   'browser.openWebStore': { input: z.void(), output: z.void() },
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */

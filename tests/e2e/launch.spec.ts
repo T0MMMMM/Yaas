@@ -44,7 +44,7 @@ test('first launch shows onboarding, then the browser', async () => {
     await page.mouse.down()
     await page.mouse.move(20, 400, { steps: 5 })
     await page.mouse.up()
-    await expect.poll(async () => (await page.getByTestId('sidebar').boundingBox())?.width).toBe(56)
+    await expect.poll(async () => (await page.getByTestId('sidebar').boundingBox())?.width).toBe(48)
     await expect(page.getByTestId('sidebar')).toHaveAttribute('data-compact', 'true')
 
     // The renderer is isolated: no Node, only the bridge.

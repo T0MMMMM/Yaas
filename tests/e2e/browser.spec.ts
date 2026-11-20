@@ -178,7 +178,7 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
     }
 
     await dragTo(80)
-    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(56)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(72)
     await expect(sidebar).toHaveAttribute('data-compact', 'true')
     // Only the favicon shows; the title is the tooltip.
     const row = page.getByTestId('tab').getByRole('button').first()
@@ -202,6 +202,70 @@ test('the sidebar snaps to icons when dragged narrow', async () => {
     await dragTo(300)
     await expect.poll(async () => (await sidebar.boundingBox())?.width).toBeGreaterThan(250)
     await expect(sidebar).toHaveAttribute('data-compact', 'false')
+  })
+})
+
+test('icon-only mode hides the window buttons and marks filed tabs', async () => {
+  await withBrowser(async ({ app, page }) => {
+    await blankTab(page)
+    await expect.poll(() => shownView(app)).toBeTruthy()
+    // Record what main would do to the traffic lights (they are not observable otherwise).
+    await app.evaluate(({ BrowserWindow }) => {
+      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed())
+      const calls: boolean[] = []
+      ;(globalThis as { controlCalls?: boolean[] }).controlCalls = calls
+      if (win) win.setWindowButtonVisibility = (visible: boolean) => void calls.push(visible)
+    })
+    const lastCall = () =>
+      app.evaluate(() => (globalThis as { controlCalls?: boolean[] }).controlCalls?.at(-1))
+    const sidebar = page.getByTestId('sidebar')
+    const dragTo = async (x: number) => {
+      const handle = await page.getByTestId('sidebar-resizer').boundingBox()
+      if (!handle) throw new Error('resizer not found')
+      await page.mouse.move(handle.x + 4, 400)
+      await page.mouse.down()
+      await page.mouse.move(x, 400, { steps: 5 })
+      await page.mouse.up()
+    }
+
+    // The blank tab is filed in a pinned folder; a second tab stays in today.
+    const folderId = await page.evaluate(async () => {
+      const folder = await window.acab.invoke('browser.createFolder', { name: 'Reading' })
+      const { tabs } = await window.acab.invoke('browser.state')
+      const first = tabs[0]
+      if (first) {
+        await window.acab.invoke('browser.moveTab', {
+          tabId: first.id,
+          section: 'pinned',
+          folderId: folder.id,
+          index: 0,
+        })
+      }
+      await window.acab.invoke('browser.openTab', {})
+      return folder.id
+    })
+    expect(folderId).toBeTruthy()
+    await expect(page.getByTestId('tab')).toHaveCount(2)
+
+    await dragTo(90)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(72)
+    await expect.poll(lastCall).toBe(false)
+    const filed = page.getByTestId('folder').getByTestId('tab')
+    await expect(filed.getByTestId('folder-bar')).toHaveCount(1)
+    await expect(
+      page.getByTestId('today').getByTestId('tab').getByTestId('folder-bar'),
+    ).toHaveCount(0)
+
+    // The top-left corner shows them while hovered.
+    await page.mouse.move(20, 20)
+    await expect.poll(lastCall).toBe(true)
+
+    await dragTo(40)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(48)
+
+    await dragTo(300)
+    await expect(sidebar).toHaveAttribute('data-compact', 'false')
+    await expect.poll(lastCall).toBe(true)
   })
 })
 

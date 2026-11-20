@@ -1,7 +1,9 @@
-import { useContext, useRef, useState } from 'react'
+import { useContext, useMemo, useRef, useState } from 'react'
 import { Folder, FolderOpen } from '@phosphor-icons/react'
 import type { SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
+import { FolderTrailContext } from './FolderTrailContext'
+import { folderHue } from './hash'
 import { showFolderMenu } from './menus'
 import { TabRow } from './TabRow'
 import { tilt } from './tilt'
@@ -58,12 +60,16 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
   const toggleHost = useUi((s) => s.toggleHost)
   const renaming = useUi((s) => node.kind === 'folder' && s.renamingFolderId === node.folder.id)
   const { zone } = useContext(TabDragContext)
+  const outerTrail = useContext(FolderTrailContext)
 
   const auto = node.kind === 'auto-folder'
   const key = auto ? `auto:${node.host}` : node.folder.id
   const name = auto ? node.host : node.folder.name
   const collapsed = auto ? Boolean(collapsedHosts[node.host]) : node.folder.collapsed
   const Icon = collapsed ? Folder : FolderOpen
+  // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue.
+  const hue = String(folderHue(name))
+  const trail = useMemo(() => [...outerTrail, hue], [outerTrail, hue])
 
   const toggle = (): void => {
     if (node.kind === 'auto-folder') toggleHost(node.host)
@@ -119,19 +125,21 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
         )}
       </div>
       {!collapsed && node.children.length > 0 && (
-        <ul className={styles.children} aria-label={name}>
-          {node.children.map(
-            (child) =>
-              child.kind === 'tab' && (
-                <TabRow
-                  key={child.tab.id}
-                  tab={child.tab}
-                  depth={child.depth}
-                  active={child.tab.id === activeId}
-                />
-              ),
-          )}
-        </ul>
+        <FolderTrailContext.Provider value={trail}>
+          <ul className={styles.children} aria-label={name}>
+            {node.children.map(
+              (child) =>
+                child.kind === 'tab' && (
+                  <TabRow
+                    key={child.tab.id}
+                    tab={child.tab}
+                    depth={child.depth}
+                    active={child.tab.id === activeId}
+                  />
+                ),
+            )}
+          </ul>
+        </FolderTrailContext.Provider>
       )}
     </li>
   )

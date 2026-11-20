@@ -32,6 +32,7 @@ export const COMMAND_CHANNELS = [
   'browser.share',
   'browser.toggleDevTools',
   'browser.openWebStore',
+  'window.setControlsVisible',
   'overlay.open',
   'overlay.close',
   'ui.openSettings',

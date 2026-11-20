@@ -59,6 +59,7 @@
   --connector-w: 14px; /* the nesting connector of child tabs */
   --title-fade: 24px; /* the tab title's fade-out at the row end */
   --title-fade-hover: 44px; /* the same, widened when the row's buttons show */
+  --controls-zone-w: 80px; /* hover zone that brings the traffic lights back (icon-only) */
   --folder-bar-w: 2px; /* the bar along an open folder's tabs */
   --finder-w: 560px; /* the tab finder (⌘K) and the command field (⌘T) */
   --finder-top: 20vh; /* how far down the window they open */

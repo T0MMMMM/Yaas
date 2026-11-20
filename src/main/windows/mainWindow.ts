@@ -94,6 +94,15 @@ export function createMainWindow(options: { material: Material }): BrowserWindow
   return win
 }
 
+/** Shows or hides the macOS traffic lights; the other platforms have nothing to toggle. */
+export function setWindowControlsVisible(
+  win: BrowserWindow,
+  visible: boolean,
+  platform: NodeJS.Platform = process.platform,
+): void {
+  if (platform === 'darwin') win.setWindowButtonVisibility(visible)
+}
+
 /** Applies the material live (DESIGN.md §4). */
 export function applyMaterial(win: BrowserWindow, material: Material): void {
   const glass = material !== 'opaque'

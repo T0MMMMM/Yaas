@@ -23,6 +23,7 @@ import {
   materialFor,
   PRELOAD_PATH,
   rendererUrl,
+  setWindowControlsVisible,
 } from './windows/mainWindow'
 
 /** The `browser.*` mirror registered on every space session (spike fix 1). */
@@ -299,6 +300,9 @@ registerCommands(
     'browser.toggleDevTools': ({ tabId }) => views().toggleDevTools(tabId),
     'browser.openWebStore': () => {
       browser.openTab(browser.snapshot().activeSpaceId, CHROME_WEB_STORE)
+    },
+    'window.setControlsVisible': ({ visible }) => {
+      if (mainWindow) setWindowControlsVisible(mainWindow, visible)
     },
     'overlay.open': (request) => overlayView().open(request),
     'overlay.close': () => overlayView().close(),

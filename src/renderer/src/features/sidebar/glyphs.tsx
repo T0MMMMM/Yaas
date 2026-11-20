@@ -1,13 +1,11 @@
 // Illustrated glyphs for the sidebar: colored folders for environments, a tiny chat bubble for
 // sessions. Colors come from the name so each folder keeps its own hue.
 import type { CSSProperties } from 'react'
-import { hashUnit } from './hash'
+import { folderHue } from './hash'
 import styles from './glyphs.module.css'
 
-const HUES = [210, 262, 330, 22, 42, 150, 188]
-
 export function FolderGlyph({ name, open }: { name: string; open: boolean }) {
-  const hue = HUES[Math.floor(hashUnit(name) * HUES.length)] ?? 210
+  const hue = folderHue(name)
   return (
     <svg
       className={styles.folder}

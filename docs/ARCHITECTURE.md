@@ -513,6 +513,8 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Bounds from the renderer.** The UI lays out the page area and sends it with
   `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
+- **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
+  lights (the main window; a no-op on Windows and Linux): the UI hides them in icon-only mode.
 - **Lazy loading.** A view is created the first time its tab is active, so restored and
   unloaded tabs don't load until visited; closing or unloading a tab destroys its view
   (`webContents.close()`).

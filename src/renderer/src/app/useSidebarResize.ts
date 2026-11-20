@@ -1,7 +1,8 @@
 import { useCallback, useState, type PointerEvent } from 'react'
 import {
-  SIDEBAR_COMPACT,
   SIDEBAR_COMPACT_FROM,
+  SIDEBAR_COMPACT_MAX,
+  SIDEBAR_COMPACT_MIN,
   SIDEBAR_DEFAULT,
   SIDEBAR_MAX,
   SIDEBAR_MIN,
@@ -11,11 +12,17 @@ import { useSettings } from '../stores/settings'
 export const clampSidebar = (px: number) =>
   Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, px)))
 
-/** The width a drag settles on: under the compact threshold the icon-only width, else clamped. */
+const clampBetween = (px: number, min: number, max: number): number =>
+  Math.round(Math.min(max, Math.max(min, px)))
+
+/**
+ * The width a drag settles on: from the compact threshold up, clamped to it…max; under it, the
+ * icon-only range (never a half-compact width).
+ */
 export const snapWidth = (px: number): number =>
-  px < SIDEBAR_COMPACT_FROM
-    ? SIDEBAR_COMPACT
-    : Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_COMPACT_FROM, px)))
+  px >= SIDEBAR_COMPACT_FROM
+    ? clampBetween(px, SIDEBAR_COMPACT_FROM, SIDEBAR_MAX)
+    : clampBetween(px, SIDEBAR_COMPACT_MIN, SIDEBAR_COMPACT_MAX)
 
 /**
  * Drag-to-resize for the sidebar. The width follows the pointer locally while dragging and is
@@ -23,7 +30,8 @@ export const snapWidth = (px: number): number =>
  */
 export function useSidebarResize() {
   const { settings, update } = useSettings()
-  const saved = settings?.sidebarWidth ?? SIDEBAR_DEFAULT
+  // Old stored widths (e.g. 56…159 from before) are normalised, never shown half-compact.
+  const saved = snapWidth(settings?.sidebarWidth ?? SIDEBAR_DEFAULT)
   // Width while dragging; null otherwise (then the saved width applies).
   const [dragWidth, setDragWidth] = useState<number | null>(null)
   const width = dragWidth ?? saved

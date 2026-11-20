@@ -83,12 +83,17 @@ caption buttons.
 **Browser sidebar (ACAB, top → bottom of the scroll area)** — the tree comes from
 `sidebarSections` in `features/workspace` (same order as the store's `visibleOrder`); the rows
 are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
-- **Icon-only mode**: dragging the sidebar narrower than 160 px (`SIDEBAR_COMPACT_FROM`) snaps it
-  to 56 px (`SIDEBAR_COMPACT`; `SIDEBAR_MIN` is 56 too) and sets `data-compact="true"` on it.
+- **Icon-only mode**: dragging the sidebar narrower than 120 px (`SIDEBAR_COMPACT_FROM`) settles
+  it in 48–72 px (`SIDEBAR_COMPACT_MIN` / `_MAX`; 56 is the default `SIDEBAR_COMPACT`; `SIDEBAR_MIN`
+  is 48) and sets `data-compact="true"` on it. Stored widths are normalised by `snapWidth`. The
+  macOS traffic lights are hidden (`window.setControlsVisible`) and come back while the pointer is
+  on the top-left corner (`--controls-zone-w` × `--titlebar-h`); a tab filed in a folder shows one
+  `--folder-bar-w` bar per folder, in the folder's hue, on its left. On Windows the address and
+  context bars reserve the caption buttons' width from `env(titlebar-area-*)`.
   Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
   (tabs stay listed under them, unindented), spaces stack as dots, New tab is an icon.
   Tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
-  past 160 px restores the normal layout.
+  past 120 px restores the normal layout.
 - **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 44, favicon
   `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
@@ -249,7 +254,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (child-tab connector) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (open-folder bar) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 14 (child-tab connector) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (open-folder bar) · `--controls-zone-w` 80 (icon-only: hover zone for the traffic lights) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |

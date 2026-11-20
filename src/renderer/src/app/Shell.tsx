@@ -22,6 +22,12 @@ export function Shell() {
 
   useEffect(() => initBrowser(), [initBrowser])
 
+  // Icon-only: the traffic lights go (they would not fit); the top-left corner brings them back
+  // while the pointer is on it. Leaving icon-only shows them again.
+  useEffect(() => {
+    void window.acab.invoke('window.setControlsVisible', { visible: !resize.compact })
+  }, [resize.compact])
+
   // Shortcuts pressed while a page has focus arrive from main's menu.
   useEffect(
     () =>
@@ -55,6 +61,18 @@ export function Shell() {
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
       <div className={styles.sidebarSlot}>
+        {resize.compact && (
+          <div
+            className={styles.controlsZone}
+            data-testid="controls-zone"
+            onPointerEnter={() =>
+              void window.acab.invoke('window.setControlsVisible', { visible: true })
+            }
+            onPointerLeave={() =>
+              void window.acab.invoke('window.setControlsVisible', { visible: false })
+            }
+          />
+        )}
         <Sidebar compact={resize.compact} />
         <div
           className={styles.resizer}
