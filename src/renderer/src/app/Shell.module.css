@@ -121,6 +121,36 @@
   font-size: var(--text-xs);
 }
 
+/* Address bar + page card. With the bar attached (setting), this box is the one card. */
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-contextbar='attached'] .page {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-surface);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+}
+
+:root[data-glass='liquid'][data-contextbar='attached'] .page {
+  border-color: var(--glass-edge);
+}
+
+:root[data-contextbar='attached'] .card,
+:root[data-glass='liquid'][data-contextbar='attached'] .card {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .card {
   flex: 1;
   min-height: 0;

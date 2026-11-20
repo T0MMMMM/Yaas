@@ -84,3 +84,31 @@ test('settings survive a relaunch', async () => {
     rmSync(userData, { recursive: true, force: true })
   }
 })
+
+test('appearance settings toggle askew cards and attach the address bar', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const app = await launchApp(userData)
+  try {
+    const page = await uiPage(app)
+    await page.getByRole('button', { name: 'Open ACAB' }).click()
+    const root = (name: string) =>
+      page.evaluate((key) => document.documentElement.dataset[key], name)
+    await expect.poll(() => root('askew')).toBe('on')
+    await expect.poll(() => root('contextbar')).toBe('card')
+
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    await page.getByRole('menuitem', { name: 'Settings' }).click()
+    await page
+      .getByRole('navigation', { name: 'Settings sections' })
+      .getByRole('button', { name: 'Appearance' })
+      .click()
+    await page.getByRole('switch', { name: 'Askew cards' }).click()
+    await page.getByRole('radio', { name: 'Attached' }).click()
+
+    await expect.poll(() => root('askew')).toBe('off')
+    await expect.poll(() => root('contextbar')).toBe('attached')
+  } finally {
+    await app.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})

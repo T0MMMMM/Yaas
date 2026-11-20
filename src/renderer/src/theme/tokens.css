@@ -134,6 +134,12 @@
   );
 }
 
+/* Askew cards off (setting): no tilt anywhere. !important beats the per-item inline angles. */
+:root[data-askew='off'] * {
+  --tilt-hover: 0deg !important;
+  --tilt-selected: 0deg !important;
+}
+
 /* ---------- transparency → liquid glass (DESIGN.md §4) ---------- */
 
 /* See-through: the frame fades with the slider; the desktop shows through native vibrancy. */

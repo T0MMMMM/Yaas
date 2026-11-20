@@ -54,7 +54,7 @@ export function General() {
 }
 
 export function Appearance() {
-  const { settings } = useSettings()
+  const { settings, update } = useSettings()
   if (!settings) return null
   return (
     <>
@@ -62,6 +62,32 @@ export function Appearance() {
         <div className={fields.fields}>
           <AppearanceFields />
         </div>
+      </SettingGroup>
+      <SettingGroup title="Layout and motion">
+        <SettingRow
+          label="Askew cards"
+          description="Hovered and selected cards tilt slightly, each at its own angle."
+        >
+          <Switch
+            label="Askew cards"
+            checked={settings.askewCards}
+            onChange={(askewCards) => void update({ askewCards })}
+          />
+        </SettingRow>
+        <SettingRow
+          label="Address bar"
+          description="In its own card above the page, or attached to the page with a separator."
+        >
+          <Segmented
+            label="Address bar"
+            value={settings.contextBarStyle}
+            options={[
+              { value: 'card', label: 'Own card' },
+              { value: 'attached', label: 'Attached' },
+            ]}
+            onChange={(contextBarStyle) => void update({ contextBarStyle })}
+          />
+        </SettingRow>
       </SettingGroup>
       <SettingGroup title="Text">
         <SettingRow label="Interface density" soon>

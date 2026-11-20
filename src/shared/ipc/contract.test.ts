@@ -18,6 +18,9 @@ describe('IPC contract', () => {
     expect(input.safeParse({ autoArchive: { enabled: true, afterDays: 7 } }).success).toBe(true)
     expect(input.safeParse({ autoArchive: { enabled: true, afterDays: 0 } }).success).toBe(false)
     expect(input.safeParse({ sidebarWidth: 120 }).success).toBe(false)
+    expect(input.safeParse({ askewCards: false }).success).toBe(true)
+    expect(input.safeParse({ contextBarStyle: 'attached' }).success).toBe(true)
+    expect(input.safeParse({ contextBarStyle: 'floating' }).success).toBe(false)
     expect(input.safeParse({ nodeIntegration: true }).success).toBe(false)
   })
 

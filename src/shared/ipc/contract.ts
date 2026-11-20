@@ -21,6 +21,10 @@ export const settingsSchema = z.object({
   spaceSwitcherStyle: z.enum(['emoji', 'letter', 'dots']),
   /** Where the context indicator and account usage live. */
   metersPlacement: z.enum(['contextbar', 'sidebar']),
+  /** Hovered and selected cards tilt slightly, each at its own angle (DESIGN.md §2). */
+  askewCards: z.boolean(),
+  /** The bar above the page: its own card, or attached to the page with a separator line. */
+  contextBarStyle: z.enum(['card', 'attached']),
   /** Sidebar width in px, resizable by drag (DESIGN.md §2). */
   sidebarWidth: z.number().int().min(SIDEBAR_MIN).max(SIDEBAR_MAX),
   /** Archive sessions inactive for N days (never deletes; pinned sessions excluded). */

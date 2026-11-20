@@ -28,6 +28,17 @@
   border-color: transparent;
 }
 
+/* Attached to the page (setting): no card of its own, a separator line above the page. */
+:root[data-contextbar='attached'] .bar,
+:root[data-contextbar='attached'] .bar[data-tinted] {
+  margin-bottom: 0;
+  border-width: 0 0 1px;
+  border-color: var(--border);
+  border-radius: 0;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
 .nav {
   flex: none;
   /* three buttons + gaps; the right-hand twin keeps the URL centred */

@@ -238,6 +238,8 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 | **Appearance** | Color (wheel + hex + presets), scheme, transparency (→ liquid glass), grain | as in onboarding | MVP ✅ |
 | | Account switcher | Emoji · First letter · Dots | MVP ✅ |
 | | Meters (context + usage) | Context bar · Sidebar | MVP ✅ |
+| | Askew cards | On · Off | ✅ |
+| | Address bar | Own card · Attached to the page (separator line) | ✅ |
 | | Interface density | Comfortable · Compact | v1 |
 | | Transcript font size | 12 · 13 · 14 · 15 | v1 |
 | **Accounts** | List: emoji, name, color, plan, sign-in status; add / sign out / remove | — | MVP |

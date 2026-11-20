@@ -49,10 +49,12 @@ export function Shell() {
       </div>
 
       <div className={styles.column}>
-        <AddressBar />
-        <main className={styles.card}>
-          <PageSlot />
-        </main>
+        <div className={styles.page}>
+          <AddressBar />
+          <main className={styles.card}>
+            <PageSlot />
+          </main>
+        </div>
       </div>
 
       {view === 'settings' && <SettingsView />}

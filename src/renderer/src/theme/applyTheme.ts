@@ -22,6 +22,8 @@ export function applyTheme(settings: Settings, info: AppInfo | null): void {
   root.dataset['glass'] = transparency === 0 ? 'off' : transparency >= LIQUID_FROM ? 'liquid' : 'on'
   root.style.setProperty('--transparency', String(transparency))
   root.style.setProperty('--grain', String(settings.grain))
+  root.dataset['askew'] = settings.askewCards ? 'on' : 'off'
+  root.dataset['contextbar'] = settings.contextBarStyle
   if (info) root.dataset['platform'] = info.platform
 
   root.style.setProperty('--accent', settings.accent)
