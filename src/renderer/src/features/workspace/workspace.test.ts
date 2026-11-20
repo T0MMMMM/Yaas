@@ -8,6 +8,7 @@ import {
   openSession,
   sidebarSections,
   sidebarTree,
+  todayCloseOrder,
   usageView,
   type SidebarNode,
 } from './workspace'
@@ -388,5 +389,29 @@ describe('sidebarSections', () => {
   it('only looks at the given space', () => {
     const sections = sidebarSections(stateOf([at('t1', 0)]), 's2', on)
     expect(sections.today.map(shape)).toEqual(['x@0'])
+  })
+})
+
+describe('todayCloseOrder', () => {
+  const today = sidebarSections(
+    stateOf([
+      at('a', 0),
+      at('b', 1, { parentId: 'a' }),
+      at('c', 2),
+      at('a1', 3, {}, 'https://a.com/1'),
+      at('a2', 4, {}, 'https://a.com/2'),
+      at('a3', 5, {}, 'https://a.com/3'),
+    ]),
+    's1',
+    { autoFolders: true },
+  ).today
+
+  it('closes bottom-up, children before parents, automatic folders included', () => {
+    expect(todayCloseOrder(today, null)).toEqual(['a3', 'a2', 'a1', 'c', 'b', 'a'])
+  })
+
+  it('closes the active tab last, so closing the others never activates (loads) a tab', () => {
+    expect(todayCloseOrder(today, 'b')).toEqual(['a3', 'a2', 'a1', 'c', 'a', 'b'])
+    expect(todayCloseOrder(today, 'elsewhere')).toEqual(['a3', 'a2', 'a1', 'c', 'b', 'a'])
   })
 })

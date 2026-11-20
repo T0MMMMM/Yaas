@@ -112,3 +112,55 @@ test('three tabs of one site are drawn as an automatic folder, unless turned off
     ])
   })
 })
+
+/** Counts web contents main creates from now on (a tab's view is one). */
+const countCreatedContents = (app: ElectronApplication) =>
+  app.evaluate(({ app: electronApp }) => {
+    const counter = globalThis as unknown as { createdContents: number }
+    counter.createdContents = 0
+    electronApp.on('web-contents-created', () => {
+      counter.createdContents += 1
+    })
+  })
+
+const createdContents = (app: ElectronApplication) =>
+  app.evaluate(() => (globalThis as unknown as { createdContents: number }).createdContents)
+
+test("Clear closes today's tabs without loading any, ⌘⇧T reopens the last one", async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
+  const site = await startSite()
+  try {
+    const first = await launchApp(userData)
+    const page = await uiPage(first)
+    await finishOnboarding(page)
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await expect(page.getByTestId('today').getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+    await first.close()
+
+    // After a relaunch only the active tab (B) has a view; A is restored without one.
+    const app = await launchApp(userData)
+    try {
+      const again = await uiPage(app)
+      const rows = again.getByTestId('today').getByTestId('tab')
+      await expect(rows).toHaveText(['Page A', 'Page B'])
+      await expect(rows.nth(0).getByRole('button').first()).toHaveAttribute('data-loaded', 'false')
+
+      await countCreatedContents(app)
+      await again.getByRole('button', { name: 'Clear' }).click()
+      await expect(rows).toHaveCount(0)
+      expect(await createdContents(app)).toBe(0)
+
+      // The active tab is closed last, so it is the first one back.
+      await app.evaluate(({ Menu }) =>
+        Menu.getApplicationMenu()?.getMenuItemById('reopenClosed')?.click(),
+      )
+      await expect(rows).toHaveText(['Page B'])
+    } finally {
+      await app.close()
+    }
+  } finally {
+    await site.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})

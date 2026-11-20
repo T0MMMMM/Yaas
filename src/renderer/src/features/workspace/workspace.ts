@@ -229,6 +229,19 @@ export function tabsOf(nodes: SidebarNode[]): TabView[] {
   return nodes.flatMap((n) => (n.kind === 'tab' ? [n.tab] : tabsOf(n.children)))
 }
 
+/**
+ * The order "Clear" closes today's tabs in: bottom-up (children before their parents, so ⌘⇧T
+ * puts each back under its parent), the active tab last. Closing a tab that is not active never
+ * changes the active tab, so no today tab gets activated — and loaded — only to be closed.
+ */
+export function todayCloseOrder(today: SidebarNode[], activeId: string | null): string[] {
+  const ids = tabsOf(today)
+    .map((t) => t.id)
+    .reverse()
+  if (activeId === null || !ids.includes(activeId)) return ids
+  return [...ids.filter((id) => id !== activeId), activeId]
+}
+
 /** Tabs of the sections in drawn order (automatic folders keep their tabs together). */
 function drawnTabs(sections: SidebarSections): TabView[] {
   return [...sections.favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)]

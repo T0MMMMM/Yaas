@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { MagnifyingGlass, Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
-import { tabsOf, type SidebarNode } from '../workspace/workspace'
+import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
@@ -22,13 +22,10 @@ function openNewMenu(button: HTMLElement): Promise<void> {
   return window.acab.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
-/**
- * Closes every today tab, deepest and lowest first: ⌘⇧T then reopens them one by one, top-down,
- * each back under its parent.
- */
-async function clearToday(nodes: SidebarNode[]): Promise<void> {
-  for (const tab of tabsOf(nodes).reverse()) {
-    await window.acab.invoke('browser.closeTab', { tabId: tab.id })
+/** Closes every today tab in `todayCloseOrder`; ⌘⇧T reopens them one by one. */
+async function clearToday(nodes: SidebarNode[], activeId: string | null): Promise<void> {
+  for (const tabId of todayCloseOrder(nodes, activeId)) {
+    await window.acab.invoke('browser.closeTab', { tabId })
   }
 }
 
@@ -91,7 +88,7 @@ export function Sidebar() {
             <button
               className={styles.clear}
               title="Close today's tabs (⌘⇧T reopens them one by one)"
-              onClick={() => void clearToday(sections.today)}
+              onClick={() => void clearToday(sections.today, activeId)}
             >
               Clear
             </button>
