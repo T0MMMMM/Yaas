@@ -31,7 +31,8 @@
   z-index: 5;
   top: 0;
   left: 0;
-  width: var(--controls-zone-w);
+  /* Never wider than the sidebar: it must not spill over the address bar's buttons. */
+  width: min(var(--controls-zone-w), 100%);
   height: var(--titlebar-h);
   -webkit-app-region: no-drag;
 }
