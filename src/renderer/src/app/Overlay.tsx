@@ -25,6 +25,7 @@ export function Overlay() {
 
   useEffect(() => initBrowser(), [initBrowser])
   useEffect(() => window.acab.on('overlay.opened', setRequest), [])
+  useEffect(() => window.acab.on('overlay.closed', () => setRequest(null)), [])
 
   // Transparent body (global.css): only the popover paints, the page shows around it.
   useEffect(() => {

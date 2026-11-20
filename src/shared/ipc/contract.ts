@@ -281,7 +281,10 @@ export const events = {
   'browser.shortcut': shortcutSchema,
   /** To the overlay only: which popover to show, and where. */
   'overlay.opened': overlayRequestSchema,
-  /** To the UI only: the overlay closed, so the button that opened it resets. */
+  /**
+   * To the UI and the overlay: the overlay closed, so the button that opened it resets and the
+   * overlay drops its popover (main can close it, e.g. for ⌘L, without the overlay asking).
+   */
   'overlay.closed': z.void(),
 } as const satisfies Record<EventChannel, z.ZodType>
 

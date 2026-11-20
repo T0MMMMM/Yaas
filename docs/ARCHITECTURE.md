@@ -529,11 +529,13 @@ results come back to the lead as a short summary + branch name, never the full c
   none for the centred cards),
   then shown, focused (Escape reaches it) and sent `overlay.opened`; Escape, a click on its empty
   area or a chosen item call `overlay.close`, which hides it, hands the keyboard back to the UI and
-  sends `overlay.closed` to the UI (the button resets). It is a **trusted sender** exactly like the
+  sends `overlay.closed` to the UI (the button resets) and to the overlay (it drops the popover).
+  It is a **trusted sender** exactly like the
   UI window (nothing else is) and also receives `settings.changed` and `browser.changed`. Actions
   that belong to the UI go through main: `ui.openSettings` / `ui.focusAddress` /
   `ui.renameFolder` emit `browser.shortcut` (`{ kind: 'settings' }` / `{ kind: 'focus-address' }` /
-  `{ kind: 'rename-folder', folderId }`) to the UI. Kinds: `new-menu` (the + menu, opens upward),
+  `{ kind: 'rename-folder', folderId }`) to the UI; these shortcuts (and ⌘L, ⌘,) close an open
+  overlay first, so its card never stays drawn over the field that takes the keyboard. Kinds: `new-menu` (the + menu, opens upward),
   `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`,
   the sidebar's Search) and `command` (`Mod+T`). Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created

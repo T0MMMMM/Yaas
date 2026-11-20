@@ -203,6 +203,9 @@ const sidebarMenuHost: SidebarMenuHost = {
 
 function emitShortcut(shortcut: Shortcut): void {
   if (!mainWindow) return
+  // Any other target (address bar, settings, a folder's name) takes over from an open card, which
+  // would otherwise stay drawn over the window and swallow the next click.
+  if (shortcut.kind !== 'command' && shortcut.kind !== 'tab-finder') overlay?.close()
   // A focused page keeps the keyboard: hand it back to the UI so the user types into its field.
   mainWindow.webContents.focus()
   emit(mainWindow.webContents, 'browser.shortcut', shortcut)
@@ -239,6 +242,7 @@ function openMainWindow(): void {
   // Created before any tab view, then raised over each new one.
   const overlayView = new OverlayView(win, PRELOAD_PATH, rendererUrl(), () => {
     emit(win.webContents, 'overlay.closed', undefined)
+    emit(overlayView.webContents, 'overlay.closed', undefined)
   })
   overlay = overlayView
   tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, () => overlayView.raise())

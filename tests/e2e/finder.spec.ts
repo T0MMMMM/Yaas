@@ -153,3 +153,13 @@ test('the + menu filters its items and creates a folder', async () => {
     await expect(page.getByTestId('folder').getByRole('button', { name: 'Reading' })).toBeVisible()
   })
 })
+
+test('⌘L while the command field is open closes it and edits the address', async () => {
+  await withTabs(async ({ app, page, overlay }) => {
+    await clickMenu(app, 'newTab')
+    await expect(overlay.getByLabel('Search or enter address')).toBeFocused()
+    await clickMenu(app, 'focusAddress')
+    await expect(overlay.getByTestId('command-field')).toHaveCount(0)
+    await expect(page.getByLabel('Address')).toBeFocused()
+  })
+})
