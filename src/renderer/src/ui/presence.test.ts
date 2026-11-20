@@ -60,4 +60,19 @@ describe('withPresence', () => {
         .map((e) => e.item),
     ).toEqual(['a', 'd'])
   })
+
+  it('drops at once an item that moved elsewhere instead of closing', () => {
+    const closed = (s: string): boolean => s !== 'b'
+    expect(view(withPresence(live('a', 'b', 'c'), ['a', 'c'], key, closed))).toEqual(['a', 'c'])
+  })
+
+  it('keeps only the closed items when several leave at once (a space switch, then a close)', () => {
+    const closed = (s: string): boolean => s === 'c'
+    expect(view(withPresence(live('a', 'b', 'c'), [], key, closed))).toEqual(['~c'])
+  })
+
+  it('drops an exiting item that turns out to live elsewhere', () => {
+    const gone = withPresence(live('a', 'b'), ['a'], key)
+    expect(view(withPresence(gone, ['a'], key, () => false))).toEqual(['a'])
+  })
 })

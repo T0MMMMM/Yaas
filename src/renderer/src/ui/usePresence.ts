@@ -8,12 +8,18 @@ const same = <T>(a: Present<T>[], b: Present<T>[]): boolean =>
 const SEPARATOR = '\u0000'
 
 /**
- * `items` as they are drawn: a removed item stays for `exitMs` flagged `exiting`, so its row can
- * play an exit animation, then is dropped.
+ * `items` as they are drawn: a removed item for which `exits` holds stays for `exitMs` flagged
+ * `exiting`, so its row can play an exit animation, then is dropped; any other removed item is
+ * dropped at once (see withPresence).
  */
-export function usePresence<T>(items: T[], key: (item: T) => string, exitMs: number): Present<T>[] {
+export function usePresence<T>(
+  items: T[],
+  key: (item: T) => string,
+  exitMs: number,
+  exits?: (item: T) => boolean,
+): Present<T>[] {
   const [kept, setKept] = useState<Present<T>[]>(() => withPresence([], items, key))
-  const drawn = withPresence(kept, items, key)
+  const drawn = withPresence(kept, items, key, exits)
   // Remembers what is drawn, so the next render merges into it (state set during render).
   if (!same(kept, drawn)) setKept(drawn)
 

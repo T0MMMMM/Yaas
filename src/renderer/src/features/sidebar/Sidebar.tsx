@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
@@ -8,7 +8,7 @@ import { usePresence } from '../../ui/usePresence'
 import { CompactContext } from './CompactContext'
 import { FavoriteTiles } from './FavoriteTiles'
 import { FolderRow } from './FolderRow'
-import { nodeKey, ROW_EXIT_MS } from './rows'
+import { exitsWhenGone, nodeKey, ROW_EXIT_MS } from './rows'
 import { TabRow } from './TabRow'
 import { tilt } from './tilt'
 import { TabDragContext, useTabDrag } from './useTabDrag'
@@ -32,8 +32,15 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
   }
 }
 
-function Rows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | null }) {
-  const rows = usePresence(nodes, nodeKey, ROW_EXIT_MS)
+interface RowsProps {
+  nodes: SidebarNode[]
+  activeId: string | null
+  /** Whether a row that left plays its exit (exitsWhenGone). */
+  exits: (node: SidebarNode) => boolean
+}
+
+function Rows({ nodes, activeId, exits }: RowsProps) {
+  const rows = usePresence(nodes, nodeKey, ROW_EXIT_MS, exits)
   return rows.map(({ item: node, exiting }) => {
     if (node.kind === 'tab') {
       return (
@@ -47,7 +54,9 @@ function Rows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | nu
       )
     }
     // A removed folder just leaves: only tab rows animate out.
-    return exiting ? null : <FolderRow key={nodeKey(node)} node={node} activeId={activeId} />
+    return exiting ? null : (
+      <FolderRow key={nodeKey(node)} node={node} activeId={activeId} exits={exits} />
+    )
   })
 }
 
@@ -66,6 +75,9 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
 
   const sections = workspace?.sections
   const activeId = workspace?.activeTab?.id ?? null
+  const openTabIds = workspace?.openTabIds
+  // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
+  const exits = useMemo(() => exitsWhenGone(openTabIds ?? new Set()), [openTabIds])
   const scroll = useRef<HTMLDivElement>(null)
   const { drag, indicator } = useTabDrag(sections, scroll)
   const dragging = drag.dragging.size > 0
@@ -103,7 +115,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                   data-drop="list:pinned"
                   data-drop-target={dropOn('list:pinned')}
                 >
-                  <Rows nodes={sections.pinned} activeId={activeId} />
+                  <Rows nodes={sections.pinned} activeId={activeId} exits={exits} />
                   {sections.pinned.length === 0 && (
                     <li className={styles.dropHint}>Drop here to pin</li>
                   )}
@@ -142,7 +154,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                 data-drop="list:today"
                 data-drop-target={dropOn('list:today')}
               >
-                {sections && <Rows nodes={sections.today} activeId={activeId} />}
+                {sections && <Rows nodes={sections.today} activeId={activeId} exits={exits} />}
               </ul>
 
               {indicator?.kind === 'line' && (

@@ -57,7 +57,16 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
  * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs dragged
  * onto a pinned folder's row are filed into it.
  */
-export function FolderRow({ node, activeId }: { node: FolderNode; activeId: string | null }) {
+export function FolderRow({
+  node,
+  activeId,
+  exits,
+}: {
+  node: FolderNode
+  activeId: string | null
+  /** Whether a child row that left plays its exit (exitsWhenGone). */
+  exits: (node: SidebarNode) => boolean
+}) {
   const collapsedHosts = useUi((s) => s.collapsedHosts)
   const toggleHost = useUi((s) => s.toggleHost)
   const renaming = useUi((s) => node.kind === 'folder' && s.renamingFolderId === node.folder.id)
@@ -71,7 +80,7 @@ export function FolderRow({ node, activeId }: { node: FolderNode; activeId: stri
   const Icon = collapsed ? Folder : FolderOpen
   // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue.
   const hue = String(folderHue(name))
-  const children = usePresence(node.children, nodeKey, ROW_EXIT_MS)
+  const children = usePresence(node.children, nodeKey, ROW_EXIT_MS, exits)
   const trail = useMemo(() => [...outerTrail, hue], [outerTrail, hue])
 
   const toggle = (): void => {

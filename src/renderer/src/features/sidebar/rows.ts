@@ -10,3 +10,12 @@ export const nodeKey = (node: SidebarNode): string =>
     : node.kind === 'folder'
       ? `folder:${node.folder.id}`
       : `auto:${node.host}`
+
+/**
+ * Whether a row that left its list plays the exit animation: only a tab row whose tab was closed
+ * (in no space any more). A moved tab, the rows of a space just left and a folder just leave.
+ */
+export const exitsWhenGone =
+  (openTabIds: ReadonlySet<string>) =>
+  (node: SidebarNode): boolean =>
+    node.kind === 'tab' && !openTabIds.has(node.tab.id)

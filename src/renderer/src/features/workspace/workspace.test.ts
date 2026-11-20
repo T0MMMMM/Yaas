@@ -220,6 +220,11 @@ describe('browserView', () => {
     expect(view.allTabs.find((t) => t.id === 'b')).toMatchObject({ loading: true, title: 'b' })
   })
 
+  it('browserView knows every open tab of every space, so a moved row is told from a closed one', () => {
+    const view = browserView(browser)
+    expect([...view.openTabIds].sort()).toEqual(['a', 'b', 'c', 'x'])
+  })
+
   it('browserView has no active tab in an empty space', () => {
     const empty = browserView({ ...browser, tabs: [], activeTabIds: { s1: null, s2: null } })
     expect(empty.tabs).toEqual([])

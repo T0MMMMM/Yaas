@@ -410,6 +410,96 @@ test('closing a tab animates its row out', async () => {
   })
 })
 
+/**
+ * Sends one bridge command and returns the most exiting rows the sidebar drew at once while it
+ * applied (watched for 600 ms, past the exit animation).
+ */
+async function exitingDuring(page: Page, channel: string, input: unknown): Promise<number> {
+  return page.evaluate(
+    async ({ channel, input }) => {
+      const sidebar = document.querySelector('[data-testid=sidebar]')
+      if (!sidebar) throw new Error('no sidebar')
+      let exiting = 0
+      const observer = new MutationObserver(() => {
+        exiting = Math.max(exiting, sidebar.querySelectorAll('[data-testid=tab-exiting]').length)
+      })
+      observer.observe(sidebar, { childList: true, subtree: true, attributes: true })
+      const invoke = window.acab.invoke as (channel: string, input: unknown) => Promise<unknown>
+      await invoke(channel, input)
+      await new Promise((resolve) => setTimeout(resolve, 600))
+      observer.disconnect()
+      return exiting
+    },
+    { channel, input },
+  )
+}
+
+test('switching space draws no exiting rows', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    const home = await page.evaluate(() =>
+      window.acab.invoke('browser.state').then((s) => s.activeSpaceId),
+    )
+    const work = await page.evaluate(() =>
+      window.acab.invoke('browser.createSpace', { name: 'Work', color: '#3366ff' }),
+    )
+    await page.evaluate(
+      ({ spaceId, input }) => window.acab.invoke('browser.openTab', { spaceId, input }),
+      { spaceId: work.id, input: site.url('/c') },
+    )
+    await page.evaluate((spaceId) => window.acab.invoke('browser.activateSpace', { spaceId }), home)
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+
+    expect(await exitingDuring(page, 'browser.activateSpace', { spaceId: work.id })).toBe(0)
+    await expect(today.getByTestId('tab')).toHaveText(['Page C'])
+    expect(await exitingDuring(page, 'browser.activateSpace', { spaceId: home })).toBe(0)
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+  })
+})
+
+test('moving a tab draws no exiting row', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await page.evaluate(() => window.acab.invoke('settings.update', { autoFolders: false }))
+    const a = await openTab(page, site.url('/a'))
+    const b = await openTab(page, site.url('/b'))
+    const folder = await page.evaluate(() =>
+      window.acab.invoke('browser.createFolder', { name: 'Reading' }),
+    )
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+
+    // Into a pinned folder, then out of it to the top of pinned, then back to today.
+    const move = { tabId: a.id, section: 'pinned', folderId: folder.id, index: 0 }
+    expect(await exitingDuring(page, 'browser.moveTab', move)).toBe(0)
+    const folderRow = page.getByTestId('pinned').getByTestId('folder')
+    await expect(folderRow.getByTestId('tab')).toHaveText(['Page A'])
+    const unfile = { tabId: a.id, section: 'pinned', folderId: null, index: 0 }
+    expect(await exitingDuring(page, 'browser.moveTab', unfile)).toBe(0)
+    const back = { tabId: b.id, section: 'pinned', index: 0 }
+    expect(await exitingDuring(page, 'browser.moveTab', back)).toBe(0)
+    await expect(page.getByTestId('pinned').getByTestId('tab')).toHaveCount(2)
+    await expect(today.getByTestId('tab')).toHaveCount(0)
+  })
+})
+
+test('a third tab of one site folds the others into an automatic folder without exiting rows', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+
+    expect(await exitingDuring(page, 'browser.openTab', { input: site.url('/c') })).toBe(0)
+    await expect(today.getByTestId('auto-folder').getByTestId('tab')).toHaveText([
+      'Page A',
+      'Page B',
+      'Page C',
+    ])
+  })
+})
+
 test('collapsing a folder keeps its tab rows in the DOM but hides them from assistive tech', async () => {
   await withBrowser(async ({ page, site }) => {
     const tab = await openTab(page, site.url('/a'))

@@ -82,6 +82,11 @@ export interface BrowserView {
   sections: SidebarSections
   /** Every space's tabs, space by space, each space's in drawn order (the tab finder, ⌘K). */
   allTabs: SpaceTab[]
+  /**
+   * Ids of every open tab, in any space: a row whose tab is still here moved (or its space was
+   * left) rather than closed, so it does not animate out.
+   */
+  openTabIds: ReadonlySet<string>
 }
 
 /** A tab with the space it belongs to. */
@@ -309,6 +314,7 @@ export function browserView(
     activeTab: tabs.find((t) => t.id === activeId) ?? null,
     sections,
     allTabs,
+    openTabIds: new Set(allTabs.map((t) => t.id)),
   }
 }
 
