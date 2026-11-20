@@ -63,7 +63,8 @@ caption buttons.
   moves. Same motion in
   the sidebar (sessions, folders) and the Settings navigation.
 - Accounts and the Settings gear are **magnetic**: they lean toward the pointer and spring back
-  (`ui/useMagnetic`, CSS `translate` so it composes with their own transforms).
+  (`ui/useMagnetic`, CSS `translate` so it composes with their own transforms). They stay still
+  under `prefers-reduced-motion`.
 - Hovering a session shows a **⋯** button on the right (session actions) in place of its status dot.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
