@@ -61,3 +61,12 @@
 .header[data-drop-target] .row::before {
   background: var(--accent-soft);
 }
+
+/* Icon-only sidebar: the folder is its icon; its tabs stay listed under it, unindented. */
+:global([data-compact='true']) .count {
+  display: none;
+}
+
+:global([data-compact='true']) .children {
+  padding-left: 0;
+}

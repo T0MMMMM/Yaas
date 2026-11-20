@@ -89,3 +89,13 @@
   color: var(--text-faint);
   font-size: var(--text-sm);
 }
+
+/* Icon-only sidebar: a single column. */
+:global([data-compact='true']) .tiles {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+:global([data-compact='true']) .hint {
+  font-size: var(--text-xs);
+  text-align: center;
+}

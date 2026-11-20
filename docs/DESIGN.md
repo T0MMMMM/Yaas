@@ -83,6 +83,12 @@ caption buttons.
 **Browser sidebar (ACAB, top → bottom of the scroll area)** — the tree comes from
 `sidebarSections` in `features/workspace` (same order as the store's `visibleOrder`); the rows
 are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
+- **Icon-only mode**: dragging the sidebar narrower than 160 px (`SIDEBAR_COMPACT_FROM`) snaps it
+  to 56 px (`SIDEBAR_COMPACT`; `SIDEBAR_MIN` is 56 too) and sets `data-compact="true"` on it.
+  Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
+  (tabs stay listed under them, unindented), spaces stack as dots, Search and New tab are icons.
+  Tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
+  past 160 px restores the normal layout.
 - **Favourites**: no header. A 4-column grid of tiles (`--tile-h` 44, favicon
   `--tile-icon-size` 22) on a soft card; the active tile is lifted and askew like a selected row.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)

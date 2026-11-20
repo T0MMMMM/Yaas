@@ -35,7 +35,7 @@ export function Shell() {
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
       <div className={styles.sidebarSlot}>
-        <Sidebar />
+        <Sidebar compact={resize.compact} />
         <div
           className={styles.resizer}
           role="separator"

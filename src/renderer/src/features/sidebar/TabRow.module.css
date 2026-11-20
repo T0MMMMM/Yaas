@@ -121,3 +121,18 @@
 .item[data-dragged] {
   opacity: var(--opacity-dragged);
 }
+
+/* Icon-only sidebar: the favicon alone, centred, never indented; no × (use the menu or ⌘W). */
+:global([data-compact='true']) .item {
+  margin-left: 0;
+}
+
+:global([data-compact='true']) .row {
+  justify-content: center;
+  padding: 7px 0;
+}
+
+:global([data-compact='true']) .title,
+:global([data-compact='true']) .close {
+  display: none;
+}

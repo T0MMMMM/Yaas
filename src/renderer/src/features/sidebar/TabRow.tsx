@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { X } from '@phosphor-icons/react'
 import type { TabView } from '../workspace/workspace'
 import { Favicon } from './Favicon'
+import { useCompact } from './CompactContext'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
 import { useTabDragHandle } from './useTabDrag'
@@ -13,6 +14,7 @@ import styles from './TabRow.module.css'
  */
 export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; active: boolean }) {
   const drag = useTabDragHandle(tab.id)
+  const compact = useCompact()
   return (
     <li
       className={styles.item}
@@ -31,7 +33,8 @@ export function TabRow({ tab, depth, active }: { tab: TabView; depth: number; ac
         data-active={active}
         data-loaded={tab.loaded}
         aria-current={active ? 'page' : undefined}
-        title={tab.url}
+        title={compact ? tab.title : tab.url}
+        aria-label={compact ? tab.title : undefined}
         onPointerDown={drag.onPointerDown}
         onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
       >

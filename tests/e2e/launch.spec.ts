@@ -37,16 +37,15 @@ test('first launch shows onboarding, then the browser', async () => {
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('settings')).toHaveCount(0)
 
-    // The sidebar resizes by drag, never below its minimum width.
+    // The sidebar resizes by drag, down to the icon-only width.
     const handle = await page.getByTestId('sidebar-resizer').boundingBox()
     if (!handle) throw new Error('resizer not found')
     await page.mouse.move(handle.x + 4, 400)
     await page.mouse.down()
     await page.mouse.move(20, 400, { steps: 5 })
     await page.mouse.up()
-    await expect
-      .poll(async () => (await page.getByTestId('sidebar').boundingBox())?.width)
-      .toBe(200)
+    await expect.poll(async () => (await page.getByTestId('sidebar').boundingBox())?.width).toBe(56)
+    await expect(page.getByTestId('sidebar')).toHaveAttribute('data-compact', 'true')
 
     // The renderer is isolated: no Node, only the bridge.
     const globals = await page.evaluate(() => ({

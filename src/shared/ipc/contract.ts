@@ -4,7 +4,10 @@ import { z } from 'zod'
 import type { Account, BrowserFolder, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
 import type { CommandChannel, EventChannel } from './channels'
 
-export const SIDEBAR_MIN = 200
+export const SIDEBAR_MIN = 56
+/** The icon-only width, and the width under which a dragged sidebar snaps to it. */
+export const SIDEBAR_COMPACT = 56
+export const SIDEBAR_COMPACT_FROM = 160
 export const SIDEBAR_MAX = 440
 export const SIDEBAR_DEFAULT = 248
 

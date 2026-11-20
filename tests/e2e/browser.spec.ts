@@ -154,6 +154,48 @@ test('page follows the card', async () => {
   })
 })
 
+test('the sidebar snaps to icons when dragged narrow', async () => {
+  await withBrowser(async ({ app, page }) => {
+    await page.getByTestId('new-tab').click()
+    await expect.poll(() => shownView(app)).toBeTruthy()
+    const sidebar = page.getByTestId('sidebar')
+    const dragTo = async (x: number) => {
+      const handle = await page.getByTestId('sidebar-resizer').boundingBox()
+      if (!handle) throw new Error('resizer not found')
+      await page.mouse.move(handle.x + 4, 400)
+      await page.mouse.down()
+      await page.mouse.move(x, 400, { steps: 5 })
+      await page.mouse.up()
+    }
+
+    await dragTo(80)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(56)
+    await expect(sidebar).toHaveAttribute('data-compact', 'true')
+    // Only the favicon shows; the title is the tooltip.
+    const row = page.getByTestId('tab').getByRole('button').first()
+    await expect(row).toHaveAttribute('title', /.+/)
+    await expect(page.getByTestId('tab').locator('span')).toBeHidden()
+    // The page card still follows the sidebar.
+    const slot = async () => {
+      const box = await page.getByTestId('page-slot').boundingBox()
+      if (!box) throw new Error('page slot not found')
+      return {
+        x: Math.round(box.x),
+        y: Math.round(box.y),
+        width: Math.round(box.width),
+        height: Math.round(box.height),
+      }
+    }
+    await expect
+      .poll(async () => JSON.stringify(await shownView(app)))
+      .toBe(JSON.stringify(await slot()))
+
+    await dragTo(300)
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBeGreaterThan(250)
+    await expect(sidebar).toHaveAttribute('data-compact', 'false')
+  })
+})
+
 test('settings hide the page', async () => {
   await withBrowser(async ({ app, page }) => {
     await page.getByTestId('new-tab').click()

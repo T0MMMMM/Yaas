@@ -1,9 +1,21 @@
 import { useCallback, useState, type PointerEvent } from 'react'
-import { SIDEBAR_DEFAULT, SIDEBAR_MAX, SIDEBAR_MIN } from '@shared/ipc/contract'
+import {
+  SIDEBAR_COMPACT,
+  SIDEBAR_COMPACT_FROM,
+  SIDEBAR_DEFAULT,
+  SIDEBAR_MAX,
+  SIDEBAR_MIN,
+} from '@shared/ipc/contract'
 import { useSettings } from '../stores/settings'
 
 export const clampSidebar = (px: number) =>
   Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, px)))
+
+/** The width a drag settles on: under the compact threshold the icon-only width, else clamped. */
+export const snapWidth = (px: number): number =>
+  px < SIDEBAR_COMPACT_FROM
+    ? SIDEBAR_COMPACT
+    : Math.round(Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_COMPACT_FROM, px)))
 
 /**
  * Drag-to-resize for the sidebar. The width follows the pointer locally while dragging and is
@@ -25,7 +37,7 @@ export function useSidebarResize() {
       setDragWidth(startWidth)
 
       const move = (ev: globalThis.PointerEvent) => {
-        latest = clampSidebar(startWidth + ev.clientX - startX)
+        latest = snapWidth(startWidth + ev.clientX - startX)
         setDragWidth(latest)
       }
       const up = () => {
@@ -42,5 +54,11 @@ export function useSidebarResize() {
 
   const reset = useCallback(() => void update({ sidebarWidth: SIDEBAR_DEFAULT }), [update])
 
-  return { width, resizing: dragWidth !== null, onPointerDown, reset }
+  return {
+    width,
+    compact: width < SIDEBAR_COMPACT_FROM,
+    resizing: dragWidth !== null,
+    onPointerDown,
+    reset,
+  }
 }

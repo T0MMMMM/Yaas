@@ -320,3 +320,42 @@ kbd {
   background: var(--accent);
   pointer-events: none;
 }
+
+/* ---------- icon-only (dragged narrower than SIDEBAR_COMPACT_FROM) ---------- */
+
+/* Favicons in one centred column; titles, shortcuts and counts are gone (tooltips remain). */
+.sidebar[data-compact='true'] {
+  padding: 0 var(--space-1) 6px;
+}
+
+.sidebar[data-compact='true'] .search,
+.sidebar[data-compact='true'] .newTab {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar[data-compact='true'] .search span,
+.sidebar[data-compact='true'] .search kbd,
+.sidebar[data-compact='true'] .newTab span,
+.sidebar[data-compact='true'] .newTab kbd,
+.sidebar[data-compact='true'] .clear,
+.sidebar[data-compact='true'] .slot {
+  display: none;
+}
+
+.sidebar[data-compact='true'] .separator {
+  padding: 0;
+}
+
+/* Spaces stack as dots, the + sits under them. */
+.sidebar[data-compact='true'] .bottom {
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sidebar[data-compact='true'] .spaces {
+  flex: none;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+}
