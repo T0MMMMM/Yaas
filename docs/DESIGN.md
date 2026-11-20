@@ -160,7 +160,7 @@ Two settings drive the material, both 0–1 and set as CSS variables:
 
 | Setting | Effect |
 |---|---|
-| `transparency` → `--transparency` | `0` = opaque. The **slider** covers the frosted range (0–0.89): native blur of the desktop under a fading frame. **Liquid glass** is a separate cell at the end of the slider (value 1, `data-glass="liquid"`): no blur, the frame disappears and the **desktop itself shows through**; the sidebar and the session card float on it as glass panels (semi-opaque, lit edge, soft sheen, shadow). |
+| `transparency` → `--transparency` | `0` = opaque. The **slider** covers the frosted range (0–0.89): native blur of the desktop under a fading frame. **Liquid glass** is a separate cell at the end of the slider (value 1, `data-glass="liquid"`): no blur, the frame thins to a light tint (30 %, never fully clear) and the **desktop shows through it**; the sidebar and the session card float on it as glass panels (semi-opaque, lit edge, soft sheen, shadow). |
 | `grain` → `--grain` | Grain intensity on the frame (opacity `grain × 0.3`), `0` = off. |
 
 ### 3.4 Sliders

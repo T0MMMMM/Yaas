@@ -144,21 +144,21 @@
   --surface-alpha: calc(1 - var(--transparency) * 0.12);
 }
 
-/* Liquid glass: the frame disappears — the desktop itself shows through (no native blur) — and
-   the sidebar and cards float on it as glass panels with a lit edge. */
+/* Liquid glass: the frame thins to a light tint — the desktop shows through it (no native blur),
+   never fully clear — and the sidebar and cards float on it as glass panels with a lit edge. */
 :root[data-glass='liquid'] {
-  --sidebar-alpha: 0;
-  --surface-alpha: 0.58;
+  --sidebar-alpha: 0.3;
+  --surface-alpha: 0.72;
   --glass-blur: 24px;
   --glass-edge: rgb(255 255 255 / 0.7);
-  --glass-panel: color-mix(in srgb, var(--neutral-surface) 52%, transparent);
+  --glass-panel: color-mix(in srgb, var(--neutral-surface) 66%, transparent);
   --glass-sheen: linear-gradient(170deg, rgb(255 255 255 / 0.25), rgb(255 255 255 / 0) 35%);
 }
 
 :root[data-glass='liquid'][data-scheme='dark'] {
-  --surface-alpha: 0.55;
+  --surface-alpha: 0.7;
   --glass-edge: rgb(255 255 255 / 0.18);
-  --glass-panel: color-mix(in srgb, var(--neutral-surface) 58%, transparent);
+  --glass-panel: color-mix(in srgb, var(--neutral-surface) 70%, transparent);
 }
 
 :root[data-platform='windows'] {
