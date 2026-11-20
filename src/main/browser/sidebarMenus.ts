@@ -1,7 +1,7 @@
 // Native context menus of the sidebar's tabs and folders, popped at the pointer by main (a native
 // menu floats over the page view, which a renderer popover can't).
 import { clipboard, Menu, type BrowserWindow, type MenuItemConstructorOptions } from 'electron'
-import type { BrowserStore } from '@core/browser/browserStore'
+import { BrowserError, type BrowserStore } from '@core/browser/browserStore'
 import type { Shortcut } from '@shared/ipc/contract'
 import type { BrowserSnapshot, BrowserTab, TabSection } from '@shared/model'
 
@@ -33,9 +33,32 @@ function endOf(
   return tabs + folders
 }
 
+/**
+ * The tab or folder can vanish while its menu is open (closed by a shortcut, a page, another
+ * window): the click then does nothing instead of throwing in main.
+ */
+function ignoreVanished(items: MenuItemConstructorOptions[]): MenuItemConstructorOptions[] {
+  return items.map((item) => {
+    const { click, submenu } = item
+    return {
+      ...item,
+      ...(click && {
+        click: (...args: Parameters<typeof click>) => {
+          try {
+            click(...args)
+          } catch (error) {
+            if (!(error instanceof BrowserError)) throw error
+          }
+        },
+      }),
+      ...(Array.isArray(submenu) && { submenu: ignoreVanished(submenu) }),
+    }
+  })
+}
+
 function popup(host: SidebarMenuHost, template: MenuItemConstructorOptions[]): void {
   const win = host.window()
-  if (win) Menu.buildFromTemplate(template).popup({ window: win })
+  if (win) Menu.buildFromTemplate(ignoreVanished(template)).popup({ window: win })
 }
 
 function tabMenu(host: SidebarMenuHost, tab: BrowserTab): MenuItemConstructorOptions[] {
@@ -45,6 +68,8 @@ function tabMenu(host: SidebarMenuHost, tab: BrowserTab): MenuItemConstructorOpt
     store.moveTab(tab.id, { section, folderId, index })
   const folders = snapshot.folders.filter((f) => f.spaceId === tab.spaceId)
   const newFolder = (): void => {
+    // Checked first so a vanished tab leaves no empty folder behind.
+    if (!store.snapshot().tabs.some((t) => t.id === tab.id)) return
     const folder = store.createFolder(tab.spaceId, NEW_FOLDER_NAME)
     store.moveTab(tab.id, { section: 'pinned', folderId: folder.id, index: 0 })
     host.emitShortcut({ kind: 'rename-folder', folderId: folder.id })
@@ -93,11 +118,15 @@ export function showTabMenu(host: SidebarMenuHost, tabId: string): void {
 
 /** Pops the folder's menu: rename (edited in the sidebar) or delete with its tabs. */
 export function showFolderMenu(host: SidebarMenuHost, folderId: string): void {
-  if (!host.store.snapshot().folders.some((f) => f.id === folderId)) {
-    throw new Error(`Unknown folder ${folderId}`)
-  }
+  const exists = (): boolean => host.store.snapshot().folders.some((f) => f.id === folderId)
+  if (!exists()) throw new Error(`Unknown folder ${folderId}`)
   popup(host, [
-    { label: 'Rename', click: () => host.emitShortcut({ kind: 'rename-folder', folderId }) },
+    {
+      label: 'Rename',
+      click: () => {
+        if (exists()) host.emitShortcut({ kind: 'rename-folder', folderId })
+      },
+    },
     { label: 'Delete Folder', click: () => host.store.deleteFolder(folderId) },
   ])
 }
