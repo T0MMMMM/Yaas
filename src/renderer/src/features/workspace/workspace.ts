@@ -1,7 +1,76 @@
-// Workspace: everything the UI needs to know about spaces, environments and sessions, as ready-to-
-// render views. Components never read the raw data or re-derive pinning rules themselves.
-import type { SessionStatus } from '@shared/model'
+// Workspace: everything the UI needs to know about spaces and tabs (and, hidden until AI tabs,
+// environments and sessions), as ready-to-render views. Components never read the raw data or
+// re-derive these rules themselves.
+import type { BrowserState, TabRuntime } from '@shared/ipc/contract'
+import type { BrowserSpace, BrowserTab, SessionStatus } from '@shared/model'
+import { displayUrl } from '@shared/url'
 import type { DemoEnvironment, DemoSession, DemoSpace, DemoUsage } from './demoData'
+
+// ---------- browser ----------
+
+export interface SpaceSummary {
+  id: string
+  label: string
+  color: string
+}
+
+export interface TabView {
+  id: string
+  title: string
+  url: string
+  faviconUrl: string | null
+  /** From displayUrl: shown bright. */
+  host: string
+  /** From displayUrl: shown dimmed. */
+  rest: string
+  loading: boolean
+  canGoBack: boolean
+  canGoForward: boolean
+  themeColor: string | null
+}
+
+export interface BrowserView {
+  spaces: SpaceSummary[]
+  space: SpaceSummary
+  /** The active space's tabs, by position. */
+  tabs: TabView[]
+  activeTab: TabView | null
+}
+
+/** A tab without a view yet (never shown since launch) has no live state. */
+const IDLE: TabRuntime = { loading: false, canGoBack: false, canGoForward: false, themeColor: null }
+
+const toSpace = (s: BrowserSpace): SpaceSummary => ({ id: s.id, label: s.name, color: s.color })
+
+function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
+  const { host, rest } = displayUrl(tab.url)
+  return {
+    id: tab.id,
+    title: tab.title || host || 'New tab',
+    url: tab.url,
+    faviconUrl: tab.faviconUrl,
+    host,
+    rest,
+    ...(runtime ?? IDLE),
+  }
+}
+
+/** The browser as the chrome shows it: the active space, its tabs in order and the active tab. */
+export function browserView(state: BrowserState): BrowserView {
+  const spaces = state.spaces.map(toSpace)
+  const space = spaces.find((s) => s.id === state.activeSpaceId) ?? spaces[0]
+  // Main always keeps at least one space.
+  if (!space) throw new Error('Browser state has no space')
+
+  const tabs = state.tabs
+    .filter((t) => t.spaceId === space.id)
+    .sort((a, b) => a.position - b.position)
+    .map((t) => toTab(t, state.runtime[t.id]))
+  const activeId = state.activeTabIds[space.id] ?? null
+  return { spaces, space, tabs, activeTab: tabs.find((t) => t.id === activeId) ?? null }
+}
+
+// ---------- sessions (hidden until AI tabs) ----------
 
 /** Context window of the models in use (tokens). */
 export const CONTEXT_LIMIT = 200_000

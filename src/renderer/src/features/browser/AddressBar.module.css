@@ -1,0 +1,142 @@
+/* yab-style address bar on top of the page. Background: the site's theme colour, set inline as
+   runtime data, else the card token. Text colour follows it (black or white). */
+.bar {
+  flex: none;
+  height: var(--addressbar-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 5px;
+  padding: 0 var(--space-1);
+  padding-right: calc(var(--space-1) + var(--titlebar-overlay-w));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow: inset 0 1px 0 var(--glass-edge);
+  transition:
+    background-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
+}
+
+:root[data-glass='liquid'] .bar {
+  border-color: var(--glass-edge);
+}
+
+.bar[data-tinted] {
+  border-color: transparent;
+}
+
+.nav {
+  flex: none;
+  width: 96px; /* three 30 px buttons + gaps: the right-hand twin keeps the URL centred */
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  opacity: 0.72;
+  cursor: pointer;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.button:hover:not(:disabled) {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.button:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.button[data-loading='true'] svg {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.url,
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--text-md);
+  color: inherit;
+}
+
+.url {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  padding: 0 var(--space-2);
+  line-height: 28px;
+  background: transparent;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: text;
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.url:hover {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.host {
+  flex: none;
+  font-weight: 600;
+}
+
+.rest {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-faint);
+}
+
+/* On a site colour the token greys would clash: dim the bar's own text colour instead. */
+.bar[data-tinted] .rest,
+.bar[data-tinted] .placeholder {
+  color: inherit;
+  opacity: 0.55;
+}
+
+.placeholder {
+  color: var(--text-faint);
+}
+
+.input {
+  padding: 0 var(--space-3);
+  text-align: center;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  outline: none;
+}
+
+.input::placeholder {
+  color: inherit;
+  opacity: 0.5;
+}

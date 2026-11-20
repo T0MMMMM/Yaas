@@ -1,33 +1,19 @@
 import { create } from 'zustand'
 
-/** Purely visual state of the window (active space / session, view, open folders). */
+/** Purely visual state of the window. Spaces and tabs come from main (stores/browser). */
 interface UiState {
-  /** null = the first space. */
-  activeSpaceId: string | null
-  activeSessionId: string | null
-  view: 'session' | 'settings'
-  closedEnvironments: ReadonlySet<string>
-  setSpace: (id: string) => void
-  openSession: (id: string) => void
+  view: 'browser' | 'settings'
+  /** Bumped to ask the address bar to enter edit mode (⌘T, ⌘L, "New tab"). */
+  addressFocus: number
   openSettings: () => void
   closeSettings: () => void
-  toggleEnvironment: (id: string) => void
+  focusAddress: () => void
 }
 
 export const useUi = create<UiState>((set) => ({
-  activeSpaceId: null,
-  activeSessionId: null,
-  view: 'session',
-  closedEnvironments: new Set(['website']),
-  setSpace: (activeSpaceId) => set({ activeSpaceId, activeSessionId: null, view: 'session' }),
-  openSession: (activeSessionId) => set({ activeSessionId, view: 'session' }),
+  view: 'browser',
+  addressFocus: 0,
   openSettings: () => set({ view: 'settings' }),
-  closeSettings: () => set({ view: 'session' }),
-  toggleEnvironment: (id) =>
-    set(({ closedEnvironments }) => {
-      const next = new Set(closedEnvironments)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return { closedEnvironments: next }
-    }),
+  closeSettings: () => set({ view: 'browser' }),
+  focusAddress: () => set(({ addressFocus }) => ({ addressFocus: addressFocus + 1 })),
 }))

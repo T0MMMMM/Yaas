@@ -1,5 +1,5 @@
 import { ContextMeter, UsageMeter } from '../features/meters/Meters'
-import { useWorkspace } from '../features/workspace/useWorkspace'
+import { useSessionWorkspace } from '../features/workspace/useWorkspace'
 import { useSettings } from '../stores/settings'
 import styles from './Shell.module.css'
 
@@ -8,7 +8,7 @@ import styles from './Shell.module.css'
  * Also a window drag region.
  */
 export function ContextBar() {
-  const { open, usage } = useWorkspace()
+  const { open, usage } = useSessionWorkspace()
   const placement = useSettings((s) => s.settings?.metersPlacement ?? 'contextbar')
   if (!open) return null
 

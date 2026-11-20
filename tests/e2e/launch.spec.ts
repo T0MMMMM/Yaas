@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
 import { launchApp } from './helpers'
 
-test('first launch shows onboarding, then the sidebar', async () => {
+test('first launch shows onboarding, then the browser', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
   const app = await launchApp(userData)
 
@@ -26,19 +26,14 @@ test('first launch shows onboarding, then the sidebar', async () => {
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await expect(page.getByTestId('empty-state')).toBeVisible()
 
-    // The context bar only exists while a session is open.
-    await expect(page.getByTestId('contextbar')).toHaveCount(0)
-    await page.getByRole('button', { name: 'Fix login redirect' }).click()
-    await expect(page.getByTestId('contextbar').getByTestId('context-indicator')).toBeVisible()
+    await expect(page.getByTestId('address-bar')).toBeVisible()
 
-    // Settings: move the meters to the sidebar.
-    await page.getByRole('button', { name: 'Settings', exact: true }).click()
+    // Settings open from the + menu and close with Escape.
+    await page.getByRole('button', { name: 'New tab, space or settings' }).click()
+    await page.getByRole('menuitem', { name: 'Settings' }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
-    await page.getByRole('button', { name: 'Appearance' }).click()
-    await page.getByRole('radio', { name: 'Sidebar' }).click()
     await page.keyboard.press('Escape')
-    await expect(page.getByTestId('sidebar').getByTestId('context-indicator')).toBeVisible()
-    await expect(page.getByTestId('contextbar').getByTestId('context-indicator')).toHaveCount(0)
+    await expect(page.getByTestId('settings')).toHaveCount(0)
 
     // The sidebar resizes by drag, never below its minimum width.
     const handle = await page.getByTestId('sidebar-resizer').boundingBox()

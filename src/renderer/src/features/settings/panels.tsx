@@ -3,7 +3,7 @@ import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
 import { Segmented } from '../../ui/Segmented'
 import { Switch } from '../../ui/Switch'
-import { useWorkspace } from '../workspace/useWorkspace'
+import { useSessionWorkspace } from '../workspace/useWorkspace'
 import { AppearanceFields, SwitcherField } from './AppearanceFields'
 import fields from './Fields.module.css'
 import { SettingGroup, SettingRow } from './SettingRow'
@@ -107,7 +107,7 @@ export function Appearance() {
 }
 
 export function Accounts() {
-  const { spaces, demo } = useWorkspace()
+  const { spaces, demo } = useSessionWorkspace()
   return (
     <>
       <SettingGroup>

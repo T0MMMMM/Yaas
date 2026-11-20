@@ -1,46 +1,77 @@
+import { useMemo } from 'react'
 import { useAccounts } from '../../stores/accounts'
-import { useUi } from '../../stores/ui'
+import { useBrowser } from '../../stores/browser'
 import { DEMO_SPACES } from './demoData'
-import { openSession, sidebarTree, usageView, type SidebarTree } from './workspace'
+import {
+  browserView,
+  sidebarTree,
+  usageView,
+  type BrowserView,
+  type OpenSessionView,
+  type SidebarTree,
+  type UsageView,
+} from './workspace'
+
+/**
+ * The single entry point for workspace data in the renderer: the spaces, the active space's tabs
+ * and the active tab. null until the first browser state arrives from main.
+ */
+export function useWorkspace(): BrowserView | null {
+  const state = useBrowser((s) => s.state)
+  return useMemo(() => (state ? browserView(state) : null), [state])
+}
+
+// ---------- sessions: hidden until AI tabs (step 3) ----------
 
 // Demo reset times are computed once per app start so they don't drift between renders.
 const appStart = Date.now()
 
 const EMPTY_TREE: SidebarTree = { pinned: [], environments: [] }
 
-export interface SpaceSummary {
+export interface AccountSummary {
   id: string
   label: string
   emoji: string
 }
 
 /**
- * The single entry point for workspace data in the renderer: the spaces, the active space's
- * sidebar tree, the open session and the account usage.
- *
- * Real accounts are the spaces as soon as one exists. Their sessions and usage are not wired yet,
- * so their tree is empty and usage unknown. With no account at all, demo data shows the layout.
+ * Session data for the hidden YAAS views (SessionView, ContextBar, meters): the Claude accounts,
+ * a sidebar tree, the open session and the usage. No session can be opened in the browser UI, so
+ * `open` is always null.
  */
-export function useWorkspace() {
-  const activeSpaceId = useUi((s) => s.activeSpaceId)
-  const activeSessionId = useUi((s) => s.activeSessionId)
+export interface SessionWorkspace {
+  spaces: AccountSummary[]
+  space: AccountSummary | null
+  tree: SidebarTree | null
+  open: OpenSessionView | null
+  usage: UsageView | null
+  demo: boolean
+}
+
+export function useSessionWorkspace(): SessionWorkspace {
   const accounts = useAccounts((s) => s.accounts)
 
   if (accounts && accounts.length > 0) {
-    const spaces: SpaceSummary[] = accounts.map(({ id, label, emoji }) => ({ id, label, emoji }))
-    const space = spaces.find((s) => s.id === activeSpaceId) ?? spaces[0] ?? null
-    return { spaces, space, tree: EMPTY_TREE, open: null, usage: null, demo: false }
+    const spaces: AccountSummary[] = accounts.map(({ id, label, emoji }) => ({ id, label, emoji }))
+    return {
+      spaces,
+      space: spaces[0] ?? null,
+      tree: EMPTY_TREE,
+      open: null,
+      usage: null,
+      demo: false,
+    }
   }
 
-  const spaces: SpaceSummary[] = DEMO_SPACES.map(({ id, label, emoji }) => ({ id, label, emoji }))
-  const space = DEMO_SPACES.find((s) => s.id === activeSpaceId) ?? DEMO_SPACES[0]
+  const spaces: AccountSummary[] = DEMO_SPACES.map(({ id, label, emoji }) => ({ id, label, emoji }))
+  const space = DEMO_SPACES[0]
   if (!space) return { spaces, space: null, tree: null, open: null, usage: null, demo: true }
 
   return {
     spaces,
-    space: { id: space.id, label: space.label, emoji: space.emoji } satisfies SpaceSummary,
+    space: { id: space.id, label: space.label, emoji: space.emoji } satisfies AccountSummary,
     tree: sidebarTree(space),
-    open: openSession(space, activeSessionId),
+    open: null,
     usage: usageView(space, appStart),
     demo: true,
   }

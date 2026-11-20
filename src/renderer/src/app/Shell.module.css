@@ -6,8 +6,6 @@
   background: var(--bg-sidebar);
 }
 
-/* ---------- right column: top bar + card ---------- */
-
 /* Liquid glass: the sidebar becomes a floating glass panel over the desktop. */
 :root[data-glass='liquid'] .sidebarSlot {
   margin: 5px 5px 5px 5px;
@@ -60,6 +58,8 @@
   cursor: col-resize;
   user-select: none;
 }
+
+/* ---------- right column: address bar + page card ---------- */
 
 .column {
   flex: 1;
@@ -144,31 +144,4 @@
     0 10px 30px rgb(0 0 0 / 0.12);
   background:
     linear-gradient(160deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 40%), var(--bg-surface);
-}
-
-.empty {
-  flex: 1;
-  display: grid;
-  place-content: center;
-  text-align: center;
-  gap: var(--space-2);
-}
-
-.emptyTitle {
-  margin: 0;
-  font-size: var(--text-lg);
-  font-weight: 600;
-}
-
-.emptyHint {
-  margin: 0;
-  color: var(--text-muted);
-}
-
-.emptyHint kbd {
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  padding: 1px var(--space-1);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
 }

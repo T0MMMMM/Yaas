@@ -73,7 +73,10 @@ function cycleTab(step: 1 | -1): void {
 }
 
 function emitShortcut(shortcut: 'focus-address' | 'settings'): void {
-  if (mainWindow) emit(mainWindow.webContents, 'browser.shortcut', shortcut)
+  if (!mainWindow) return
+  // A focused page keeps the keyboard: hand it back to the UI so the user types into its field.
+  mainWindow.webContents.focus()
+  emit(mainWindow.webContents, 'browser.shortcut', shortcut)
 }
 
 function setupMenu(): void {

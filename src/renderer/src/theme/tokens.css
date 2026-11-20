@@ -43,6 +43,7 @@
   /* layout */
   --sidebar-w: 248px;
   --titlebar-h: 44px;
+  --addressbar-h: 38px;
   --titlebar-overlay-w: 0px; /* Windows caption buttons */
 
   /* motion */

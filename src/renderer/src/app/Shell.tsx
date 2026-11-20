@@ -1,18 +1,31 @@
-import type { CSSProperties } from 'react'
-import { SessionView } from '../features/session/SessionView'
+import { useEffect, type CSSProperties } from 'react'
+import { AddressBar } from '../features/browser/AddressBar'
+import { PageSlot } from '../features/browser/PageSlot'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
-import { useWorkspace } from '../features/workspace/useWorkspace'
+import { useBrowser } from '../stores/browser'
 import { useUi } from '../stores/ui'
-import { ContextBar } from './ContextBar'
 import { useSidebarResize } from './useSidebarResize'
 import styles from './Shell.module.css'
 
-/** Main layout: sidebar + context bar (in a session) + content card (DESIGN.md §2). */
+/** Main layout: sidebar | address bar over the page card (spec, "Browser chrome"). */
 export function Shell() {
   const view = useUi((s) => s.view)
-  const { open } = useWorkspace()
+  const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
+
+  useEffect(() => initBrowser(), [initBrowser])
+
+  // Shortcuts pressed while a page has focus arrive from main's menu.
+  useEffect(
+    () =>
+      window.acab.on('browser.shortcut', (shortcut) => {
+        const ui = useUi.getState()
+        if (shortcut === 'focus-address') ui.focusAddress()
+        else ui.openSettings()
+      }),
+    [],
+  )
 
   return (
     <div
@@ -35,19 +48,10 @@ export function Shell() {
         />
       </div>
 
-      <div className={styles.column} data-has-contextbar={open !== null}>
+      <div className={styles.column}>
+        <AddressBar />
         <main className={styles.card}>
-          <ContextBar />
-          {open ? (
-            <SessionView path={open.environment.path} />
-          ) : (
-            <section className={styles.empty} data-testid="empty-state">
-              <p className={styles.emptyTitle}>No session open</p>
-              <p className={styles.emptyHint}>
-                Press <kbd>⌘T</kbd> to start a session.
-              </p>
-            </section>
-          )}
+          <PageSlot />
         </main>
       </div>
 

@@ -1,14 +1,12 @@
-import type { CSSProperties } from 'react'
-import { DotsThree, GearSix, MagnifyingGlass, Plus } from '@phosphor-icons/react'
-import { ContextMeter, UsageMeter } from '../meters/Meters'
+import { useState, type CSSProperties } from 'react'
+import { GearSix, Globe, MagnifyingGlass, Plus, SquaresFour, X } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
-import type { EnvironmentView, SessionView } from '../workspace/workspace'
+import type { TabView } from '../workspace/workspace'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
+import { Menu, type MenuItem } from '../../ui/Menu'
 import { useMagnetic } from '../../ui/useMagnetic'
-import { FolderGlyph, SessionGlyph } from './glyphs'
 import { hashUnit } from './hash'
-import { SessionStatusIcon } from './SessionStatusIcon'
 import styles from './Sidebar.module.css'
 
 /**
@@ -22,57 +20,49 @@ function tilt(id: string): CSSProperties {
   return { '--tilt-hover': `${hover}deg`, '--tilt-selected': `${selected}deg` } as CSSProperties
 }
 
-/** Arc-style vertical sidebar (DESIGN.md §2). Renders the workspace views; no data logic here. */
-export function Sidebar() {
-  const ui = useUi()
-  const { spaces, space, tree, open, usage } = useWorkspace()
-  const settings = useSettings((s) => s.settings)
-  const switcher = settings?.spaceSwitcherStyle ?? 'emoji'
-  const metersInSidebar = settings?.metersPlacement === 'sidebar'
-  const magnet = useMagnetic<HTMLButtonElement>(0.4)
-  if (!space || !tree) return null
+/** Opens a blank tab in the active space, then puts the address bar in edit mode. */
+async function newTab(): Promise<void> {
+  await window.acab.invoke('browser.openTab', {})
+  useUi.getState().focusAddress()
+}
 
-  const renderSession = (session: SessionView, nested: boolean) => (
-    <li key={session.id} className={styles.item} style={tilt(session.id)}>
-      <button
-        className={styles.row}
-        data-nested={nested}
-        data-active={session.id === open?.session.id && ui.view === 'session'}
-        onClick={() => ui.openSession(session.id)}
-      >
-        <SessionGlyph />
-        <span className={styles.rowTitle}>{session.title}</span>
-        <SessionStatusIcon status={session.status} />
-      </button>
-      <button className={styles.more} aria-label="Session actions" title="More">
-        <DotsThree size={18} weight="bold" />
-      </button>
-    </li>
-  )
-
-  const renderFolder = (env: EnvironmentView) => {
-    const isOpen = !ui.closedEnvironments.has(env.id)
-    return (
-      <li key={env.id} data-testid="environment" style={tilt(env.id)}>
-        <button
-          className={styles.folder}
-          onClick={() => ui.toggleEnvironment(env.id)}
-          aria-expanded={isOpen}
-          title={env.path}
-        >
-          <FolderGlyph name={env.name} open={isOpen} />
-          <span className={styles.rowTitle}>{env.name}</span>
-          {!isOpen && <span className={styles.count}>{env.sessions.length}</span>}
-        </button>
-        {isOpen && (
-          <ul className={styles.list}>{env.sessions.map((s) => renderSession(s, true))}</ul>
-        )}
-      </li>
-    )
+/** Only inline images: a remote favicon would load in the UI's own session, outside the space. */
+function Favicon({ tab }: { tab: TabView }) {
+  if (tab.faviconUrl?.startsWith('data:')) {
+    return <img className={styles.favicon} src={tab.faviconUrl} alt="" />
   }
+  return <Globe size={16} className={styles.favicon} />
+}
+
+/** Arc-style vertical sidebar: the active space's tabs and the spaces. No data logic here. */
+export function Sidebar() {
+  const workspace = useWorkspace()
+  const openSettings = useUi((s) => s.openSettings)
+  const accent = useSettings((s) => s.settings?.accent)
+  const magnet = useMagnetic<HTMLButtonElement>(0.4)
+  /** The + button while its menu is open. */
+  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
+
+  const menuItems: MenuItem[] = [
+    { id: 'new-tab', label: 'New tab', icon: Plus, shortcut: '⌘T', onSelect: () => void newTab() },
+    {
+      id: 'new-space',
+      label: 'New space',
+      icon: SquaresFour,
+      onSelect: () => {
+        if (!workspace || !accent) return
+        void window.acab.invoke('browser.createSpace', {
+          name: `Space ${workspace.spaces.length + 1}`,
+          color: accent,
+        })
+      },
+    },
+    'separator',
+    { id: 'settings', label: 'Settings', icon: GearSix, shortcut: '⌘,', onSelect: openSettings },
+  ]
 
   return (
-    <nav className={styles.sidebar} aria-label="Spaces and sessions" data-testid="sidebar">
+    <nav className={styles.sidebar} aria-label="Spaces and tabs" data-testid="sidebar">
       <div className={`${styles.titlebar} drag`} />
 
       <button className={`${styles.search} no-drag`}>
@@ -82,65 +72,80 @@ export function Sidebar() {
       </button>
 
       <div className={styles.scroll}>
-        {tree.pinned.length > 0 && (
-          <>
-            <ul className={styles.list} aria-label="Pinned" data-testid="pinned">
-              {tree.pinned.map((item) =>
-                item.kind === 'environment'
-                  ? renderFolder(item.environment)
-                  : renderSession(item.session, false),
-              )}
-            </ul>
-            <hr className={styles.separator} />
-          </>
-        )}
-        <ul className={styles.list}>{tree.environments.map(renderFolder)}</ul>
+        <ul className={styles.list} aria-label="Tabs">
+          {workspace?.tabs.map((tab) => {
+            const active = tab.id === workspace.activeTab?.id
+            return (
+              <li key={tab.id} className={styles.item} style={tilt(tab.id)} data-testid="tab">
+                <button
+                  className={styles.row}
+                  data-active={active}
+                  aria-current={active ? 'page' : undefined}
+                  title={tab.url}
+                  onClick={() => void window.acab.invoke('browser.activateTab', { tabId: tab.id })}
+                >
+                  <Favicon tab={tab} />
+                  <span className={styles.rowTitle}>{tab.title}</span>
+                </button>
+                <button
+                  className={styles.close}
+                  data-active={active}
+                  aria-label="Close tab"
+                  title="Close tab (⌘W)"
+                  onClick={() => void window.acab.invoke('browser.closeTab', { tabId: tab.id })}
+                >
+                  <X size={13} weight="bold" />
+                </button>
+              </li>
+            )
+          })}
+        </ul>
 
-        <button className={styles.newSession}>
+        <button className={styles.newTab} onClick={() => void newTab()} data-testid="new-tab">
           <Plus size={13} weight="bold" />
-          <span>New session</span>
+          <span>New tab</span>
           <kbd>⌘T</kbd>
         </button>
       </div>
 
-      {metersInSidebar && open && (
-        <div className={styles.meters}>
-          <ContextMeter tokens={open.session.contextTokens} limit={open.session.contextLimit} />
-          {usage && <UsageMeter layout="stacked" {...usage} />}
-        </div>
-      )}
-
       <div className={styles.bottom}>
-        <div className={styles.accounts} data-style={switcher} role="tablist" aria-label="Accounts">
-          {spaces.map((s) => (
+        {/* Downloads (plan 4). */}
+        <div className={styles.slot} />
+
+        <div className={styles.spaces} role="tablist" aria-label="Spaces">
+          {workspace?.spaces.map((s) => (
             <button
               key={s.id}
               role="tab"
-              aria-selected={s.id === space.id}
+              aria-selected={s.id === workspace.space.id}
               aria-label={s.label}
               title={s.label}
-              className={styles.account}
-              style={tilt(s.id)}
-              onClick={() => ui.setSpace(s.id)}
+              className={styles.space}
+              style={{ ...tilt(s.id), color: s.color }}
+              onClick={() => void window.acab.invoke('browser.activateSpace', { spaceId: s.id })}
               {...magnet}
             >
-              {switcher === 'emoji' && s.emoji}
-              {switcher === 'letter' && s.label.charAt(0).toUpperCase()}
-              {switcher === 'dots' && <span className={styles.dot} />}
+              <span className={styles.dot} />
             </button>
           ))}
         </div>
+
         <button
-          className={styles.iconButton}
-          onClick={ui.openSettings}
+          className={`${styles.iconButton} no-drag`}
+          aria-label="New tab, space or settings"
+          aria-haspopup="menu"
+          aria-expanded={menuAnchor !== null}
+          title="New…"
+          onClick={(e) => setMenuAnchor(menuAnchor ? null : e.currentTarget)}
           {...magnet}
-          aria-pressed={ui.view === 'settings'}
-          title="Settings (⌘,)"
-          aria-label="Settings"
         >
-          <GearSix size={18} />
+          <Plus size={18} />
         </button>
       </div>
+
+      {menuAnchor && (
+        <Menu anchor={menuAnchor} items={menuItems} onClose={() => setMenuAnchor(null)} />
+      )}
     </nav>
   )
 }

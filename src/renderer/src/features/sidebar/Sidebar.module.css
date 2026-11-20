@@ -40,10 +40,15 @@
     translate 260ms var(--ease-bounce);
 }
 
-.iconButton:hover,
-.iconButton[aria-pressed='true'] {
+.iconButton:hover {
   color: var(--text);
   transform: rotate(30deg) scale(1.08);
+}
+
+/* Open menu: the + turns into a ×. */
+.iconButton[aria-expanded='true'] {
+  color: var(--text);
+  transform: rotate(45deg) scale(1.08);
 }
 
 /* ---------- search: no outline, just a soft field ---------- */
@@ -68,12 +73,12 @@
 }
 
 .search span,
-.newSession span {
+.newTab span {
   flex: 1;
   text-align: left;
 }
 
-.newSession {
+.newTab {
   width: 100%;
   display: flex;
   align-items: center;
@@ -89,7 +94,7 @@
   transition: color var(--dur-fast) var(--ease);
 }
 
-.newSession:hover {
+.newTab:hover {
   color: var(--text);
 }
 
@@ -99,7 +104,7 @@ kbd {
   color: var(--text-faint);
 }
 
-/* ---------- tree ---------- */
+/* ---------- tabs ---------- */
 
 .scroll {
   flex: 1;
@@ -120,18 +125,11 @@ kbd {
   gap: 1px;
 }
 
-.separator {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: var(--space-2) var(--space-3);
-}
-
 .item {
   position: relative;
 }
 
-.row,
-.folder {
+.row {
   position: relative;
   isolation: isolate;
   width: 100%;
@@ -148,8 +146,7 @@ kbd {
 }
 
 /* The card is a layer behind the text: only it tilts (angle per item, see tilt() in Sidebar). */
-.row::before,
-.folder::before {
+.row::before {
   content: '';
   position: absolute;
   z-index: -1;
@@ -162,12 +159,7 @@ kbd {
     transform var(--dur-base) var(--ease-bounce);
 }
 
-.row[data-nested='true'] {
-  padding-left: 28px; /* under the folder name */
-}
-
 .row:hover::before,
-.folder:hover::before,
 .item:hover .row::before {
   background: var(--hover-fill);
   transform: rotate(var(--tilt-hover));
@@ -194,14 +186,20 @@ kbd {
   text-overflow: ellipsis;
 }
 
-.count {
-  color: var(--text-faint);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+.favicon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
 }
 
-/* ⋯ appears on hover, in place of the status dot. */
-.more {
+/* Leaves room for the close button. */
+.row {
+  padding-right: 30px;
+}
+
+/* × on hover and on the active tab. */
+.close {
   position: absolute;
   top: 5px; /* (34 px row − 24 px button) / 2 */
   right: 4px;
@@ -221,19 +219,16 @@ kbd {
     transform var(--dur-base) var(--ease-bounce);
 }
 
-.item:hover .more,
-.more:focus-visible {
+.item:hover .close,
+.close[data-active='true'],
+.close:focus-visible {
   opacity: 1;
   transform: scale(1);
 }
 
-.more:hover {
+.close:hover {
   color: var(--text);
   background: var(--hover-fill);
-}
-
-.item:hover .status {
-  opacity: 0;
 }
 
 /* ---------- status dots ---------- */
@@ -274,18 +269,10 @@ kbd {
   }
 }
 
-/* ---------- meters (when placed in the sidebar) ---------- */
-
-.meters {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
-}
-
-/* ---------- bottom row: accounts (left) + settings (right) ---------- */
+/* ---------- bottom row: downloads (left), spaces as dots (middle), + (right) ---------- */
 
 .bottom {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -293,25 +280,29 @@ kbd {
   padding: 0 2px;
 }
 
-.accounts {
+.slot {
+  flex: none;
+  width: 30px;
+}
+
+.spaces {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 2px;
 }
 
-/* No card: the active account is simply full opacity and a bit bigger. */
-.account {
+/* No card: each space is a dot in its colour; the active one is full opacity and a bit bigger. */
+.space {
   display: grid;
   place-items: center;
-  width: 30px;
+  width: 16px;
   height: 30px;
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--text-muted);
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1;
   cursor: pointer;
   opacity: 0.42;
   transform: scale(0.92);
@@ -321,23 +312,14 @@ kbd {
     translate 260ms var(--ease-bounce);
 }
 
-.account:hover {
+.space:hover {
   opacity: 1;
   transform: translateY(-2px) rotate(var(--tilt-selected)) scale(1.18);
 }
 
-.account[aria-selected='true'] {
+.space[aria-selected='true'] {
   opacity: 1;
-  color: var(--accent);
   transform: scale(1.14);
-}
-
-.accounts[data-style='letter'] .account {
-  font-size: var(--text-md);
-}
-
-.accounts[data-style='dots'] .account {
-  width: 16px;
 }
 
 .dot {
