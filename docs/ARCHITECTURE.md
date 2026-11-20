@@ -515,9 +515,10 @@ results come back to the lead as a short summary + branch name, never the full c
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
-  the window's top margin is open. While they show, main polls the pointer (100 ms) and emits
-  `window.topHover` when it leaves or re-enters the top band (`WINDOW_CONTROLS_H`), since the
-  page gets no pointer events over the traffic lights.
+  the window's top margin is open. While the margin is open (macOS and Windows), main polls the
+  pointer (50 ms) and emits `window.topHover` when it leaves or re-enters the top band
+  (`WINDOW_CONTROLS_H`), since the open margin is a drag region (and holds the traffic lights),
+  where the page gets no pointer events.
   Windows has no native caption buttons (no `titleBarOverlay`): the UI draws minimize / maximize /
   close and calls `window.minimize`, `window.toggleMaximize`, `window.close`; it reads
   `window.isMaximized` once and follows the `window.maximized` event (maximize / restore icon).

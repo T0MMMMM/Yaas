@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   autoFolders: true,
   contextBarStyle: 'attached',
   sidebarWidth: 248,
+  sidebarExpandedWidth: 248,
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
   adBlock: { enabled: true, allowedHosts: [] },

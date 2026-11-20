@@ -29,6 +29,7 @@ export const COMMAND_CHANNELS = [
   'browser.activateSpace',
   'browser.setPageBounds',
   'browser.setPageVisible',
+  'browser.copyLink',
   'browser.share',
   'browser.toggleDevTools',
   'browser.openWebStore',

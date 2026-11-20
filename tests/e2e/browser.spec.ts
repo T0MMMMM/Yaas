@@ -544,3 +544,45 @@ test('favicons are fetched', async () => {
       .toMatch(/^data:image\/png;base64,/)
   })
 })
+
+test('the address bar switches the sidebar to icons and back', async () => {
+  await withBrowser(async ({ page }) => {
+    const sidebar = page.getByTestId('sidebar')
+    await expect(sidebar).toHaveAttribute('data-compact', 'false')
+    const before = (await sidebar.boundingBox())?.width ?? 0
+
+    await page.getByRole('button', { name: 'Icons only' }).click()
+    await expect(sidebar).toHaveAttribute('data-compact', 'true')
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(56)
+
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+    await expect(sidebar).toHaveAttribute('data-compact', 'false')
+    await expect.poll(async () => (await sidebar.boundingBox())?.width).toBe(before)
+  })
+})
+
+test('copy link puts the page address on the clipboard', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/a'))
+    await app.evaluate(({ clipboard }) => clipboard.writeText(''))
+    await page.getByRole('button', { name: 'Copy link' }).click()
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toBe(site.url('/a'))
+    // A check mark confirms it for a moment.
+    await expect(page.getByRole('button', { name: 'Link copied' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Copy link' })).toBeVisible()
+  })
+})
+
+test('the design button opens the look settings', async () => {
+  await withBrowser(async ({ page }) => {
+    await page.getByRole('button', { name: 'Design' }).click()
+    await expect(page.getByTestId('settings')).toBeVisible()
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Settings sections' })
+        .getByRole('button', { name: 'Appearance' }),
+    ).toHaveAttribute('aria-current', 'page')
+  })
+})

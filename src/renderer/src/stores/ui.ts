@@ -9,7 +9,9 @@ interface UiState {
   collapsedHosts: Record<string, true>
   /** The folder whose name the sidebar is editing ("New Folder…", "Rename"), or null. */
   renamingFolderId: string | null
-  openSettings: () => void
+  /** The Settings section to show when Settings opens (the address bar's Design opens Appearance). */
+  settingsSection: string | null
+  openSettings: (section?: string) => void
   closeSettings: () => void
   focusAddress: () => void
   toggleHost: (host: string) => void
@@ -21,7 +23,8 @@ export const useUi = create<UiState>((set) => ({
   addressFocus: 0,
   collapsedHosts: {},
   renamingFolderId: null,
-  openSettings: () => set({ view: 'settings' }),
+  settingsSection: null,
+  openSettings: (section) => set({ view: 'settings', settingsSection: section ?? null }),
   closeSettings: () => set({ view: 'browser' }),
   focusAddress: () => set(({ addressFocus }) => ({ addressFocus: addressFocus + 1 })),
   toggleHost: (host) =>

@@ -8,7 +8,7 @@
   /* The buttons never spill over the address bar below. */
   overflow: hidden;
   -webkit-app-region: no-drag;
-  transition: height var(--dur-base) var(--ease);
+  transition: height var(--dur-fast) var(--ease);
 }
 
 .strip[data-open='true'] {
@@ -36,9 +36,9 @@
   /* Hidden once faded out, so closed buttons are not there at all. */
   visibility: hidden;
   transition:
-    opacity var(--dur-base) var(--ease),
-    translate var(--dur-base) var(--ease),
-    visibility 0s linear var(--dur-base);
+    opacity var(--dur-fast) var(--ease),
+    translate var(--dur-fast) var(--ease),
+    visibility 0s linear var(--dur-fast);
 }
 
 .strip[data-open='true'] .buttons {

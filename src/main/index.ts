@@ -264,7 +264,7 @@ function setupMenu(): void {
 }
 
 /** How often main checks the pointer while the macOS traffic lights show. */
-const TOP_BAND_POLL_MS = 100
+const TOP_BAND_POLL_MS = 50
 let topBandWatch: ReturnType<typeof setInterval> | null = null
 
 /**
@@ -347,6 +347,10 @@ registerCommands(
     'browser.activateSpace': ({ spaceId }) => browser.activateSpace(spaceId),
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
+    'browser.copyLink': ({ tabId }) => {
+      const tab = browser.snapshot().tabs.find((t) => t.id === tabId)
+      if (tab) clipboard.writeText(tab.url)
+    },
     'browser.share': ({ tabId }) => shareTab(tabId),
     'browser.toggleDevTools': ({ tabId }) => views().toggleDevTools(tabId),
     'browser.openWebStore': () => {

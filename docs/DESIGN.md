@@ -161,6 +161,12 @@ picked, switching space; an empty query lists the space's tabs. The command fiel
 offers "Go to <url>" when the text is a URL, else "Search Google for "…"", then up to six open
 tabs it matches ("Switch to tab"); no tab is created until Enter.
 
+**Address bar buttons** — left: the sidebar switch (icons only ↔ the width it had,
+`sidebarExpandedWidth`), Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a check
+mark for 1.2 s), the site menu (below; it holds the extensions) and Design, which opens Settings
+at Appearance for now (the browser's style editor comes later). Both groups are four buttons wide
+so the URL stays centred.
+
 **Site menu** — the sliders button at the right of the address bar opens it, right-aligned under
 the button (`features/browser/SiteMenu`). yab's shape, top to bottom:
 
@@ -300,9 +306,9 @@ How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
 
 **Window buttons in the top margin** (macOS and Windows; Linux keeps its native title bar). The
 window's top margin runs along the whole window, above the sidebar and the page, `--frame-gap`
-high, and the window buttons wait in it, hidden. When the pointer rests on it for 300 ms
-(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-base`), pushing everything down, and
-the buttons come; it closes 500 ms (`HIDE_DELAY_MS`) after the pointer leaves. Passing over the
+high, and the window buttons wait in it, hidden. When the pointer rests on it for 120 ms
+(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-fast`), pushing everything down, and
+the buttons come; it closes 250 ms (`HIDE_DELAY_MS`) after the pointer leaves. Passing over the
 margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
 - **Windows**: no native caption buttons. Minimize, maximize / restore and close are drawn at the
   top right and slide in; Close turns `--danger` on hover. Snap layouts on the maximize button
@@ -311,7 +317,7 @@ margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
   margin (`trafficLightPosition` 14, 9).
 - Closed, the margin is not a drag region (Windows sends no pointer events over one, and the hover
   is what opens it). Open, it drags the window (its buttons do not); since the page then gets no
-  pointer events there, main watches the pointer every 100 ms and reports leaving the top band
+  pointer events there, main watches the pointer every 50 ms and reports leaving the top band
   (`window.topHover`), on both platforms. The sidebar's top and the address bar drag the window
   too. During the onboarding the margin floats over the screen.
 

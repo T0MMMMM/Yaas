@@ -6,9 +6,9 @@ export type ControlsState = 'hidden' | 'revealing' | 'shown' | 'hiding'
 export type ControlsEvent = 'enter' | 'leave' | 'elapsed'
 
 /** How long the pointer rests on the top edge before the buttons come. */
-export const REVEAL_DELAY_MS = 300
+export const REVEAL_DELAY_MS = 120
 /** How long the buttons stay after the pointer leaves them. */
-export const HIDE_DELAY_MS = 500
+export const HIDE_DELAY_MS = 250
 
 export function controlsReducer(state: ControlsState, event: ControlsEvent): ControlsState {
   switch (state) {

@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { ArrowClockwise, ArrowLeft, ArrowRight, SlidersHorizontal } from '@phosphor-icons/react'
+import {
+  ArrowClockwise,
+  ArrowLeft,
+  ArrowRight,
+  Check,
+  LinkSimple,
+  PaintBrush,
+  SidebarSimple,
+  SlidersHorizontal,
+} from '@phosphor-icons/react'
+import { useSidebarToggle } from '../../app/useSidebarResize'
 import { isHex, onAccentColor } from '../../theme/color'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
@@ -7,6 +17,8 @@ import { useWorkspace } from '../workspace/useWorkspace'
 import styles from './AddressBar.module.css'
 
 const BLANK = 'about:blank'
+/** How long Copy link shows its check mark. */
+const COPIED_MS = 1200
 
 /** The site's colour, as runtime data: the bar takes it, with legible text on top. */
 function tint(themeColor: string | null | undefined): CSSProperties | undefined {
@@ -17,9 +29,10 @@ function tint(themeColor: string | null | undefined): CSSProperties | undefined 
 }
 
 /**
- * yab-style address bar (spec, "Browser chrome"): back, forward, reload, and the URL centred with
- * the host bright and the path dimmed. Clicking the URL (or ⌘L, ⌘T) edits it; the button on the
- * right opens the site menu. Always shown.
+ * yab-style address bar (spec, "Browser chrome"): the sidebar's icons-only switch, back, forward,
+ * reload, and the URL centred with the host bright and the path dimmed. Clicking the URL (or ⌘L,
+ * ⌘T) edits it. On the right: Copy link, the site menu (its extensions and settings) and Design
+ * (the browser's look). Always shown.
  */
 export function AddressBar() {
   const tab = useWorkspace()?.activeTab ?? null
@@ -29,8 +42,16 @@ export function AddressBar() {
   const input = useRef<HTMLInputElement>(null)
   /** Whether the site menu is open in the overlay. */
   const [siteMenuOpen, setSiteMenuOpen] = useState(false)
+  const sidebar = useSidebarToggle()
+  const openSettings = useUi((s) => s.openSettings)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => window.bigBrowser.on('overlay.closed', () => setSiteMenuOpen(false)), [])
+  useEffect(() => {
+    if (!copied) return
+    const timer = window.setTimeout(() => setCopied(false), COPIED_MS)
+    return () => window.clearTimeout(timer)
+  }, [copied])
 
   const startEditing = () => {
     setDraft(tab && tab.url !== BLANK ? tab.url : '')
@@ -73,6 +94,14 @@ export function AddressBar() {
       data-testid="address-bar"
     >
       <div className={`${styles.nav} no-drag`}>
+        <button
+          className={styles.button}
+          aria-label={sidebar.compact ? 'Expand sidebar' : 'Icons only'}
+          title={sidebar.compact ? 'Expand sidebar' : 'Icons-only sidebar'}
+          onClick={sidebar.toggle}
+        >
+          <SidebarSimple size={15} weight="bold" />
+        </button>
         <button
           className={styles.button}
           aria-label="Back"
@@ -144,6 +173,19 @@ export function AddressBar() {
       <div className={`${styles.nav} ${styles.actions} no-drag`}>
         <button
           className={styles.button}
+          aria-label={copied ? 'Link copied' : 'Copy link'}
+          title="Copy link"
+          disabled={!tab}
+          onClick={() => {
+            if (!tab) return
+            void window.bigBrowser.invoke('browser.copyLink', { tabId: tab.id })
+            setCopied(true)
+          }}
+        >
+          {copied ? <Check size={15} weight="bold" /> : <LinkSimple size={15} weight="bold" />}
+        </button>
+        <button
+          className={styles.button}
           aria-label="Site menu"
           title="Site menu"
           aria-haspopup="dialog"
@@ -158,6 +200,14 @@ export function AddressBar() {
           }}
         >
           <SlidersHorizontal size={15} weight="bold" />
+        </button>
+        <button
+          className={styles.button}
+          aria-label="Design"
+          title="Edit the browser's look"
+          onClick={() => openSettings('appearance')}
+        >
+          <PaintBrush size={15} weight="bold" />
         </button>
       </div>
     </header>

@@ -1,11 +1,13 @@
 import { useCallback, useState, type PointerEvent } from 'react'
 import {
+  SIDEBAR_COMPACT,
   SIDEBAR_COMPACT_FROM,
   SIDEBAR_COMPACT_MAX,
   SIDEBAR_COMPACT_MIN,
   SIDEBAR_DEFAULT,
   SIDEBAR_MAX,
   SIDEBAR_MIN,
+  type Settings,
 } from '@shared/ipc/contract'
 import { useSettings } from '../stores/settings'
 
@@ -23,6 +25,35 @@ export const snapWidth = (px: number): number =>
   px >= SIDEBAR_COMPACT_FROM
     ? clampBetween(px, SIDEBAR_COMPACT_FROM, SIDEBAR_MAX)
     : clampBetween(px, SIDEBAR_COMPACT_MIN, SIDEBAR_COMPACT_MAX)
+
+/**
+ * What the address bar's sidebar button writes: to icons only (remembering the width it leaves),
+ * or back to that width — never a half-compact one.
+ */
+export function toggledSidebar(
+  width: number,
+  expandedWidth: number,
+): Pick<Settings, 'sidebarWidth' | 'sidebarExpandedWidth'> {
+  if (width < SIDEBAR_COMPACT_FROM) {
+    return {
+      sidebarWidth: clampBetween(expandedWidth, SIDEBAR_COMPACT_FROM, SIDEBAR_MAX),
+      sidebarExpandedWidth: expandedWidth,
+    }
+  }
+  return { sidebarWidth: SIDEBAR_COMPACT, sidebarExpandedWidth: width }
+}
+
+/** The address bar's sidebar button: whether the sidebar is icons only, and the switch. */
+export function useSidebarToggle() {
+  const { settings, update } = useSettings()
+  const width = snapWidth(settings?.sidebarWidth ?? SIDEBAR_DEFAULT)
+  const expanded = settings?.sidebarExpandedWidth ?? SIDEBAR_DEFAULT
+  const toggle = useCallback(
+    () => void update(toggledSidebar(width, expanded)),
+    [width, expanded, update],
+  )
+  return { compact: width < SIDEBAR_COMPACT_FROM, toggle }
+}
 
 /**
  * Drag-to-resize for the sidebar. The width follows the pointer locally while dragging and is

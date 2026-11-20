@@ -42,6 +42,8 @@ export const settingsSchema = z.object({
   contextBarStyle: z.enum(['card', 'attached']),
   /** Sidebar width in px, resizable by drag (DESIGN.md §2). */
   sidebarWidth: z.number().int().min(SIDEBAR_MIN).max(SIDEBAR_MAX),
+  /** The width the sidebar comes back to from icon-only mode (the address bar's sidebar button). */
+  sidebarExpandedWidth: z.number().int().min(SIDEBAR_MIN).max(SIDEBAR_MAX),
   /** Archive sessions inactive for N days (never deletes; pinned sessions excluded). */
   autoArchive: z.object({
     enabled: z.boolean(),
@@ -284,6 +286,8 @@ export const commands = {
     input: z.object({ visible: z.boolean() }).strict(),
     output: z.void(),
   },
+  /** Copies the tab's URL to the clipboard (the address bar's Copy link). */
+  'browser.copyLink': { input: tabRef, output: z.void() },
   /** Shares the tab's URL: the macOS share menu at the pointer, elsewhere copied to the clipboard. */
   'browser.share': { input: tabRef, output: z.void() },
   /** Opens or closes the developer tools of the tab's page. */

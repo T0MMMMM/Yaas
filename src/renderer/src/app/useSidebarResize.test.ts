@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { SIDEBAR_MAX, SIDEBAR_MIN } from '@shared/ipc/contract'
-import { clampSidebar, snapWidth } from './useSidebarResize'
+import { SIDEBAR_COMPACT, SIDEBAR_MAX, SIDEBAR_MIN } from '@shared/ipc/contract'
+import { clampSidebar, snapWidth, toggledSidebar } from './useSidebarResize'
 
 describe('clampSidebar', () => {
   it('keeps the width between the min and max', () => {
@@ -25,5 +25,23 @@ describe('snapWidth', () => {
     expect(snapWidth(60)).toBe(60)
     expect(snapWidth(40)).toBe(48)
     expect(snapWidth(0)).toBe(48)
+  })
+})
+
+describe('toggledSidebar', () => {
+  it('goes to icons only and remembers the width it leaves', () => {
+    expect(toggledSidebar(300, 248)).toEqual({
+      sidebarWidth: SIDEBAR_COMPACT,
+      sidebarExpandedWidth: 300,
+    })
+  })
+
+  it('comes back to the remembered width', () => {
+    expect(toggledSidebar(56, 300)).toEqual({ sidebarWidth: 300, sidebarExpandedWidth: 300 })
+    expect(toggledSidebar(72, 248)).toEqual({ sidebarWidth: 248, sidebarExpandedWidth: 248 })
+  })
+
+  it('never comes back half-compact', () => {
+    expect(toggledSidebar(56, 90)).toEqual({ sidebarWidth: 120, sidebarExpandedWidth: 90 })
   })
 })

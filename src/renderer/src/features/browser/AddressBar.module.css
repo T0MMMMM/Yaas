@@ -40,8 +40,8 @@
 
 .nav {
   flex: none;
-  /* three buttons + gaps; the right-hand twin keeps the URL centred */
-  width: calc(3 * var(--control-size) + 2 * var(--space-hair));
+  /* four buttons + gaps; the right-hand twin keeps the URL centred */
+  width: calc(4 * var(--control-size) + 3 * var(--space-hair));
   display: flex;
   align-items: center;
   gap: var(--space-hair);

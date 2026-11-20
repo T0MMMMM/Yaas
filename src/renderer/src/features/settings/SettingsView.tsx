@@ -27,7 +27,8 @@ export function SettingsView() {
     },
     [],
   )
-  const [sectionId, setSectionId] = useState(SECTIONS[0]?.id)
+  const asked = useUi((s) => s.settingsSection)
+  const [sectionId, setSectionId] = useState(asked ?? SECTIONS[0]?.id)
   const section = SECTIONS.find((s) => s.id === sectionId) ?? SECTIONS[0]
 
   useEffect(() => {
