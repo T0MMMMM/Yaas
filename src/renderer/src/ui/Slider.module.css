@@ -65,7 +65,8 @@
   box-shadow: inset 0 0 0 1px var(--border);
 }
 
-/* Crescent thumb: a white pill with one concave side (path in Slider.tsx). */
+/* Bump thumb: a white shape, flat on the left, a half-circle bulging out on the right
+   (path in Slider.tsx). */
 .thumb {
   position: absolute;
   top: 50%;

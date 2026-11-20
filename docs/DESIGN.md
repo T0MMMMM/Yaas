@@ -165,7 +165,7 @@ Two settings drive the material, both 0–1 and set as CSS variables:
 
 ### 3.4 Sliders
 
-`ui/Slider` draws its track; the thumb is a **crescent** — a white pill with one concave side — and
+`ui/Slider` draws its track; the thumb is a **bump** — a white shape, **flat on its left side**, with a **half-circle bulging out on its right side** — and
 a transparent native range input sits on top for keyboard, pointer and screen readers:
 
 | Variant | Track | Used for |
