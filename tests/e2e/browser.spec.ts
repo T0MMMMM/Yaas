@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { startSite } from './fixtures/site'
-import { finishOnboarding, launchApp } from './helpers'
+import { finishOnboarding, launchApp, uiPage } from './helpers'
 
 type Site = Awaited<ReturnType<typeof startSite>>
 
@@ -223,7 +223,7 @@ test('tabs survive a relaunch', async () => {
 
     const second = await launchApp(userData)
     try {
-      const again = await second.firstWindow()
+      const again = await uiPage(second)
       await expect(again.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
       await expect(again.getByTestId('tab').nth(1).getByRole('button').first()).toHaveAttribute(
         'aria-current',
@@ -253,7 +253,7 @@ test('restored tabs stay dim until visited', async () => {
 
     const second = await launchApp(userData)
     try {
-      const again = await second.firstWindow()
+      const again = await uiPage(second)
       const tabs = again.getByTestId('tab')
       await expect(tabs).toHaveText(['Page A', 'Page B'])
       await expect(tabs.nth(0).getByRole('button').first()).toHaveAttribute('data-loaded', 'false')

@@ -22,3 +22,26 @@ export async function finishOnboarding(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Open ACAB' }).click()
   await expect(page.getByTestId('sidebar')).toBeVisible()
 }
+
+/**
+ * The ACAB UI page. After a relaunch the restored active tab's view is a web contents too, and
+ * `firstWindow()` can resolve to it instead, so pick the page that exposes the `acab` bridge.
+ */
+export async function uiPage(app: ElectronApplication): Promise<Page> {
+  const isUi = (page: Page) => page.evaluate(() => 'acab' in window).catch(() => false)
+  let found: Page | undefined
+  // Poll rather than wait for the 'window' event: one fired between the scan and the wait is lost.
+  await expect
+    .poll(async () => {
+      for (const page of app.windows()) {
+        if (await isUi(page)) {
+          found = page
+          return true
+        }
+      }
+      return false
+    })
+    .toBe(true)
+  if (!found) throw new Error('ACAB UI page not found')
+  return found
+}
