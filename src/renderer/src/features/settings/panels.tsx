@@ -4,7 +4,7 @@ import { useUi } from '../../stores/ui'
 import { Segmented } from '../../ui/Segmented'
 import { Switch } from '../../ui/Switch'
 import { useSessionWorkspace } from '../workspace/useWorkspace'
-import { AppearanceFields, SwitcherField } from './AppearanceFields'
+import { AppearanceFields } from './AppearanceFields'
 import fields from './Fields.module.css'
 import { SettingGroup, SettingRow } from './SettingRow'
 import styles from './SettingsView.module.css'
@@ -54,31 +54,13 @@ export function General() {
 }
 
 export function Appearance() {
-  const { settings, update } = useSettings()
+  const { settings } = useSettings()
   if (!settings) return null
   return (
     <>
       <SettingGroup title="Theme">
         <div className={fields.fields}>
           <AppearanceFields />
-        </div>
-      </SettingGroup>
-      <SettingGroup title="Layout">
-        <div className={fields.fields}>
-          <SwitcherField />
-          <div className={fields.field}>
-            <span className={fields.label}>Context and usage meters</span>
-            <Segmented
-              label="Meters placement"
-              value={settings.metersPlacement}
-              options={[
-                { value: 'contextbar', label: 'Context bar' },
-                { value: 'sidebar', label: 'Sidebar' },
-              ]}
-              onChange={(metersPlacement) => void update({ metersPlacement })}
-            />
-            <p className={fields.hint}>Shown only while a session is open.</p>
-          </div>
         </div>
       </SettingGroup>
       <SettingGroup title="Text">

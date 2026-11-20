@@ -17,8 +17,6 @@ export function launchApp(userData: string): Promise<ElectronApplication> {
 /** Walks through the onboarding with its defaults, up to the main UI. */
 export async function finishOnboarding(page: Page): Promise<void> {
   await expect(page.getByTestId('visual-setup')).toBeVisible()
-  await page.getByRole('button', { name: 'Continue' }).click()
-  await expect(page.getByTestId('technical-setup')).toBeVisible()
   await page.getByRole('button', { name: 'Open ACAB' }).click()
   await expect(page.getByTestId('sidebar')).toBeVisible()
 }

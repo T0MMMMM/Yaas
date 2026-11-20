@@ -1,16 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Logo } from '../brand/Logo'
-import { TechnicalSetup } from './TechnicalSetup'
 import { VisualSetup } from './VisualSetup'
 import styles from './Onboarding.module.css'
 
-type Stage = 'intro' | 'visual' | 'technical'
+type Stage = 'intro' | 'visual'
 
 const INTRO_MS = 1200
 
 /**
  * First-launch onboarding as a full-window page (DESIGN.md §6):
- * logo intro → (animated) visual setup → technical setup.
+ * logo intro → (animated) visual setup, which opens the browser.
  */
 export function Onboarding() {
   const [stage, setStage] = useState<Stage>('intro')
@@ -22,13 +21,11 @@ export function Onboarding() {
     return () => clearTimeout(timer)
   }, [stage])
 
-  // ← / → between the two setup pages (not while typing in a field).
+  // Enter skips the intro (not while typing in a field).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement) return
       if (stage === 'intro' && e.key === 'Enter') setStage('visual')
-      if (stage === 'visual' && e.key === 'ArrowRight') setStage('technical')
-      if (stage === 'technical' && e.key === 'ArrowLeft') setStage('visual')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -49,10 +46,7 @@ export function Onboarding() {
 
       <p className={styles.tagline}>Yeah, An Account Switcher.</p>
 
-      <div className={styles.content}>
-        {stage === 'visual' && <VisualSetup onNext={() => setStage('technical')} />}
-        {stage === 'technical' && <TechnicalSetup onBack={() => setStage('visual')} />}
-      </div>
+      <div className={styles.content}>{stage === 'visual' && <VisualSetup />}</div>
     </div>
   )
 }

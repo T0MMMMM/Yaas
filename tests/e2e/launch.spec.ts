@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp } from './helpers'
+import { launchApp, uiPage } from './helpers'
 
 test('first launch shows onboarding, then the browser', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'acab-e2e-'))
@@ -18,9 +18,6 @@ test('first launch shows onboarding, then the browser', async () => {
     await expect
       .poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue('--accent')))
       .toBe('#2BB673')
-    await page.getByRole('button', { name: 'Continue' }).click()
-
-    await expect(page.getByTestId('technical-setup')).toBeVisible()
     await page.getByRole('button', { name: 'Open ACAB' }).click()
 
     await expect(page.getByTestId('sidebar')).toBeVisible()
@@ -32,6 +29,10 @@ test('first launch shows onboarding, then the browser', async () => {
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
     await page.getByRole('menuitem', { name: 'Settings' }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
+    // Only the browser sections show: no accounts, sessions, handoff or crew.
+    await expect(
+      page.getByRole('navigation', { name: 'Settings sections' }).getByRole('button'),
+    ).toHaveText(['General', 'Appearance', 'Shortcuts', 'Privacy & data', 'Advanced', 'About'])
     await page.keyboard.press('Escape')
     await expect(page.getByTestId('settings')).toHaveCount(0)
 
@@ -64,17 +65,15 @@ test('settings survive a relaunch', async () => {
 
   try {
     const first = await launch()
-    const page = await first.firstWindow()
+    const page = await uiPage(first)
     await expect(page.getByTestId('visual-setup')).toBeVisible()
     await page.getByRole('radio', { name: '#2BB673' }).click()
-    await page.getByRole('button', { name: 'Continue' }).click()
-    await expect(page.getByTestId('cli-status')).not.toHaveText(/Looking for/)
     await page.getByRole('button', { name: 'Open ACAB' }).click()
     await expect(page.getByTestId('sidebar')).toBeVisible()
     await first.close()
 
     const second = await launch()
-    const again = await second.firstWindow()
+    const again = await uiPage(second)
     await expect(again.getByTestId('sidebar')).toBeVisible()
     await expect(again.getByTestId('onboarding')).toHaveCount(0)
     await expect

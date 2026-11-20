@@ -1,13 +1,14 @@
 import { ArrowRight } from '@phosphor-icons/react'
 import { useSettings } from '../../stores/settings'
-import { AppearanceFields, SwitcherField } from '../settings/AppearanceFields'
+import { AppearanceFields } from '../settings/AppearanceFields'
 import fields from '../settings/Fields.module.css'
 import { MiniPreview } from './MiniPreview'
 import styles from './Onboarding.module.css'
 
-/** Onboarding screen 2 — every choice applies live (DESIGN.md §6). */
-export function VisualSetup({ onNext }: { onNext: () => void }) {
+/** Onboarding screen 2 — every choice applies live; "Open ACAB" finishes (DESIGN.md §6). */
+export function VisualSetup() {
   const settings = useSettings((s) => s.settings)
+  const update = useSettings((s) => s.update)
   if (!settings) return null
 
   return (
@@ -20,15 +21,14 @@ export function VisualSetup({ onNext }: { onNext: () => void }) {
       <div className={styles.columns}>
         <div className={fields.fields}>
           <AppearanceFields />
-          <SwitcherField />
         </div>
-        <MiniPreview switcher={settings.spaceSwitcherStyle} />
+        <MiniPreview switcher="dots" />
       </div>
 
       <footer className={styles.footer}>
         <span />
-        <button className={styles.primary} onClick={onNext}>
-          Continue <ArrowRight size={16} />
+        <button className={styles.primary} onClick={() => void update({ onboardingDone: true })}>
+          Open ACAB <ArrowRight size={16} />
         </button>
       </footer>
     </section>
