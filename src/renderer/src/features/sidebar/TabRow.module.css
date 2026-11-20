@@ -181,5 +181,5 @@
   left: calc(var(--bar-index) * (var(--folder-bar-w) + var(--space-1)));
   width: var(--folder-bar-w);
   border-radius: var(--folder-bar-w);
-  background: hsl(var(--bar-hue) 70% 48%);
+  background: hsl(var(--bar-hue) var(--folder-hue-s) var(--folder-hue-l));
 }

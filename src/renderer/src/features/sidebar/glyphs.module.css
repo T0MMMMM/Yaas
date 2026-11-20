@@ -6,7 +6,7 @@
 }
 
 .back {
-  fill: hsl(var(--hue) 70% 48%);
+  fill: hsl(var(--hue) var(--folder-hue-s) var(--folder-hue-l));
 }
 
 .paper {

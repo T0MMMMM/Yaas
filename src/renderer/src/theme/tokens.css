@@ -47,6 +47,7 @@
   --addressbar-h: 38px;
   --frame-gap: 5px; /* between the frame's floating panels (address bar, card) */
   --row-h: 38px; /* sidebar rows */
+  --row-gap: 1px; /* between sidebar rows (lists, the New tab row) */
   --control-size: 30px; /* icon buttons, menu rows, space dots' hit box */
   --control-size-sm: 28px; /* address bar buttons and field */
   --control-size-xs: 24px; /* in-row buttons (close tab) */
@@ -61,6 +62,8 @@
   --title-fade-hover: 44px; /* the same, widened when the row's buttons show */
   --controls-zone-w: 80px; /* hover zone that brings the traffic lights back (icon-only) */
   --folder-bar-w: 2px; /* the bar along an open folder's tabs */
+  --folder-hue-s: 70%; /* a folder's colour from its hue: saturation (icon back, filed-tab bars) */
+  --folder-hue-l: 48%; /* the same: lightness */
   --finder-w: 560px; /* the tab finder (⌘K) and the command field (⌘T) */
   --finder-top: 20vh; /* how far down the window they open */
 
