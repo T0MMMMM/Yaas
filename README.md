@@ -1,25 +1,22 @@
 # ACAB — AI Custom Another Browser
 
-A desktop web browser (macOS + Windows) that you customize with your own AI. It grew out of ACAB,
-a multi-account Claude Code app; the ACAB design docs in `docs/` remain the reference for AI tabs
+A desktop web browser (macOS + Windows) that you customize with your own AI. It grew out of YAAS,
+a multi-account Claude Code app; the YAAS design docs in `docs/` remain the reference for AI tabs
 (see ADR-0006).
 
-> **Status: pre-alpha.** Design docs are done; the app skeleton is being set up. Nothing works yet.
+> **Status: pre-alpha.** The browser core is being built. Nothing is usable yet.
 
-## What it does (planned)
+## What it is (planned)
 
-- **Spaces per account** — each account is fully isolated (auth, history, settings); its sessions
-  live as tabs in a vertical sidebar.
-- **Session admin** — create, rename, pin, archive, search; live usage gauges (5 h / 7 d) per account.
-- **Context profiles** — choose which skills, MCP servers and plugins each session loads, so you
-  don't pay tokens for what you don't use.
-- **Handoff** — an account hit its limit? ACAB proposes to continue the same session on another
-  account, with the full context.
-- **Crew mode** — a lead session can delegate sub-tasks to Claude running on your other accounts,
-  always with your approval.
-- **Near-zero overhead** — ACAB never calls the model behind your back.
+- **A real web browser** for macOS and Windows, with browser spaces and an Arc-style sidebar.
+- **Chrome extensions** support.
+- **Removable feature modules** — browser features are modules your own AI can edit or remove.
+- **AI tabs** — Claude Code sessions as tabs, coming later (the former YAAS scope).
+- **Near-zero overhead** — ACAB never calls a model behind your back.
 
-See [`docs/FEATURES.md`](docs/FEATURES.md) for the full roadmap (MVP / v1 / later).
+Design: [`docs/superpowers/specs/2026-11-20-acab-design.md`](docs/superpowers/specs/2026-11-20-acab-design.md)
+and [`docs/adr/0006-pivot-to-acab-browser.md`](docs/adr/0006-pivot-to-acab-browser.md). The AI-tabs
+roadmap is in [`docs/FEATURES.md`](docs/FEATURES.md).
 
 ## Requirements
 
