@@ -1,0 +1,31 @@
+/* Sits in the gap main leaves between the two pages (same maths as core splitBounds). */
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((100% - var(--split-gap)) * var(--split-ratio));
+  width: var(--split-gap);
+  cursor: col-resize;
+  touch-action: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.divider::after {
+  content: '';
+  width: var(--split-handle-w);
+  height: var(--split-handle-h);
+  border-radius: var(--radius-pill);
+  background: var(--split-handle);
+  transition: background var(--dur-fast) var(--ease);
+}
+
+.divider:hover::after,
+.divider:focus-visible::after {
+  background: var(--accent);
+}
+
+.divider:focus-visible {
+  outline: none;
+}

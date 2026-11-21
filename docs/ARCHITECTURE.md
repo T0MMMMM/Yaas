@@ -588,6 +588,11 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Bounds from the renderer.** The UI lays out the page area and sends it with
   `browser.setPageBounds` (DIP); `browser.setPageVisible` hides the page under overlays. The view
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
+- **Split screen.** When the active tab is a half of a split, `TabViews` shows both halves' views
+  at `splitBounds(bounds, ratio, SPLIT_GAP)` (`core/browser/splitBounds.ts`, pure) and hides the
+  rest. `SPLIT_GAP` must equal `--split-gap`: the UI draws the divider in that gap (`PageSlot`),
+  previews a drag locally and stores the ratio with one `browser.setSplitRatio` on release. A
+  half's web contents getting focus activates its tab, which keeps the pair on screen.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
   the window's top margin is open. While the margin is open (macOS and Windows), main polls the

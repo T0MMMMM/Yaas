@@ -5,6 +5,7 @@ import type { HistoryStore } from '@core/browser/historyStore'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
+import { shownSplit, splitBounds } from '@core/browser/splitBounds'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
 import { DEFAULT_SEARCH, hostOf } from '@shared/url'
@@ -14,6 +15,9 @@ import type { SpaceSessions } from './spaceSessions'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
 export const PAGE_RADIUS = 9
+
+/** Space between the two pages of a split, where the divider shows. Must equal `--split-gap`. */
+export const SPLIT_GAP = 5
 
 interface TabView {
   view: WebContentsView
@@ -112,6 +116,8 @@ export class TabViews {
   private bounds: PageBounds = { x: 0, y: 0, width: 0, height: 0 }
   private visible = true
   private shownTabId: string | null = null
+  /** The active split's halves and ratio, or null when the active tab is shown alone. */
+  private split: { firstId: string; secondId: string; ratio: number } | null = null
 
   constructor(
     private readonly win: BrowserWindow,
@@ -150,7 +156,13 @@ export class TabViews {
 
     const activeId = snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
     const active = activeId ? tabs.get(activeId) : undefined
-    if (active && !this.views.has(active.id)) this.create(active.id, active.spaceId, active.url)
+    this.split = active ? shownSplit(snapshot.tabs, active.id) : null
+    // Both halves of a split are on screen, so both need a view.
+    const onScreen = this.split ? [this.split.firstId, this.split.secondId] : [active?.id]
+    for (const id of onScreen) {
+      const tab = id ? tabs.get(id) : undefined
+      if (tab && !this.views.has(tab.id)) this.create(tab.id, tab.spaceId, tab.url)
+    }
     const shown = active?.id ?? null
     if (shown !== this.shownTabId && shown) this.selectForExtensions(shown)
     this.shownTabId = shown
@@ -231,10 +243,20 @@ export class TabViews {
 
   private layout(): void {
     for (const [tabId, { view }] of this.views) {
-      const shown = this.visible && tabId === this.shownTabId
-      if (shown) view.setBounds(this.bounds)
+      const bounds = this.boundsOf(tabId)
+      const shown = this.visible && bounds !== null
+      if (bounds) view.setBounds(bounds)
       view.setVisible(shown)
     }
+  }
+
+  /** Where a tab's page sits: its half of the active split, the whole page box, or null (hidden). */
+  private boundsOf(tabId: string): PageBounds | null {
+    if (!this.split) return tabId === this.shownTabId ? this.bounds : null
+    const halves = splitBounds(this.bounds, this.split.ratio, SPLIT_GAP)
+    if (tabId === this.split.firstId) return halves.first
+    if (tabId === this.split.secondId) return halves.second
+    return null
   }
 
   /** Tells the space's extensions which tab is active (`chrome.tabs`, actions). */
@@ -341,6 +363,10 @@ export class TabViews {
     contents.on('did-start-loading', () => setRuntime({ loading: true }))
     contents.on('did-stop-loading', () => setRuntime({ loading: false }))
     contents.on('did-change-theme-color', (_event, color) => setRuntime({ themeColor: color }))
+    // Clicking into one half of a split makes it the active tab (the pair stays on screen).
+    contents.on('focus', () => {
+      if (isCurrent() && this.split && this.shownTabId !== tabId) this.store.activateTab(tabId)
+    })
 
     // Popups and target=_blank become tabs in the same space, nested under this one, never windows.
     contents.setWindowOpenHandler(({ url }) => {
@@ -429,10 +455,7 @@ export class TabViews {
     // Only when one of them is visible: else two separators would meet before Inspect.
     if (defs.length > 0) items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
     // `params` are relative to the page; the overlay draws in window coordinates.
-    this.showMenu(
-      { at: { x: params.x + this.bounds.x, y: params.y + this.bounds.y } },
-      items,
-      contents,
-    )
+    const origin = this.boundsOf(tabId) ?? this.bounds
+    this.showMenu({ at: { x: params.x + origin.x, y: params.y + origin.y } }, items, contents)
   }
 }

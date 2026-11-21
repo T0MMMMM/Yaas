@@ -702,3 +702,73 @@ test('visits are recorded in history, searched and forgotten', async () => {
     expect(await frequent()).toEqual([])
   })
 })
+
+test('a split shows two pages', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    const [a, b] = await page.evaluate(
+      async (urls) =>
+        Promise.all(urls.map((input) => window.bigBrowser.invoke('browser.openTab', { input }))),
+      [site.url('/a'), site.url('/b')],
+    )
+    if (!a || !b) throw new Error('tabs not opened')
+    await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
+      firstId: a.id,
+      secondId: b.id,
+    })
+
+    // Both pages are shown, side by side, at the same height.
+    const shownViews = () =>
+      app.evaluate(({ BrowserWindow }) =>
+        (BrowserWindow.getAllWindows()[0]?.contentView.children ?? [])
+          .filter((v) => v.getVisible() && v.getBounds().width > 0)
+          .map((v) => v.getBounds())
+          .filter((r) => r.height > 100)
+          .sort((p, q) => p.x - q.x),
+      )
+    await expect.poll(async () => (await shownViews()).length).toBe(2)
+    const [left, right] = await shownViews()
+    if (!left || !right) throw new Error('views not shown')
+    expect(right.x).toBeGreaterThan(left.x + left.width)
+    expect(right.y).toBe(left.y)
+
+    // Dragging the divider stores the new ratio.
+    const divider = page.getByTestId('split-divider')
+    const box = await divider.boundingBox()
+    if (!box) throw new Error('divider not found')
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x - 150, box.y + box.height / 2, { steps: 5 })
+    await page.mouse.up()
+    await expect
+      .poll(async () => {
+        const { tabs } = await browserState(page)
+        return tabs.find((t) => t.id === a.id)?.splitRatio ?? 0.5
+      })
+      .toBeLessThan(0.45)
+    await expect.poll(async () => (await shownViews())[0]?.width ?? 0).toBeLessThan(left.width)
+
+    // Clicking into the left page makes it the active tab: the address bar follows.
+    const leftId = await page.evaluate(async (tabId) => {
+      const { runtime } = await window.bigBrowser.invoke('browser.state')
+      return runtime[tabId]?.webContentsId ?? null
+    }, a.id)
+    if (leftId === null) throw new Error('left page has no view')
+    await app.evaluate(({ webContents }, id) => {
+      const contents = webContents.fromId(id)
+      if (!contents) throw new Error(`No web contents ${id}`)
+      const at = { x: 40, y: 40, button: 'left' as const, clickCount: 1 }
+      contents.sendInputEvent({ type: 'mouseMove', x: at.x, y: at.y })
+      contents.sendInputEvent({ ...at, type: 'mouseDown' })
+      contents.sendInputEvent({ ...at, type: 'mouseUp' })
+      contents.focus()
+    }, leftId)
+    await expect(page.getByTestId('url')).toContainText('127.0.0.1')
+    await expect
+      .poll(async () => {
+        const state = await browserState(page)
+        return state.activeTabIds[state.activeSpaceId]
+      })
+      .toBe(a.id)
+    await expect(page.getByTestId('split-divider')).toBeVisible()
+  })
+})

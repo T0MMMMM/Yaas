@@ -46,6 +46,10 @@
   --titlebar-h: 44px;
   --addressbar-h: 38px;
   --frame-gap: 5px; /* between the frame's floating panels (address bar, card) */
+  --split-gap: 5px; /* between a split's two pages (= SPLIT_GAP in main) */
+  --split-handle-w: 3px; /* the split divider's grip */
+  --split-handle-h: 32px;
+  --split-handle: var(--border-strong);
   --row-h: 38px; /* sidebar rows */
   --row-gap: 1px; /* between sidebar rows (lists, the New tab row) */
   --control-size: 30px; /* icon buttons, menu rows, space dots' hit box */
