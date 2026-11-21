@@ -651,7 +651,11 @@ test('visits are recorded in history, searched and forgotten', async () => {
     )
     expect(found.map((e) => e.url)).toEqual([site.url('/a')])
 
-    await page.evaluate((id) => window.bigBrowser.invoke('history.forget', { id }), found[0]?.id)
+    const id = found[0]?.id ?? ''
+    await page.evaluate(
+      (entryId) => window.bigBrowser.invoke('history.forget', { id: entryId }),
+      id,
+    )
     expect(await frequent()).toEqual([])
   })
 })
