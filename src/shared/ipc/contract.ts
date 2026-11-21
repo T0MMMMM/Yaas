@@ -231,6 +231,8 @@ export const overlayRequestSchema = z.union([
     .object({ kind: z.enum(['new-menu', 'site-menu', 'downloads']), anchor: pageBoundsSchema })
     .strict(),
   z.object({ kind: z.enum(['tab-finder', 'command']) }).strict(),
+  /** A split divider drag: a full-window capture layer that drives `browser.splitDrag`. */
+  z.object({ kind: z.literal('split-drag') }).strict(),
   /** A space's icon (an emoji) or colour, edited from the button its menu opened from. */
   z
     .object({
@@ -358,6 +360,19 @@ export const commands = {
   /** The first page's share of a split's width, either half naming the split. */
   'browser.setSplitRatio': {
     input: z.object({ tabId: id, ratio: z.number().min(0.25).max(0.75) }).strict(),
+    output: z.void(),
+  },
+  /**
+   * A divider drag, run by main so the pages follow: `start` shows the overlay's capture layer,
+   * `move` resizes the views live (pointer x in window DIP), `end` stores the ratio once, `cancel`
+   * (Escape) restores it.
+   */
+  'browser.splitDrag': {
+    input: z.discriminatedUnion('phase', [
+      z.object({ phase: z.literal('start'), tabId: id }).strict(),
+      z.object({ phase: z.enum(['move', 'end']), x: z.number().finite() }).strict(),
+      z.object({ phase: z.literal('cancel') }).strict(),
+    ]),
     output: z.void(),
   },
   'browser.createFolder': {

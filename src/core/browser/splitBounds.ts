@@ -46,3 +46,18 @@ export function shownSplit(
   if (!second) return null
   return { firstId: first.id, secondId: second.id, ratio: first.splitRatio ?? DEFAULT_SPLIT_RATIO }
 }
+
+/** Narrowest and widest share of a split's first page. */
+export const MIN_SPLIT_RATIO = 0.25
+export const MAX_SPLIT_RATIO = 0.75
+
+/**
+ * The ratio that puts the middle of the gap under window x `x` (a divider drag), clamped to
+ * MIN/MAX_SPLIT_RATIO; a page box with no room keeps the default.
+ */
+export function splitRatioAt(bounds: Rect, x: number, gap: number): number {
+  const usable = bounds.width - gap
+  if (usable <= 0) return DEFAULT_SPLIT_RATIO
+  const ratio = (x - bounds.x - gap / 2) / usable
+  return Math.min(MAX_SPLIT_RATIO, Math.max(MIN_SPLIT_RATIO, ratio))
+}

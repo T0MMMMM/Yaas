@@ -590,9 +590,12 @@ results come back to the lead as a short summary + branch name, never the full c
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
 - **Split screen.** When the active tab is a half of a split, `TabViews` shows both halves' views
   at `splitBounds(bounds, ratio, SPLIT_GAP)` (`core/browser/splitBounds.ts`, pure) and hides the
-  rest. `SPLIT_GAP` must equal `--split-gap`: the UI draws the divider in that gap (`PageSlot`),
-  previews a drag locally and stores the ratio with one `browser.setSplitRatio` on release. A
-  half's web contents getting focus activates its tab, which keeps the pair on screen.
+  rest. `SPLIT_GAP` must equal `--split-gap`: the UI draws the divider in that gap (`PageSlot`).
+  A divider drag is run by main (`browser.splitDrag` start/move/end/cancel): once the pointer
+  enters a page the UI gets no more events, so `start` opens the overlay as a full-window capture
+  layer (`split-drag`), `move` lays the views out live at `splitRatioAt(x)` without storing,
+  `end` stores the ratio once, Escape (or the overlay closing) restores it. Arrow keys on the
+  divider store at once. A mouse press or focus in a half activates its tab; the pair stays shown.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
   the window's top margin is open. While the margin is open (macOS and Windows), main polls the

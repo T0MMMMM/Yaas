@@ -3,6 +3,7 @@ import type { OverlayRequest, Tooltip } from '@shared/ipc/contract'
 import type { MenuSpecItem } from '@shared/menuSpec'
 import { DownloadsMenu } from '../features/downloads/DownloadsMenu'
 import { SiteMenu } from '../features/browser/SiteMenu'
+import { SplitDragLayer } from '../features/browser/SplitDragLayer'
 import { CommandField } from '../features/finder/CommandField'
 import { TabFinder } from '../features/finder/TabFinder'
 import { EmojiField } from '../features/sidebar/EmojiField'
@@ -151,6 +152,8 @@ export function Overlay() {
       return <TabFinder closing={closing} onClose={close} />
     case 'command':
       return <CommandField closing={closing} onClose={close} />
+    case 'split-drag':
+      return <SplitDragLayer />
     case 'site-menu':
       return <SiteMenu anchor={request.anchor} closing={closing} onClose={close} />
     case 'new-menu': {

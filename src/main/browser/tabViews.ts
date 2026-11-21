@@ -5,7 +5,7 @@ import type { HistoryStore } from '@core/browser/historyStore'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
-import { shownSplit, splitBounds } from '@core/browser/splitBounds'
+import { shownSplit, splitBounds, splitRatioAt } from '@core/browser/splitBounds'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
 import { DEFAULT_SEARCH, hostOf } from '@shared/url'
@@ -118,6 +118,8 @@ export class TabViews {
   private shownTabId: string | null = null
   /** The active split's halves and ratio, or null when the active tab is shown alone. */
   private split: { firstId: string; secondId: string; ratio: number } | null = null
+  /** The ratio a divider drag shows before it is stored, or null. */
+  private previewRatio: number | null = null
 
   constructor(
     private readonly win: BrowserWindow,
@@ -157,6 +159,7 @@ export class TabViews {
     const activeId = snapshot.activeTabIds[snapshot.activeSpaceId] ?? null
     const active = activeId ? tabs.get(activeId) : undefined
     this.split = active ? shownSplit(snapshot.tabs, active.id) : null
+    if (!this.split) this.previewRatio = null
     // Both halves of a split are on screen, so both need a view.
     const onScreen = this.split ? [this.split.firstId, this.split.secondId] : [active?.id]
     for (const id of onScreen) {
@@ -199,6 +202,17 @@ export class TabViews {
   setBounds(bounds: PageBounds): void {
     this.bounds = bounds
     this.layout()
+  }
+
+  /** Lays the active split out at `ratio` without storing it (a divider drag); null ends that. */
+  previewSplitRatio(ratio: number | null): void {
+    this.previewRatio = this.split ? ratio : null
+    this.layout()
+  }
+
+  /** The split ratio that puts the divider under window x `x`. */
+  splitRatioAt(x: number): number {
+    return splitRatioAt(this.bounds, x, SPLIT_GAP)
   }
 
   setVisible(visible: boolean): void {
@@ -253,7 +267,7 @@ export class TabViews {
   /** Where a tab's page sits: its half of the active split, the whole page box, or null (hidden). */
   private boundsOf(tabId: string): PageBounds | null {
     if (!this.split) return tabId === this.shownTabId ? this.bounds : null
-    const halves = splitBounds(this.bounds, this.split.ratio, SPLIT_GAP)
+    const halves = splitBounds(this.bounds, this.previewRatio ?? this.split.ratio, SPLIT_GAP)
     if (tabId === this.split.firstId) return halves.first
     if (tabId === this.split.secondId) return halves.second
     return null
@@ -363,9 +377,14 @@ export class TabViews {
     contents.on('did-start-loading', () => setRuntime({ loading: true }))
     contents.on('did-stop-loading', () => setRuntime({ loading: false }))
     contents.on('did-change-theme-color', (_event, color) => setRuntime({ themeColor: color }))
-    // Clicking into one half of a split makes it the active tab (the pair stays on screen).
-    contents.on('focus', () => {
+    // Clicking (or tabbing) into one half of a split makes it the active tab (the pair stays on
+    // screen). A press is seen directly: the half may already have the keyboard focus.
+    const activateHalf = (): void => {
       if (isCurrent() && this.split && this.shownTabId !== tabId) this.store.activateTab(tabId)
+    }
+    contents.on('focus', activateHalf)
+    contents.on('before-mouse-event', (_event, mouse) => {
+      if (mouse.type === 'mouseDown') activateHalf()
     })
 
     // Popups and target=_blank become tabs in the same space, nested under this one, never windows.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BrowserTab } from '@shared/model'
-import { shownSplit, splitBounds } from './splitBounds'
+import { shownSplit, splitBounds, splitRatioAt } from './splitBounds'
 
 describe('splitBounds', () => {
   const box = { x: 100, y: 40, width: 1000, height: 600 }
@@ -41,5 +41,20 @@ describe('shownSplit', () => {
 
   it('defaults the ratio to one half', () => {
     expect(shownSplit([tab('a'), tab('b', 'a')], 'b')?.ratio).toBe(0.5)
+  })
+})
+
+describe('splitRatioAt', () => {
+  const box = { x: 100, y: 40, width: 1005, height: 600 }
+
+  it('puts the gap centre under the pointer', () => {
+    expect(splitRatioAt(box, 100 + 502.5, 5)).toBeCloseTo(0.5)
+    expect(splitRatioAt(box, 100 + 2.5 + 400, 5)).toBeCloseTo(0.4)
+  })
+
+  it('clamps to 0.25–0.75', () => {
+    expect(splitRatioAt(box, 0, 5)).toBe(0.25)
+    expect(splitRatioAt(box, 5000, 5)).toBe(0.75)
+    expect(splitRatioAt({ ...box, width: 0 }, 300, 5)).toBe(0.5)
   })
 })

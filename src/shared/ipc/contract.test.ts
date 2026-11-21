@@ -214,6 +214,13 @@ describe('IPC contract', () => {
     expect(ratio.safeParse({ tabId: 'a', ratio: 0.75 }).success).toBe(true)
     expect(ratio.safeParse({ tabId: 'a', ratio: 0.2 }).success).toBe(false)
     expect(ratio.safeParse({ tabId: 'a', ratio: 0.8 }).success).toBe(false)
+    const drag = commands['browser.splitDrag'].input
+    expect(drag.safeParse({ phase: 'start', tabId: 'a' }).success).toBe(true)
+    expect(drag.safeParse({ phase: 'move', x: 412.5 }).success).toBe(true)
+    expect(drag.safeParse({ phase: 'end', x: 400 }).success).toBe(true)
+    expect(drag.safeParse({ phase: 'cancel' }).success).toBe(true)
+    expect(drag.safeParse({ phase: 'move', x: Number.NaN }).success).toBe(false)
+    expect(drag.safeParse({ phase: 'start' }).success).toBe(false)
   })
 
   it('validates browser.setFolderIcon', () => {

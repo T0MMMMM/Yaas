@@ -703,72 +703,128 @@ test('visits are recorded in history, searched and forgotten', async () => {
   })
 })
 
+/** Visible page views (not the overlay strip), left to right. */
+const shownPages = (app: ElectronApplication) =>
+  app.evaluate(({ BrowserWindow }) =>
+    (BrowserWindow.getAllWindows()[0]?.contentView.children ?? [])
+      .slice(0, -1) // the overlay is always the top child
+      .filter((v) => v.getVisible())
+      .map((v) => v.getBounds())
+      .sort((p, q) => p.x - q.x),
+  )
+
+/** A real left click (input events, as the OS sends them) into a tab's page. */
+async function clickPage(app: ElectronApplication, page: Page, tabId: string): Promise<void> {
+  const id = await page.evaluate(async (tabId) => {
+    const { runtime } = await window.bigBrowser.invoke('browser.state')
+    return runtime[tabId]?.webContentsId ?? null
+  }, tabId)
+  if (id === null) throw new Error('the page has no view')
+  await app.evaluate(({ webContents }, id) => {
+    const contents = webContents.fromId(id)
+    if (!contents) throw new Error(`No web contents ${id}`)
+    const at = { x: 40, y: 40, button: 'left' as const, clickCount: 1 }
+    contents.sendInputEvent({ type: 'mouseMove', x: at.x, y: at.y })
+    contents.sendInputEvent({ ...at, type: 'mouseDown' })
+    contents.sendInputEvent({ ...at, type: 'mouseUp' })
+  }, id)
+}
+
 test('a split shows two pages', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    const [a, b] = await page.evaluate(
-      async (urls) =>
-        Promise.all(urls.map((input) => window.bigBrowser.invoke('browser.openTab', { input }))),
-      [site.url('/a'), site.url('/b')],
+    const a = await page.evaluate(
+      (input) => window.bigBrowser.invoke('browser.openTab', { input }),
+      site.url('/a'),
     )
-    if (!a || !b) throw new Error('tabs not opened')
+    const b = await page.evaluate(
+      (input) => window.bigBrowser.invoke('browser.openTab', { input }),
+      site.url('/b'),
+    )
     await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
       firstId: a.id,
       secondId: b.id,
     })
+    await page.evaluate((tabId) => window.bigBrowser.invoke('browser.activateTab', { tabId }), a.id)
+    await expect(page.getByTestId('url-rest')).toHaveText('/a')
 
     // Both pages are shown, side by side, at the same height.
-    const shownViews = () =>
-      app.evaluate(({ BrowserWindow }) =>
-        (BrowserWindow.getAllWindows()[0]?.contentView.children ?? [])
-          .filter((v) => v.getVisible() && v.getBounds().width > 0)
-          .map((v) => v.getBounds())
-          .filter((r) => r.height > 100)
-          .sort((p, q) => p.x - q.x),
-      )
-    await expect.poll(async () => (await shownViews()).length).toBe(2)
-    const [left, right] = await shownViews()
+    await expect.poll(async () => (await shownPages(app)).length).toBe(2)
+    const [left, right] = await shownPages(app)
     if (!left || !right) throw new Error('views not shown')
     expect(right.x).toBeGreaterThan(left.x + left.width)
     expect(right.y).toBe(left.y)
 
-    // Dragging the divider stores the new ratio.
-    const divider = page.getByTestId('split-divider')
-    const box = await divider.boundingBox()
+    // A real drag: pressed on the divider, then the overlay's capture layer gets the pointer even
+    // over the pages; both views follow before release, the ratio is stored on release.
+    const box = await page.getByTestId('split-divider').boundingBox()
     if (!box) throw new Error('divider not found')
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    const y = box.y + box.height / 2
+    await page.mouse.move(box.x + box.width / 2, y)
     await page.mouse.down()
-    await page.mouse.move(box.x - 150, box.y + box.height / 2, { steps: 5 })
-    await page.mouse.up()
+    const overlay = await overlayPage(app)
+    const layer = overlay.getByTestId('split-drag-layer')
+    await expect(layer).toBeVisible()
+    await overlay.mouse.move(box.x + box.width / 2, y)
+    await overlay.mouse.down()
+    await overlay.mouse.move(box.x - 150, y, { steps: 5 })
+    await expect.poll(async () => (await shownPages(app))[0]?.width ?? 0).toBeLessThan(left.width)
+    const [movedLeft, movedRight] = await shownPages(app)
+    expect(movedRight?.x).toBeLessThan(right.x)
+    expect(movedLeft?.width).toBeLessThan(left.width)
+    await overlay.mouse.up()
+    await expect(layer).toBeHidden()
     await expect
       .poll(async () => {
         const { tabs } = await browserState(page)
         return tabs.find((t) => t.id === a.id)?.splitRatio ?? 0.5
       })
       .toBeLessThan(0.45)
-    await expect.poll(async () => (await shownViews())[0]?.width ?? 0).toBeLessThan(left.width)
 
-    // Clicking into the left page makes it the active tab: the address bar follows.
-    const leftId = await page.evaluate(async (tabId) => {
-      const { runtime } = await window.bigBrowser.invoke('browser.state')
-      return runtime[tabId]?.webContentsId ?? null
-    }, a.id)
-    if (leftId === null) throw new Error('left page has no view')
-    await app.evaluate(({ webContents }, id) => {
-      const contents = webContents.fromId(id)
-      if (!contents) throw new Error(`No web contents ${id}`)
-      const at = { x: 40, y: 40, button: 'left' as const, clickCount: 1 }
-      contents.sendInputEvent({ type: 'mouseMove', x: at.x, y: at.y })
-      contents.sendInputEvent({ ...at, type: 'mouseDown' })
-      contents.sendInputEvent({ ...at, type: 'mouseUp' })
-      contents.focus()
-    }, leftId)
-    await expect(page.getByTestId('url')).toContainText('127.0.0.1')
-    await expect
-      .poll(async () => {
-        const state = await browserState(page)
-        return state.activeTabIds[state.activeSpaceId]
-      })
-      .toBe(a.id)
+    // A click into the right page makes it the active tab: the address bar follows.
+    await clickPage(app, page, b.id)
+    await expect(page.getByTestId('url-rest')).toHaveText('/b')
+    await clickPage(app, page, a.id)
+    await expect(page.getByTestId('url-rest')).toHaveText('/a')
     await expect(page.getByTestId('split-divider')).toBeVisible()
+  })
+})
+
+test('Escape cancels a split divider drag', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    const tabs = []
+    for (const path of ['/a', '/b']) {
+      tabs.push(
+        await page.evaluate(
+          (input) => window.bigBrowser.invoke('browser.openTab', { input }),
+          site.url(path),
+        ),
+      )
+    }
+    const [a, b] = tabs
+    if (!a || !b) throw new Error('tabs not opened')
+    await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
+      firstId: a.id,
+      secondId: b.id,
+    })
+    await expect.poll(async () => (await shownPages(app)).length).toBe(2)
+    const before = await shownPages(app)
+
+    const box = await page.getByTestId('split-divider').boundingBox()
+    if (!box) throw new Error('divider not found')
+    await page.mouse.move(box.x + 2, box.y + 100)
+    await page.mouse.down()
+    const overlay = await overlayPage(app)
+    await expect(overlay.getByTestId('split-drag-layer')).toBeVisible()
+    await overlay.mouse.move(box.x + 2, box.y + 100)
+    await overlay.mouse.down()
+    await overlay.mouse.move(box.x + 200, box.y + 100, { steps: 3 })
+    await expect.poll(async () => (await shownPages(app))[0]?.width).not.toBe(before[0]?.width)
+    await overlay.keyboard.press('Escape')
+    await expect(overlay.getByTestId('split-drag-layer')).toBeHidden()
+    await expect
+      .poll(async () => JSON.stringify(await shownPages(app)))
+      .toBe(JSON.stringify(before))
+    const { tabs: stored } = await browserState(page)
+    expect(stored.find((t) => t.id === a.id)?.splitRatio ?? 0.5).toBe(0.5)
   })
 })

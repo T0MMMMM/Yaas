@@ -16,6 +16,7 @@ export const COMMAND_CHANNELS = [
   'browser.splitTabs',
   'browser.separate',
   'browser.setSplitRatio',
+  'browser.splitDrag',
   'browser.createFolder',
   'browser.moveFolder',
   'browser.renameFolder',

@@ -104,6 +104,19 @@ function emitBrowserState(): void {
   for (const contents of trustedContents()) emit(contents, 'browser.changed', state)
 }
 
+/** The split whose divider is being dragged (its first or second tab), or null. */
+let splitDrag: { tabId: string } | null = null
+
+/** Ends a divider drag: stores the ratio under `x`, or (no `x`) goes back to the stored one. */
+function endSplitDrag(x: number | null): void {
+  const drag = splitDrag
+  if (!drag) return
+  splitDrag = null
+  if (x !== null && tabViews) browser.setSplitRatio(drag.tabId, tabViews.splitRatioAt(x))
+  tabViews?.previewSplitRatio(null)
+  overlay?.close()
+}
+
 function overlayView(): OverlayView {
   if (!overlay) throw new Error('No browser window')
   return overlay
@@ -320,6 +333,8 @@ function openMainWindow(): void {
   mainWindow = win
   // Created before any tab view, then raised over each new one.
   const overlayView = new OverlayView(win, PRELOAD_PATH, rendererUrl(), () => {
+    // The capture layer went away (e.g. the window lost it): a drag in progress is cancelled.
+    endSplitDrag(null)
     menus.clear()
     emit(win.webContents, 'overlay.closed', undefined)
     emit(overlayView.webContents, 'overlay.closed', undefined)
@@ -368,6 +383,14 @@ registerCommands(
     'browser.splitTabs': ({ firstId, secondId }) => browser.splitTabs(firstId, secondId),
     'browser.separate': ({ tabId }) => browser.separate(tabId),
     'browser.setSplitRatio': ({ tabId, ratio }) => browser.setSplitRatio(tabId, ratio),
+    'browser.splitDrag': (drag) => {
+      if (drag.phase === 'start') {
+        splitDrag = { tabId: drag.tabId }
+        overlayView().open({ kind: 'split-drag' })
+      } else if (drag.phase === 'move') {
+        if (splitDrag) tabViews?.previewSplitRatio(tabViews.splitRatioAt(drag.x))
+      } else endSplitDrag(drag.phase === 'end' ? drag.x : null)
+    },
     'browser.createFolder': ({ spaceId, name, parentId }) =>
       browser.createFolder(spaceId ?? browser.snapshot().activeSpaceId, name, parentId ?? null),
     'browser.moveFolder': ({ folderId, parentId, index }) =>

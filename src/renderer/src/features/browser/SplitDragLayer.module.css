@@ -1,0 +1,7 @@
+/* Catches the pointer over the whole window while a split divider is dragged. */
+.layer {
+  position: fixed;
+  inset: 0;
+  cursor: col-resize;
+  touch-action: none;
+}
