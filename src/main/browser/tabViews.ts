@@ -297,11 +297,22 @@ export class TabViews {
 
     // Visits go to the tab's space history: top-level navigations only (not in-page, not frames).
     const spaceId = (): string | undefined => this.views.get(tabId)?.spaceId
+    // History must never break navigation (e.g. the space was deleted a moment ago).
+    const safeHistory = (write: () => void): void => {
+      try {
+        write()
+      } catch (error) {
+        console.warn('Could not record browsing history:', error)
+      }
+    }
     contents.on('did-navigate', (_event, url) => {
       update({ url })
       updateHistory()
       const space = spaceId()
-      if (space && isCurrent()) this.history?.record(space, url, contents.getTitle() || url)
+      if (space && isCurrent()) {
+        // An empty title keeps the stored one (the real title arrives with page-title-updated).
+        safeHistory(() => this.history?.record(space, url, contents.getTitle()))
+      }
     })
     contents.on('did-navigate-in-page', (_event, url, isMainFrame) => {
       if (!isMainFrame) return
@@ -311,7 +322,9 @@ export class TabViews {
     contents.on('page-title-updated', (_event, title) => {
       update({ title })
       const space = spaceId()
-      if (space && isCurrent()) this.history?.setTitle(space, contents.getURL(), title)
+      if (space && title && isCurrent()) {
+        safeHistory(() => this.history?.setTitle(space, contents.getURL(), title))
+      }
     })
     // Only the latest page's icon is kept: an older, slower request is dropped.
     let faviconRequest = 0

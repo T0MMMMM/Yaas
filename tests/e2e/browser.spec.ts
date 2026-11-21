@@ -631,3 +631,27 @@ test('the page menu is drawn', async () => {
     await expect.poll(marked).toBe(false)
   })
 })
+
+test('visits are recorded in history, searched and forgotten', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const frequent = () => page.evaluate(() => window.bigBrowser.invoke('history.frequent', {}))
+    await blankTab(page)
+    await go(page, site.url('/a'))
+    await expect.poll(async () => (await frequent()).map((e) => e.title)).toEqual(['Page A'])
+    expect((await frequent())[0]).toMatchObject({ url: site.url('/a'), visitCount: 1 })
+
+    // A reload is another visit; a hash change is not.
+    await go(page, site.url('/a#section'))
+    await go(page, site.url('/a'))
+    await expect.poll(async () => (await frequent())[0]?.visitCount).toBe(2)
+    expect(await frequent()).toHaveLength(1)
+
+    const found = await page.evaluate(() =>
+      window.bigBrowser.invoke('history.search', { query: 'PAGE a' }),
+    )
+    expect(found.map((e) => e.url)).toEqual([site.url('/a')])
+
+    await page.evaluate((id) => window.bigBrowser.invoke('history.forget', { id }), found[0]?.id)
+    expect(await frequent()).toEqual([])
+  })
+})
