@@ -50,6 +50,25 @@ describe('openDatabase', () => {
     ])
   })
 
+  it('migrates a v7 database to v8 keeping its tabs, none of them split', () => {
+    const db = new DatabaseSync(':memory:')
+    db.exec('PRAGMA foreign_keys = ON')
+    migrate(db, 7)
+    db.exec(
+      `INSERT INTO spaces (id, name, color, position, active_tab_id, created_at)
+         VALUES ('s', 'Personal', '#7C5CFF', 0, 't', 'now');
+       INSERT INTO tabs (id, space_id, url, title, favicon_url, position, created_at, section)
+         VALUES ('t', 's', 'a', 'A', NULL, 0, 'now', 'today'),
+                ('u', 's', 'b', 'B', NULL, 1, 'now', 'today');`,
+    )
+    migrate(db, 8)
+    expect(db.prepare('PRAGMA user_version').get()).toEqual({ user_version: 8 })
+    expect(db.prepare('SELECT id, position, split_of, split_ratio FROM tabs').all()).toEqual([
+      { id: 't', position: 0, split_of: null, split_ratio: null },
+      { id: 'u', position: 1, split_of: null, split_ratio: null },
+    ])
+  })
+
   it('deleting a folder row cascades its child folders', () => {
     const db = openDatabase(':memory:')
     db.exec(

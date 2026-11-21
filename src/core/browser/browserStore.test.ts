@@ -161,6 +161,8 @@ describe('BrowserStore organisation', () => {
         folderId: null,
         parentId: null,
         lastActiveAt: null,
+        splitOf: null,
+        splitRatio: null,
       },
     ])
     expect(snap.folders).toEqual([])
@@ -579,5 +581,130 @@ describe('BrowserStore space model', () => {
       expect.objectContaining({ code: 'last_space' }),
     )
     expect(store.snapshot().spaces).toHaveLength(1)
+  })
+})
+
+describe('BrowserStore splits', () => {
+  const tab = (store: BrowserStore, id: string) => store.snapshot().tabs.find((t) => t.id === id)
+
+  function three() {
+    const ctx = setup()
+    const a = ctx.store.openTab(ctx.spaceId, 'a')
+    const b = ctx.store.openTab(ctx.spaceId, 'b')
+    const c = ctx.store.openTab(ctx.spaceId, 'c')
+    return { ...ctx, a, b, c }
+  }
+
+  it('pairs two tabs: the second points at the first and leaves its list', () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(a.id, c.id)
+    expect(tab(store, c.id)).toMatchObject({ splitOf: a.id, section: 'today', parentId: null })
+    expect(tab(store, a.id)).toMatchObject({ splitOf: null, splitRatio: null })
+    expect(store.visibleOrder(spaceId)).toEqual([a.id, b.id])
+    expect(tab(store, a.id)?.position).toBe(0)
+    expect(tab(store, b.id)?.position).toBe(1)
+    // The list stays contiguous: a new tab lands at the end, right after b.
+    store.activateTab(b.id)
+    const d = store.openTab(spaceId, 'd')
+    expect(tab(store, d.id)?.position).toBe(2)
+  })
+
+  it('splitting a tab across spaces or one already split is an invalid move', () => {
+    const { store, a, b, c } = three()
+    store.splitTabs(a.id, b.id)
+    const code = expect.objectContaining({ code: 'invalid_move' })
+    expect(() => store.splitTabs(a.id, c.id)).toThrow(code)
+    expect(() => store.splitTabs(c.id, b.id)).toThrow(code)
+    expect(() => store.splitTabs(c.id, c.id)).toThrow(code)
+    const other = store.createSpace('Work', '#fff')
+    const x = store.openTab(other.id, 'x')
+    expect(() => store.splitTabs(c.id, x.id)).toThrow(code)
+  })
+
+  it('moving either half moves the pair', () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(a.id, b.id)
+    const folder = store.createFolder(spaceId, 'F')
+    store.moveTab(b.id, { section: 'pinned', folderId: folder.id, index: 0 })
+    expect(tab(store, a.id)).toMatchObject({ section: 'pinned', folderId: folder.id, position: 0 })
+    expect(tab(store, b.id)).toMatchObject({
+      section: 'pinned',
+      folderId: folder.id,
+      splitOf: a.id,
+    })
+    expect(store.visibleOrder(spaceId)).toEqual([a.id, c.id])
+    store.moveTab(a.id, { section: 'today', index: 1 })
+    expect(tab(store, b.id)).toMatchObject({ section: 'today', folderId: null, splitOf: a.id })
+    expect(store.visibleOrder(spaceId)).toEqual([c.id, a.id])
+  })
+
+  it("closing one half leaves the other in the row's place, no split left", () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(b.id, a.id)
+    expect(store.visibleOrder(spaceId)).toEqual([b.id, c.id])
+    store.activateTab(b.id)
+    store.closeTab(b.id)
+    expect(store.visibleOrder(spaceId)).toEqual([a.id, c.id])
+    expect(tab(store, a.id)).toMatchObject({ splitOf: null, position: 0 })
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(a.id)
+    // Closing the second half keeps the first where it was.
+    store.splitTabs(a.id, c.id)
+    store.closeTab(c.id)
+    expect(store.visibleOrder(spaceId)).toEqual([a.id])
+    expect(tab(store, a.id)?.splitOf).toBeNull()
+    // Reopened as a normal tab.
+    const reopened = store.reopenClosed()
+    expect(reopened?.splitOf).toBeNull()
+    expect(store.snapshot().tabs.every((t) => t.splitOf === null)).toBe(true)
+  })
+
+  it('separate puts the second right after the first', () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(a.id, c.id)
+    store.setSplitRatio(a.id, 0.6)
+    store.separate(c.id)
+    expect(store.visibleOrder(spaceId)).toEqual([a.id, c.id, b.id])
+    expect(store.snapshot().tabs.map((t) => t.position)).toEqual([0, 1, 2])
+    expect(tab(store, a.id)?.splitRatio).toBeNull()
+  })
+
+  it('clamps the ratio to 0.25–0.75 and refuses it on a tab that is not split', () => {
+    const { store, a, b, c } = three()
+    store.splitTabs(a.id, b.id)
+    store.setSplitRatio(b.id, 0.9)
+    expect(tab(store, a.id)?.splitRatio).toBe(0.75)
+    store.setSplitRatio(a.id, 0.1)
+    expect(tab(store, a.id)?.splitRatio).toBe(0.25)
+    expect(() => store.setSplitRatio(c.id, 0.5)).toThrow(
+      expect.objectContaining({ code: 'invalid_move' }),
+    )
+  })
+
+  it('deleting a folder with a split reopens both tabs as normal tabs', () => {
+    const { store, spaceId, a, b } = three()
+    const folder = store.createFolder(spaceId, 'F')
+    store.moveTab(a.id, { section: 'pinned', folderId: folder.id, index: 0 })
+    store.splitTabs(a.id, b.id)
+    store.deleteFolder(folder.id)
+    expect(store.snapshot().tabs.map((t) => t.url)).toEqual(['c'])
+    store.reopenClosed()
+    const tabs = store.snapshot().tabs.filter((t) => t.folderId === folder.id)
+    expect(tabs.map((t) => [t.url, t.position, t.splitOf])).toEqual([
+      ['a', 0, null],
+      ['b', 1, null],
+    ])
+  })
+
+  it('a pair whose first tab is gone degrades to a normal tab at the end of its list', () => {
+    const { db, a, b, c } = three()
+    db.exec('PRAGMA foreign_keys = OFF')
+    db.prepare("UPDATE tabs SET split_of = 'gone', position = -1 WHERE id = ?").run(a.id)
+    db.prepare('UPDATE tabs SET position = position - 1 WHERE id IN (?, ?)').run(b.id, c.id)
+    const store = new BrowserStore(db, options)
+    expect(store.snapshot().tabs.map((t) => [t.url, t.position, t.splitOf])).toEqual([
+      ['b', 0, null],
+      ['c', 1, null],
+      ['a', 2, null],
+    ])
   })
 })

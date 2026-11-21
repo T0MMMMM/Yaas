@@ -59,6 +59,15 @@ export type SidebarNode =
       /** Its tabs and child folders, by their shared position. */
       children: SidebarNode[]
     }
+  /** Two tabs shown side by side, drawn as one row in the first's place. */
+  | {
+      kind: 'split'
+      first: TabView
+      second: TabView
+      /** The first page's share of the width (0.25–0.75). */
+      ratio: number
+      depth: number
+    }
   /** 3+ top-level today tabs of one host, drawn as a folder named after it. Never stored. */
   | { kind: 'auto-folder'; host: string; children: SidebarNode[] }
 
@@ -91,6 +100,8 @@ export interface BrowserView {
   /** The active space's tabs in drawn order (favourites, pinned, today depth-first). */
   tabs: TabView[]
   activeTab: TabView | null
+  /** The split the active tab is a half of, or null. */
+  activeSplit: ActiveSplit | null
   /** The active space's sidebar. */
   sections: SidebarSections
   /** Every stored folder, in any space (the folder icon card finds its folder here). */
@@ -102,6 +113,13 @@ export interface BrowserView {
    * left) rather than closed, so it does not animate out.
    */
   openTabIds: ReadonlySet<string>
+}
+
+export interface ActiveSplit {
+  first: TabView
+  second: TabView
+  ratio: number
+  activeHalf: 'first' | 'second'
 }
 
 /** A tab with the space it belongs to. */
@@ -174,13 +192,59 @@ export const AUTO_FOLDER_MIN = 3
 const byPosition = (a: { position: number }, b: { position: number }): number =>
   a.position - b.position
 
+/** Ratio of a split whose first tab stores none. */
+const DEFAULT_SPLIT_RATIO = 0.5
+
+/**
+ * A space's splits: each second half by its first tab's id. A second half whose first is missing,
+ * itself a second half or already paired is not in a split (drawn as a normal tab).
+ */
+function splitPairs(tabs: BrowserTab[]): Map<string, BrowserTab> {
+  const byId = new Map(tabs.map((t) => [t.id, t]))
+  const pairs = new Map<string, BrowserTab>()
+  for (const tab of [...tabs].sort((a, b) => (a.id < b.id ? -1 : 1))) {
+    const first = tab.splitOf === null ? undefined : byId.get(tab.splitOf)
+    if (first && first.splitOf === null && !pairs.has(first.id)) pairs.set(first.id, tab)
+  }
+  return pairs
+}
+
+/** The row of a list's tab: a split when it is a split's first tab. */
+function rowOf(
+  tab: BrowserTab,
+  depth: number,
+  pairs: Map<string, BrowserTab>,
+  view: (t: BrowserTab) => TabView,
+): SidebarNode {
+  const second = pairs.get(tab.id)
+  return second
+    ? {
+        kind: 'split',
+        first: view(tab),
+        second: view(second),
+        ratio: tab.splitRatio ?? DEFAULT_SPLIT_RATIO,
+        depth,
+      }
+    : { kind: 'tab', tab: view(tab), depth }
+}
+
+/** The tab standing for a tab or split row in its list (a split's first tab). */
+function listTabOf(node: SidebarNode): TabView | null {
+  if (node.kind === 'tab') return node.tab
+  if (node.kind === 'split') return node.first
+  return null
+}
+
 /** The host automatic folders group by: lower-cased, without `www.`; null for non-web pages. */
 export function autoFolderHost(url: string): string | null {
   return hostOf(url)?.replace(/^www\./, '') ?? null
 }
 
 /** Today's tabs as root subtrees (by position), each flattened depth-first like the store. */
-function todayTrees(tabs: BrowserTab[], view: (t: BrowserTab) => TabView): SidebarNode[][] {
+function todayTrees(
+  tabs: BrowserTab[],
+  node: (t: BrowserTab, depth: number) => SidebarNode,
+): SidebarNode[][] {
   const ids = new Set(tabs.map((t) => t.id))
   const children = new Map<string | null, BrowserTab[]>()
   for (const tab of [...tabs].sort(byPosition)) {
@@ -188,7 +252,7 @@ function todayTrees(tabs: BrowserTab[], view: (t: BrowserTab) => TabView): Sideb
     children.set(parent, [...(children.get(parent) ?? []), tab])
   }
   const flatten = (tab: BrowserTab, level: number): SidebarNode[] => [
-    { kind: 'tab', tab: view(tab), depth: Math.min(level, MAX_DEPTH) },
+    node(tab, Math.min(level, MAX_DEPTH)),
     ...(children.get(tab.id) ?? []).flatMap((child) => flatten(child, level + 1)),
   ]
   return (children.get(null) ?? []).map((root) => flatten(root, 0))
@@ -198,7 +262,8 @@ function todayTrees(tabs: BrowserTab[], view: (t: BrowserTab) => TabView): Sideb
 function withAutoFolders(trees: SidebarNode[][]): SidebarNode[] {
   const hostOfTree = (tree: SidebarNode[]): string | null => {
     const root = tree[0]
-    return root?.kind === 'tab' ? autoFolderHost(root.tab.url) : null
+    const tab = root ? listTabOf(root) : null
+    return tab ? autoFolderHost(tab.url) : null
   }
   const counts = new Map<string, number>()
   for (const tree of trees) {
@@ -225,11 +290,15 @@ function withAutoFolders(trees: SidebarNode[][]): SidebarNode[] {
 }
 
 function sectionsOf(
-  tabs: BrowserTab[],
+  allTabs: BrowserTab[],
   folders: BrowserFolder[],
   view: (t: BrowserTab) => TabView,
   opts: SidebarOptions,
 ): SidebarSections {
+  const pairs = splitPairs(allTabs)
+  const seconds = new Set([...pairs.values()].map((t) => t.id))
+  const tabs = allTabs.filter((t) => !seconds.has(t.id))
+  const node = (t: BrowserTab, depth: number): SidebarNode => rowOf(t, depth, pairs, view)
   const favorites = tabs
     .filter((t) => t.section === 'favorites')
     .sort(byPosition)
@@ -259,14 +328,14 @@ function sectionsOf(
         .filter((t) => folderOf(t.folderId) === parentId)
         .map((t) => ({
           position: t.position,
-          node: (): SidebarNode => ({ kind: 'tab', tab: view(t), depth: 0 }),
+          node: (): SidebarNode => node(t, 0),
         })),
     ]
       .sort(byPosition)
       .map((item) => item.node())
 
   const todayTabs = tabs.filter((t) => t.section === 'today')
-  const trees = todayTrees(todayTabs, view)
+  const trees = todayTrees(todayTabs, node)
   const todayIds = new Set(todayTabs.map((t) => t.id))
   const parentOf = new Map(
     todayTabs.map((t) => [
@@ -278,10 +347,13 @@ function sectionsOf(
     favorites,
     pinned: pinnedList(null, 0),
     today: opts.autoFolders ? withAutoFolders(trees) : trees.flat(),
-    todayOrder: tabsOf(trees.flat()).map((t) => ({
-      id: t.id,
-      parentId: parentOf.get(t.id) ?? null,
-    })),
+    todayOrder: trees
+      .flat()
+      .flatMap((n) => listTabOf(n) ?? [])
+      .map((t) => ({
+        id: t.id,
+        parentId: parentOf.get(t.id) ?? null,
+      })),
   }
 }
 
@@ -302,9 +374,13 @@ export function sidebarSections(
   )
 }
 
-/** The tabs of a pinned or today list, in drawn order (folders' tabs included). */
+/** The tabs of a pinned or today list, in drawn order (folders' tabs and both halves of a split). */
 export function tabsOf(nodes: SidebarNode[]): TabView[] {
-  return nodes.flatMap((n) => (n.kind === 'tab' ? [n.tab] : tabsOf(n.children)))
+  return nodes.flatMap((n) => {
+    if (n.kind === 'tab') return [n.tab]
+    if (n.kind === 'split') return [n.first, n.second]
+    return tabsOf(n.children)
+  })
 }
 
 /** A today tab and its descendants: what moves with it (empty when it is not in today). */
@@ -332,9 +408,41 @@ export function todayCloseOrder(today: SidebarNode[], activeId: string | null): 
   return [...ids.filter((id) => id !== activeId), activeId]
 }
 
-/** Tabs of the sections in drawn order (automatic folders keep their tabs together). */
-function drawnTabs(sections: SidebarSections): TabView[] {
-  return [...sections.favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)]
+/**
+ * Tabs of a space's sections in drawn order (automatic folders keep their tabs together, a split's
+ * second half follows its first).
+ */
+function drawnTabs(state: BrowserState, spaceId: string, sections: SidebarSections): TabView[] {
+  const pairs = splitPairs(state.tabs.filter((t) => t.spaceId === spaceId))
+  const favorites = sections.favorites.flatMap((f) => {
+    const second = pairs.get(f.id)
+    return second ? [f, toTab(second, state.runtime[second.id])] : [f]
+  })
+  return [...favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)]
+}
+
+/** The split the tab `activeId` is a half of, among a space's drawn tabs. */
+function activeSplitOf(
+  state: BrowserState,
+  spaceId: string,
+  tabs: TabView[],
+  activeId: string | null,
+): ActiveSplit | null {
+  if (activeId === null) return null
+  for (const [firstId, second] of splitPairs(state.tabs.filter((t) => t.spaceId === spaceId))) {
+    if (activeId !== firstId && activeId !== second.id) continue
+    const first = tabs.find((t) => t.id === firstId)
+    const secondView = tabs.find((t) => t.id === second.id)
+    const stored = state.tabs.find((t) => t.id === firstId)
+    if (!first || !secondView) return null
+    return {
+      first,
+      second: secondView,
+      ratio: stored?.splitRatio ?? DEFAULT_SPLIT_RATIO,
+      activeHalf: activeId === firstId ? 'first' : 'second',
+    }
+  }
+  return null
 }
 
 /** The browser as the chrome shows it: the active space, its sidebar and the active tab. */
@@ -348,19 +456,22 @@ export function browserView(
   if (!space) throw new Error('Browser state has no space')
 
   const sections = sidebarSections(state, space.id, opts)
-  const tabs = drawnTabs(sections)
+  const tabs = drawnTabs(state, space.id, sections)
   const activeId = state.activeTabIds[space.id] ?? null
   const allTabs = spaces.flatMap((s) =>
-    (s.id === space.id ? tabs : drawnTabs(sidebarSections(state, s.id, opts))).map((t) => ({
-      ...t,
-      space: s,
-    })),
+    (s.id === space.id ? tabs : drawnTabs(state, s.id, sidebarSections(state, s.id, opts))).map(
+      (t) => ({
+        ...t,
+        space: s,
+      }),
+    ),
   )
   return {
     spaces,
     space,
     tabs,
     activeTab: tabs.find((t) => t.id === activeId) ?? null,
+    activeSplit: activeSplitOf(state, space.id, tabs, activeId),
     sections,
     folders: state.folders,
     allTabs,

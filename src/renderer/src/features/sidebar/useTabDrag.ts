@@ -298,6 +298,7 @@ function folderSubtree(nodes: SidebarNode[], folderId: string): Set<string> {
   const ids = new Set<string>()
   const collect = (node: SidebarNode): void => {
     if (node.kind === 'tab') ids.add(node.tab.id)
+    else if (node.kind === 'split') ids.add(node.first.id).add(node.second.id)
     else {
       if (node.kind === 'folder') ids.add(node.folder.id)
       node.children.forEach(collect)
@@ -354,6 +355,7 @@ export function dropRows(sections: SidebarSections, dragged: DragKey, measure: M
   const pinnedRows = (nodes: SidebarNode[], folderId: string | null): void => {
     for (const node of nodes) {
       if (node.kind === 'tab') tabRow(node.tab.id, 'pinned', folderId)
+      else if (node.kind === 'split') tabRow(node.first.id, 'pinned', folderId)
       else if (node.kind === 'folder') {
         add(`folder:${node.folder.id}`, {
           id: node.folder.id,

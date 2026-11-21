@@ -204,6 +204,18 @@ describe('IPC contract', () => {
     expect(input.safeParse({ tabId: 'x', section: 'today', index: 1.5 }).success).toBe(false)
   })
 
+  it('validates the split commands, the ratio within 0.25–0.75', () => {
+    const split = commands['browser.splitTabs'].input
+    expect(split.safeParse({ firstId: 'a', secondId: 'b' }).success).toBe(true)
+    expect(split.safeParse({ firstId: 'a' }).success).toBe(false)
+    expect(commands['browser.separate'].input.safeParse({ tabId: 'a' }).success).toBe(true)
+    const ratio = commands['browser.setSplitRatio'].input
+    expect(ratio.safeParse({ tabId: 'a', ratio: 0.25 }).success).toBe(true)
+    expect(ratio.safeParse({ tabId: 'a', ratio: 0.75 }).success).toBe(true)
+    expect(ratio.safeParse({ tabId: 'a', ratio: 0.2 }).success).toBe(false)
+    expect(ratio.safeParse({ tabId: 'a', ratio: 0.8 }).success).toBe(false)
+  })
+
   it('validates browser.setFolderIcon', () => {
     const input = commands['browser.setFolderIcon'].input
     expect(input.safeParse({ folderId: 'f', icon: '🎧' }).success).toBe(true)

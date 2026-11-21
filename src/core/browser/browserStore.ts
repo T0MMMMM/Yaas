@@ -37,6 +37,8 @@ interface TabRow {
   folder_id: string | null
   parent_id: string | null
   last_active_at: string | null
+  split_of: string | null
+  split_ratio: number | null
 }
 
 interface FolderRow {
@@ -79,6 +81,8 @@ const toTab = (r: TabRow): BrowserTab => ({
   folderId: r.folder_id,
   parentId: r.parent_id,
   lastActiveAt: r.last_active_at,
+  splitOf: r.split_of,
+  splitRatio: r.split_ratio,
 })
 
 const toFolder = (r: FolderRow): BrowserFolder => ({
@@ -167,6 +171,7 @@ export class BrowserStore {
       const space = this.insertSpace(options.defaultSpace.name, options.defaultSpace.color)
       this.setActiveSpace(space.id)
     }
+    this.repairSplits()
   }
 
   snapshot(): BrowserSnapshot {
@@ -275,8 +280,9 @@ export class BrowserStore {
     const space = this.requireSpace(spaceId)
     const activate = options.activate ?? true
     const parent = options.parentId ? this.findTab(options.parentId) : undefined
-    const opener = parent?.space_id === spaceId ? parent : undefined
-    const active = space.active_tab_id ? this.findTab(space.active_tab_id) : undefined
+    const opener = parent?.space_id === spaceId ? this.firstOf(parent) : undefined
+    const found = space.active_tab_id ? this.findTab(space.active_tab_id) : undefined
+    const active = found ? this.firstOf(found) : undefined
     const today: ListKey = { spaceId, section: 'today', folderId: null }
     let position: number
     if (opener) {
@@ -311,6 +317,7 @@ export class BrowserStore {
    * stays; main destroys its view), a today tab is deleted and can be reopened.
    */
   closeTab(id: string): 'deleted' | 'unloaded' {
+    this.leaveSplit(id)
     const tab = this.requireTab(id)
     if (tab.section === 'today') {
       this.removeTab(id)
@@ -326,6 +333,7 @@ export class BrowserStore {
 
   /** Deletes a tab whatever its section; its children move up to its parent. Reopenable. */
   removeTab(id: string): void {
+    this.leaveSplit(id)
     const tab = this.requireTab(id)
     this.transaction(() => {
       const space = this.requireSpace(tab.space_id)
@@ -349,9 +357,12 @@ export class BrowserStore {
    * moveIntoToday: `index` is in drawn order and the tab's subtree moves with it.
    */
   moveTab(id: string, to: { section: TabSection; folderId?: string | null; index: number }): void {
-    const tab = this.requireTab(id)
+    const tab = this.firstOf(this.requireTab(id))
     if (to.section === 'today') {
-      this.transaction(() => this.moveIntoToday(tab, to.index))
+      this.transaction(() => {
+        this.moveIntoToday(tab, to.index)
+        this.syncSecond(tab.id)
+      })
       this.emit()
       return
     }
@@ -363,19 +374,22 @@ export class BrowserStore {
     const leavesToday = tab.section === 'today'
     this.transaction(() => {
       // Out of every list while the others close up and make room.
-      this.db.prepare('UPDATE tabs SET position = -1 WHERE id = ?').run(id)
+      this.db.prepare('UPDATE tabs SET position = -1 WHERE id = ?').run(tab.id)
       this.shift(source, tab.position + 1, -1)
       const length = this.listLength(target) - (sameList ? 1 : 0)
       const index = Math.max(0, Math.min(to.index, length))
       this.shift(target, index, 1)
       if (leavesToday) {
-        this.db.prepare('UPDATE tabs SET parent_id = ? WHERE parent_id = ?').run(tab.parent_id, id)
+        this.db
+          .prepare('UPDATE tabs SET parent_id = ? WHERE parent_id = ?')
+          .run(tab.parent_id, tab.id)
       }
       this.db
         .prepare(
           'UPDATE tabs SET section = ?, folder_id = ?, position = ?, parent_id = ? WHERE id = ?',
         )
-        .run(to.section, folderId, index, leavesToday ? null : tab.parent_id, id)
+        .run(to.section, folderId, index, leavesToday ? null : tab.parent_id, tab.id)
+      this.syncSecond(tab.id)
     })
     this.emit()
   }
@@ -457,6 +471,14 @@ export class BrowserStore {
     const folder = this.requireFolder(id)
     const folders = this.folderSubtree(folder)
     const folderIds = new Set(folders.map((f) => f.id))
+    // A split inside comes back from reopenClosed as two normal tabs.
+    this.transaction(() => {
+      for (const second of this.secondRows(folder.space_id)) {
+        if (second.folder_id === null || !folderIds.has(second.folder_id)) continue
+        const first = this.findTab(second.split_of ?? '')
+        if (first) this.unpair(first, second, false)
+      }
+    })
     const tabs = (
       this.db
         .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'pinned' ORDER BY position")
@@ -520,7 +542,7 @@ export class BrowserStore {
    */
   visibleOrder(spaceId: string): string[] {
     const tabs = this.db
-      .prepare('SELECT * FROM tabs WHERE space_id = ? ORDER BY position')
+      .prepare('SELECT * FROM tabs WHERE space_id = ? AND split_of IS NULL ORDER BY position')
       .all(spaceId) as unknown as TabRow[]
     const folders = this.db
       .prepare('SELECT * FROM folders WHERE space_id = ? ORDER BY position')
@@ -571,6 +593,54 @@ export class BrowserStore {
     this.emit()
   }
 
+  /**
+   * Pairs two tabs of one space as a split: `secondId` leaves its list (its today children move
+   * up to its parent) and mirrors the first's section, folder and parent. Neither may already be
+   * in a split (`invalid_move`).
+   */
+  splitTabs(firstId: string, secondId: string): void {
+    const first = this.requireTab(firstId)
+    const second = this.requireTab(secondId)
+    if (first.id === second.id || first.space_id !== second.space_id) {
+      throw new BrowserError('invalid_move', 'A split needs two tabs of one space')
+    }
+    if (this.pairOf(first) || this.pairOf(second)) {
+      throw new BrowserError('invalid_move', 'A tab can be in one split only')
+    }
+    this.transaction(() => {
+      this.db
+        .prepare('UPDATE tabs SET split_of = ?, position = -1 WHERE id = ?')
+        .run(first.id, second.id)
+      this.shift(keyOf(second), second.position + 1, -1)
+      if (second.section === 'today') {
+        this.db
+          .prepare('UPDATE tabs SET parent_id = ? WHERE parent_id = ?')
+          .run(second.parent_id, second.id)
+      }
+      this.db.prepare('UPDATE tabs SET split_ratio = NULL WHERE id = ?').run(first.id)
+      this.syncSecond(first.id)
+      this.renumberToday(first.space_id)
+    })
+    this.emit()
+  }
+
+  /** Ends the split `id` is a half of: the second goes right after the first, in its list. */
+  separate(id: string): void {
+    const pair = this.pairOf(this.requireTab(id))
+    if (!pair) throw new BrowserError('invalid_move', `Not in a split: ${id}`)
+    this.transaction(() => this.unpair(pair.first, pair.second, false))
+    this.emit()
+  }
+
+  /** The first page's share of the width of the split `id` is a half of, clamped to 0.25–0.75. */
+  setSplitRatio(id: string, ratio: number): void {
+    const pair = this.pairOf(this.requireTab(id))
+    if (!pair) throw new BrowserError('invalid_move', `Not in a split: ${id}`)
+    const clamped = Math.min(0.75, Math.max(0.25, ratio))
+    this.db.prepare('UPDATE tabs SET split_ratio = ? WHERE id = ?').run(clamped, pair.first.id)
+    this.emit()
+  }
+
   subscribe(listener: Listener): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
@@ -618,7 +688,8 @@ export class BrowserStore {
   /** The tab after `anchor` in visible order that is not `removed`, else the one before, else null. */
   private nextActive(spaceId: string, anchor: string, removed: Set<string>): string | null {
     const order = this.visibleOrder(spaceId)
-    const index = order.indexOf(anchor)
+    // A second half stands where its first is.
+    const index = order.indexOf(this.findTab(anchor)?.split_of ?? anchor)
     const after = order.slice(index + 1).find((id) => !removed.has(id))
     const before = order
       .slice(0, Math.max(index, 0))
@@ -630,7 +701,9 @@ export class BrowserStore {
   /** A space's today tabs, by position. */
   private todayRows(spaceId: string): TabRow[] {
     return this.db
-      .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'today' ORDER BY position")
+      .prepare(
+        "SELECT * FROM tabs WHERE space_id = ? AND section = 'today' AND split_of IS NULL ORDER BY position",
+      )
       .all(spaceId) as unknown as TabRow[]
   }
 
@@ -795,7 +868,8 @@ export class BrowserStore {
     const tabs = (
       this.db
         .prepare(
-          'SELECT COUNT(*) AS n FROM tabs WHERE space_id = ? AND section = ? AND folder_id IS ?',
+          `SELECT COUNT(*) AS n FROM tabs
+           WHERE space_id = ? AND section = ? AND folder_id IS ? AND split_of IS NULL`,
         )
         .get(key.spaceId, key.section, key.folderId) as { n: number }
     ).n
@@ -813,7 +887,8 @@ export class BrowserStore {
     this.db
       .prepare(
         `UPDATE tabs SET position = position + ?
-         WHERE space_id = ? AND section = ? AND folder_id IS ? AND position >= ?`,
+         WHERE space_id = ? AND section = ? AND folder_id IS ? AND position >= ?
+           AND split_of IS NULL`,
       )
       .run(delta, key.spaceId, key.section, key.folderId, from)
     if (key.section === 'pinned') {
@@ -824,6 +899,103 @@ export class BrowserStore {
         )
         .run(delta, key.spaceId, key.folderId, from)
     }
+  }
+
+  /** The split `tab` is a half of, or undefined. */
+  private pairOf(tab: TabRow): { first: TabRow; second: TabRow } | undefined {
+    if (tab.split_of !== null) {
+      const first = this.findTab(tab.split_of)
+      return first ? { first, second: tab } : undefined
+    }
+    const second = this.db
+      .prepare('SELECT * FROM tabs WHERE split_of = ?')
+      .get(tab.id) as unknown as TabRow | undefined
+    return second ? { first: tab, second } : undefined
+  }
+
+  /** The row standing for `tab` in its list: its split's first tab when it is a second half. */
+  private firstOf(tab: TabRow): TabRow {
+    return (tab.split_of !== null ? this.findTab(tab.split_of) : undefined) ?? tab
+  }
+
+  /** A space's second halves. */
+  private secondRows(spaceId: string): TabRow[] {
+    return this.db
+      .prepare('SELECT * FROM tabs WHERE space_id = ? AND split_of IS NOT NULL')
+      .all(spaceId) as unknown as TabRow[]
+  }
+
+  /** The second half of `firstId` (if any) takes its first's section, folder and parent. */
+  private syncSecond(firstId: string): void {
+    this.db
+      .prepare(
+        `UPDATE tabs SET (section, folder_id, parent_id) =
+           (SELECT section, folder_id, parent_id FROM tabs WHERE id = ?)
+         WHERE split_of = ?`,
+      )
+      .run(firstId, firstId)
+  }
+
+  /**
+   * Puts `second` back in its first's list, right after it, or `before` it (where the row was,
+   * when the first is about to close). Run inside a transaction.
+   */
+  private unpair(first: TabRow, second: TabRow, before: boolean): void {
+    const position = before ? first.position : first.position + 1
+    this.shift(keyOf(first), position, 1)
+    this.db
+      .prepare('UPDATE tabs SET split_of = NULL, position = ? WHERE id = ?')
+      .run(position, second.id)
+    this.db.prepare('UPDATE tabs SET split_ratio = NULL WHERE id = ?').run(first.id)
+    this.renumberToday(first.space_id)
+  }
+
+  /**
+   * Before `id` closes: when it is a half of a split, the split ends and the other half takes the
+   * row's place (and becomes active when `id` was).
+   */
+  private leaveSplit(id: string): void {
+    const tab = this.requireTab(id)
+    const pair = this.pairOf(tab)
+    if (!pair) return
+    const other = pair.first.id === id ? pair.second : pair.first
+    this.transaction(() => {
+      this.unpair(pair.first, pair.second, pair.first.id === id)
+      const space = this.requireSpace(tab.space_id)
+      if (space.active_tab_id === id) this.setActiveTab(tab.space_id, other.id)
+    })
+  }
+
+  /** Today's positions follow its drawn (depth-first) order again. Run inside a transaction. */
+  private renumberToday(spaceId: string): void {
+    const update = this.db.prepare('UPDATE tabs SET position = ? WHERE id = ?')
+    treeOrder(this.todayRows(spaceId)).forEach((id, position) => update.run(position, id))
+  }
+
+  /**
+   * A second half whose first is gone, in another space, itself a second half or already paired,
+   * and a tab left out of its list (position -1) without a split, go back to the end of their
+   * list as normal tabs.
+   */
+  private repairSplits(): void {
+    const broken = this.db
+      .prepare(
+        `SELECT t.* FROM tabs t LEFT JOIN tabs f ON f.id = t.split_of
+         WHERE (t.split_of IS NOT NULL
+                AND (f.id IS NULL OR f.space_id != t.space_id OR f.split_of IS NOT NULL
+                     OR t.id != (SELECT MIN(id) FROM tabs WHERE split_of = t.split_of)))
+            OR (t.split_of IS NULL AND t.position < 0)
+         ORDER BY t.created_at`,
+      )
+      .all() as unknown as TabRow[]
+    if (broken.length === 0) return
+    this.transaction(() => {
+      for (const tab of broken) {
+        this.db.prepare('UPDATE tabs SET split_of = NULL, position = -1 WHERE id = ?').run(tab.id)
+        const position = this.listLength(keyOf(tab)) - 1
+        this.db.prepare('UPDATE tabs SET position = ? WHERE id = ?').run(position, tab.id)
+      }
+    })
   }
 
   private findSpace(id: string): SpaceRow | undefined {

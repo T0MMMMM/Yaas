@@ -89,6 +89,8 @@ const tab = (id: string, position: number, extra: Partial<BrowserTab> = {}): Bro
   folderId: null,
   parentId: null,
   lastActiveAt: null,
+  splitOf: null,
+  splitRatio: null,
   ...extra,
 })
 

@@ -365,6 +365,9 @@ registerCommands(
     'browser.removeTab': ({ tabId }) => browser.removeTab(tabId),
     'browser.moveTab': ({ tabId, section, folderId, index }) =>
       browser.moveTab(tabId, { section, index, ...(folderId === undefined ? {} : { folderId }) }),
+    'browser.splitTabs': ({ firstId, secondId }) => browser.splitTabs(firstId, secondId),
+    'browser.separate': ({ tabId }) => browser.separate(tabId),
+    'browser.setSplitRatio': ({ tabId, ratio }) => browser.setSplitRatio(tabId, ratio),
     'browser.createFolder': ({ spaceId, name, parentId }) =>
       browser.createFolder(spaceId ?? browser.snapshot().activeSpaceId, name, parentId ?? null),
     'browser.moveFolder': ({ folderId, parentId, index }) =>

@@ -102,6 +102,13 @@ export interface BrowserTab {
   parentId: string | null
   /** When it was last activated (ISO), or null when it never was. */
   lastActiveAt: string | null
+  /**
+   * The first tab of the split it is the second half of, or null. A second half mirrors its
+   * first's section, folder and parent and is left out of every list (its position is ignored).
+   */
+  splitOf: string | null
+  /** On a split's first tab: the first page's share of the width (0.25–0.75); null = 0.5. */
+  splitRatio: number | null
 }
 
 /** A page visited in a space (personal data, kept in the local database only). */

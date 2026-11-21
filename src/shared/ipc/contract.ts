@@ -117,6 +117,8 @@ export const browserTabSchema = z.object({
   folderId: z.string().nullable(),
   parentId: z.string().nullable(),
   lastActiveAt: z.string().nullable(),
+  splitOf: z.string().nullable(),
+  splitRatio: z.number().nullable(),
 }) satisfies z.ZodType<BrowserTab>
 
 export const historyEntrySchema = z.object({
@@ -346,6 +348,18 @@ export const commands = {
    * A new folder at the end of its parent's list: the space's pinned section, or the folder
    * `parentId` (default: the active space's pinned section).
    */
+  /** Pairs two tabs of one space as a split: the second leaves its list and shows beside the first. */
+  'browser.splitTabs': {
+    input: z.object({ firstId: id, secondId: id }).strict(),
+    output: z.void(),
+  },
+  /** Ends the split either half belongs to: the second goes right after the first. */
+  'browser.separate': { input: tabRef, output: z.void() },
+  /** The first page's share of a split's width, either half naming the split. */
+  'browser.setSplitRatio': {
+    input: z.object({ tabId: id, ratio: z.number().min(0.25).max(0.75) }).strict(),
+    output: z.void(),
+  },
   'browser.createFolder': {
     input: z
       .object({ spaceId: id.optional(), name: folderName, parentId: id.nullable().optional() })

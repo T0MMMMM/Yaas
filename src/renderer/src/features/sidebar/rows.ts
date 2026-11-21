@@ -7,9 +7,11 @@ export const ROW_EXIT_MS = 200
 export const nodeKey = (node: SidebarNode): string =>
   node.kind === 'tab'
     ? `tab:${node.tab.id}`
-    : node.kind === 'folder'
-      ? `folder:${node.folder.id}`
-      : `auto:${node.host}`
+    : node.kind === 'split'
+      ? `tab:${node.first.id}`
+      : node.kind === 'folder'
+        ? `folder:${node.folder.id}`
+        : `auto:${node.host}`
 
 /**
  * Whether a row that left its list plays the exit animation: only a tab row whose tab was closed
@@ -18,4 +20,5 @@ export const nodeKey = (node: SidebarNode): string =>
 export const exitsWhenGone =
   (openTabIds: ReadonlySet<string>) =>
   (node: SidebarNode): boolean =>
-    node.kind === 'tab' && !openTabIds.has(node.tab.id)
+    (node.kind === 'tab' && !openTabIds.has(node.tab.id)) ||
+    (node.kind === 'split' && !openTabIds.has(node.first.id) && !openTabIds.has(node.second.id))

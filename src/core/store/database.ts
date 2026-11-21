@@ -66,6 +66,9 @@ const MIGRATIONS: string[] = [
      total_bytes INTEGER NOT NULL, received_bytes INTEGER NOT NULL, state TEXT NOT NULL,
      started_at TEXT NOT NULL
    );`,
+  // 8 — split view: the second tab of a pair points at the first, which keeps the ratio
+  `ALTER TABLE tabs ADD COLUMN split_of TEXT REFERENCES tabs(id) ON DELETE SET NULL;
+   ALTER TABLE tabs ADD COLUMN split_ratio REAL;`,
 ]
 
 export type Database = DatabaseSync

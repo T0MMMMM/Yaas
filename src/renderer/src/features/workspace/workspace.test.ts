@@ -105,6 +105,8 @@ const tab = (id: string, spaceId: string, position: number, url = `https://${id}
     folderId: null,
     parentId: null,
     lastActiveAt: null,
+    splitOf: null,
+    splitRatio: null,
   }) satisfies BrowserTab
 
 const browser: BrowserState = {
@@ -285,6 +287,7 @@ const stateOf = (tabs: BrowserTab[], folders: BrowserFolder[] = []): BrowserStat
 type Shape = string | { [name: string]: Shape[] }
 const shape = (node: SidebarNode): Shape => {
   if (node.kind === 'tab') return `${node.tab.id}@${node.depth}`
+  if (node.kind === 'split') return `${node.first.id}+${node.second.id}@${node.depth}`
   const name = node.kind === 'folder' ? node.folder.id : `auto:${node.host}`
   return { [name]: node.children.map(shape) }
 }
@@ -545,5 +548,45 @@ describe('todayOrder', () => {
     expect([...todaySubtree(order, 'a')]).toEqual(['a', 'b', 'c'])
     expect([...todaySubtree(order, 'b')]).toEqual(['b', 'c'])
     expect([...todaySubtree(order, 'pinned')]).toEqual([])
+  })
+})
+
+describe('splits', () => {
+  const pair = [
+    at('a', 0),
+    at('b', 1, { splitRatio: 0.6 }),
+    at('c', -1, { splitOf: 'b' }),
+    at('d', 2),
+  ]
+
+  it('a split is one node with both halves, the second out of the list', () => {
+    const sections = sidebarSections(stateOf(pair), 's1', { autoFolders: false })
+    expect(sections.today.map((n) => n.kind)).toEqual(['tab', 'split', 'tab'])
+    const split = sections.today[1]
+    expect(split?.kind === 'split' && [split.first.id, split.second.id, split.ratio]).toEqual([
+      'b',
+      'c',
+      0.6,
+    ])
+    expect(sections.todayOrder.map((t) => t.id)).toEqual(['a', 'b', 'd'])
+  })
+
+  it('activeSplit follows the active half', () => {
+    const state = { ...stateOf(pair), activeTabIds: { s1: 'c', s2: 'x' } }
+    const view = browserView(state)
+    expect(view.activeTab?.id).toBe('c')
+    expect(view.tabs.map((t) => t.id)).toEqual(['a', 'b', 'c', 'd'])
+    expect(view.activeSplit).toMatchObject({ ratio: 0.6, activeHalf: 'second' })
+    expect(view.activeSplit?.first.id).toBe('b')
+    const onFirst = browserView({ ...state, activeTabIds: { s1: 'b', s2: 'x' } })
+    expect(onFirst.activeSplit?.activeHalf).toBe('first')
+    expect(browserView({ ...state, activeTabIds: { s1: 'a', s2: 'x' } }).activeSplit).toBeNull()
+  })
+
+  it('a second whose first is gone is a normal tab', () => {
+    const sections = sidebarSections(stateOf([at('a', 0), at('c', 1, { splitOf: 'gone' })]), 's1', {
+      autoFolders: false,
+    })
+    expect(sections.today.map((n) => n.kind)).toEqual(['tab', 'tab'])
   })
 })

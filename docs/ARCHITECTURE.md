@@ -428,6 +428,18 @@ results come back to the lead as a short summary + branch name, never the full c
   `icon` (`hue:<deg>` or an emoji; null = a hue from its name), a space an `icon` (an emoji;
   null = its colour dot) and `sectionCollapsed`, and a tab `lastActiveAt` (set by `activateTab`
   and by `openTab` when it activates; Recent Tabs sorts by it) — migration 5.
+- **Splits.** Two tabs of one space can be paired side by side (migration 8): the second tab's
+  `split_of` points at the first, which keeps `split_ratio` (the first page's share, 0.25–0.75;
+  null = 0.5). The second mirrors the first's section, folder and parent and is out of every list
+  (`visibleOrder`, list lengths and positions, sidebar rows); the sidebar draws the pair as one
+  `split` node and `BrowserView.activeSplit` says which half is active. Commands
+  `browser.splitTabs` (same space, neither already split, else `invalid_move`), `browser.separate`
+  (the second goes right after the first) and `browser.setSplitRatio` (clamped). `moveTab` of
+  either half moves the pair; closing or removing one half first ends the split, the other half
+  taking the row's place (and the focus, when the closed one had it). Undo brings a closed half
+  back as a normal tab; a deleted folder's splits are separated first, so they come back as two
+  normal tabs. A broken pair (first gone, in another space, itself a second) is repaired at
+  startup into a normal tab at the end of its list.
 - **History.** `core/browser/historyStore.ts` keeps one `history` row per page (URL) per space
   with a visit count and last visit (migration 6; rows go with their space). `TabViews` records
   on a tab's top-level `did-navigate` (http(s) only, not in-page or frames) and updates the title

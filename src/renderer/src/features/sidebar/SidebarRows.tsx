@@ -18,13 +18,16 @@ interface RowsProps {
 export function Rows({ nodes, activeId, exits }: RowsProps) {
   const rows = usePresence(nodes, nodeKey, ROW_EXIT_MS, exits)
   return rows.map(({ item: node, exiting }) => {
-    if (node.kind === 'tab') {
+    if (node.kind === 'tab' || node.kind === 'split') {
+      // A split is drawn as its first tab's row until the split row exists (plan 4, task 3).
+      const tab = node.kind === 'tab' ? node.tab : node.first
+      const active = tab.id === activeId || (node.kind === 'split' && node.second.id === activeId)
       return (
         <TabRow
           key={nodeKey(node)}
-          tab={node.tab}
+          tab={tab}
           depth={node.depth}
-          active={node.tab.id === activeId}
+          active={active}
           exiting={exiting}
         />
       )
