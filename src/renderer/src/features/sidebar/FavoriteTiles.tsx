@@ -3,12 +3,12 @@ import type { TabView } from '../workspace/workspace'
 import { Favicon } from './Favicon'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
-import { TabDragContext, useTabDragHandle } from './useTabDrag'
+import { TabDragContext, useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './FavoriteTiles.module.css'
 
 function Tile({ tab, active }: { tab: TabView; active: boolean }) {
-  const drag = useTabDragHandle(tab.id)
+  const drag = useDragHandle(`tab:${tab.id}`)
   const enterTooltip = useTooltipEnter()
   return (
     <li
@@ -16,6 +16,7 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
       style={tilt(tab.id)}
       data-testid="favorite"
       data-drop={`tab:${tab.id}`}
+      data-drag-row
       data-dragged={drag.dragged || undefined}
     >
       <button
@@ -41,12 +42,14 @@ function Tile({ tab, active }: { tab: TabView; active: boolean }) {
 
 /**
  * The space's favourites: a grid of large favicons filling the width, above the pinned list. A tab
- * dropped on the grid becomes the last favourite; while a tab is dragged and there are none
- * yet, an empty grid is drawn to drop it on.
+ * dropped on the grid becomes the last favourite, a dragged tile moves among the others; while a
+ * tab is dragged and there are none yet, an empty grid is drawn to drop it on.
  */
 export function FavoriteTiles({ tabs, activeId }: { tabs: TabView[]; activeId: string | null }) {
   const { dragging, zone } = useContext(TabDragContext)
-  if (tabs.length === 0 && dragging.size === 0) return null
+  // A folder can't be a favourite: only a dragged tab draws the empty grid.
+  const tabDragged = [...dragging].some((key) => key.startsWith('tab:'))
+  if (tabs.length === 0 && !tabDragged) return null
   return (
     <ul
       className={styles.tiles}

@@ -123,7 +123,7 @@ kbd {
 /* ---------- tabs ---------- */
 
 .scroll {
-  /* The drop line is placed in the scroll content. */
+  /* Rows are measured against the scroll content while a row is dragged (dragLift). */
   position: relative;
   flex: 1;
   min-height: 0;
@@ -344,16 +344,34 @@ kbd {
   font-size: var(--text-sm);
 }
 
-/* The insertion point: centred on the boundary between two rows. */
-.dropLine {
-  position: absolute;
-  left: var(--space-1);
-  right: var(--space-1);
-  height: var(--drop-line-w);
-  translate: 0 -50%;
-  border-radius: var(--radius-pill);
-  background: var(--accent);
+/* The other rows move aside to open a gap where the dragged row will land (dragLift); a list
+   the row comes into grows by its height. */
+.sidebar[data-dragging] [data-drag-row] {
+  transition: translate var(--dur-base) var(--ease);
+}
+
+.sidebar[data-dragging] .list {
+  transition: padding-bottom var(--dur-base) var(--ease);
+}
+
+/* The lifted row: a clone of the dragged row over the sidebar, following the pointer. */
+.sidebar .dragClone {
+  z-index: 1;
+  margin: 0;
+  list-style: none;
   pointer-events: none;
+  border-radius: var(--radius-lg);
+  background: var(--bg-menu);
+  box-shadow: var(--shadow-lift);
+  scale: 1.03;
+  animation: lift var(--dur-base) var(--ease-bounce);
+}
+
+@keyframes lift {
+  from {
+    scale: 1;
+    box-shadow: none;
+  }
 }
 
 /* ---------- icon-only (dragged narrower than SIDEBAR_COMPACT_FROM) ---------- */

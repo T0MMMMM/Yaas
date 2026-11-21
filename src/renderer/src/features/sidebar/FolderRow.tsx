@@ -7,7 +7,7 @@ import { folderHue, folderIcon } from './hash'
 import { showFolderMenu } from './menus'
 import { Rows } from './SidebarRows'
 import { tilt } from './tilt'
-import { TabDragContext } from './useTabDrag'
+import { TabDragContext, useDragHandle } from './useTabDrag'
 import styles from './FolderRow.module.css'
 
 type FolderNode = Extract<SidebarNode, { kind: 'folder' | 'auto-folder' }>
@@ -52,9 +52,10 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
 
 /**
  * A pinned folder (collapsed state in main, renamable, its menu on right-click) or an
- * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs dragged
- * onto a pinned folder's row are filed into it. A pinned folder's children (tabs and folders)
- * are drawn by Rows one indent step further in, up to MAX_FOLDER_INDENT steps.
+ * automatic folder of today (collapsed state per host in the UI store, no menu). Tabs and folders
+ * dragged onto a pinned folder's row are filed into it; a pinned folder is dragged by its row. A
+ * pinned folder's children (tabs and folders) are drawn by Rows one indent step further in, up
+ * to MAX_FOLDER_INDENT steps.
  */
 export function FolderRow({
   node,
@@ -70,6 +71,8 @@ export function FolderRow({
   const toggleHost = useUi((s) => s.toggleHost)
   const renaming = useUi((s) => node.kind === 'folder' && s.renamingFolderId === node.folder.id)
   const { zone } = useContext(TabDragContext)
+  // An automatic folder is not dragged (its tabs are); its key is never pressed.
+  const drag = useDragHandle(node.kind === 'folder' ? `folder:${node.folder.id}` : `folder:`)
   const outerTrail = useContext(FolderTrailContext)
 
   const auto = node.kind === 'auto-folder'
@@ -110,6 +113,8 @@ export function FolderRow({
       data-collapsed={collapsed}
       // An automatic folder is measured as one block for a tab of another site (useTabDrag).
       data-drop={auto ? `auto:${node.host}` : undefined}
+      // A dragged folder is hidden with its rows; its lifted clone follows the pointer.
+      data-dragged={(!auto && drag.dragged) || undefined}
     >
       <div
         className={styles.header}
@@ -117,6 +122,7 @@ export function FolderRow({
         // A tab dropped on a pinned folder files into it; an automatic folder's header does not.
         data-drop={auto ? undefined : `folder:${node.folder.id}`}
         data-drop-target={(!auto && zone === `folder:${node.folder.id}`) || undefined}
+        data-drag-row
         onContextMenu={(e) => {
           if (node.kind !== 'folder') return
           e.preventDefault()
@@ -133,6 +139,8 @@ export function FolderRow({
             className={styles.row}
             aria-expanded={!collapsed}
             title={auto ? `${name} — tabs of this site` : name}
+            // A pinned folder is dragged by its row, into another folder or elsewhere in pinned.
+            onPointerDown={auto ? undefined : drag.onPointerDown}
             onClick={toggle}
           >
             {glyph}

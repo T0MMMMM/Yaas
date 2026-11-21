@@ -276,6 +276,135 @@ test('while a tab is dragged, an empty favourites grid appears to drop it on', a
   })
 })
 
+/** Presses on the first today tab and moves the pointer onto the lower half of the third. */
+async function liftFirstOntoThird(page: Page): Promise<void> {
+  const rows = page.getByTestId('today').getByTestId('tab')
+  const first = await rows.nth(0).boundingBox()
+  if (!first) throw new Error('No tab row')
+  await page.mouse.move(first.x + 40, first.y + first.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(first.x + 40, first.y + first.height / 2 + 6, { steps: 2 })
+  // Lifted: the empty favourites grid now pushes the rows down, so the third is measured now.
+  await expect(page.getByTestId('drag-clone')).toHaveCount(1)
+  const third = await rows.nth(2).boundingBox()
+  if (!third) throw new Error('No third tab row')
+  await page.mouse.move(first.x + 40, third.y + third.height * 0.75, { steps: 6 })
+}
+
+/** The CSS `translate` of the nth today row ('none' when it does not move). */
+const rowTranslate = (page: Page, nth: number) =>
+  page
+    .getByTestId('today')
+    .getByTestId('tab')
+    .nth(nth)
+    .evaluate((el) => getComputedStyle(el).translate)
+
+test('dragging lifts the row and opens a gap', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+
+    await liftFirstOntoThird(page)
+    // The row lifts: a clone follows the pointer, scaled up; the row itself keeps its slot.
+    const clone = page.getByTestId('drag-clone')
+    await expect(clone).toHaveCount(1)
+    await expect(clone).toHaveCSS('scale', '1.03')
+    await expect(today.getByTestId('tab').first()).toHaveCSS('visibility', 'hidden')
+    // The rows it passes move up into its slot: the gap opens after Page C.
+    await expect.poll(() => rowTranslate(page, 1)).not.toBe('none')
+    await expect.poll(() => rowTranslate(page, 2)).not.toBe('none')
+    await expect(page.getByTestId('drop-line')).toHaveCount(0)
+
+    await page.mouse.up()
+    await expect(today.getByTestId('tab')).toHaveText(['Page B', 'Page C', 'Page A'])
+    await expect(clone).toHaveCount(0)
+    await expect.poll(() => rowTranslate(page, 0)).toBe('none')
+    await expect(today.getByTestId('tab').last()).toHaveCSS('visibility', 'visible')
+  })
+})
+
+test('Escape cancels a drag', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+
+    await liftFirstOntoThird(page)
+    const clone = page.getByTestId('drag-clone')
+    await expect(clone).toHaveCount(1)
+    await expect.poll(() => rowTranslate(page, 1)).not.toBe('none')
+
+    await page.keyboard.press('Escape')
+    // The clone flies back and goes; the rows close the gap. The release moves nothing.
+    await expect(clone).toHaveCount(0)
+    await expect.poll(() => rowTranslate(page, 1)).toBe('none')
+    await page.mouse.up()
+    await expect(today.getByTestId('tab').first()).toHaveCSS('visibility', 'visible')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+    // Nor did the release activate the pressed tab (Page C, the last opened, stays active).
+    await expect(today.getByRole('button', { name: 'Page C' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
+  })
+})
+
+test('a folder drags into a folder', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const tab = await openTab(page, site.url('/a'))
+    const [outer, inner] = await page.evaluate(async () => [
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Outer' }),
+      await window.bigBrowser.invoke('browser.createFolder', { name: 'Inner' }),
+    ])
+    if (!outer || !inner) throw new Error('folders not created')
+    await page.evaluate(
+      ({ tabId, folderId }) =>
+        window.bigBrowser.invoke('browser.moveTab', {
+          tabId,
+          section: 'pinned',
+          folderId,
+          index: 0,
+        }),
+      { tabId: tab.id, folderId: inner.id },
+    )
+    const pinned = page.getByTestId('pinned')
+    const outerButton = pinned.getByRole('button', { name: 'Outer', exact: true })
+    const innerButton = pinned.getByRole('button', { name: 'Inner', exact: true })
+    await expect(innerButton).toBeVisible()
+
+    // The inner folder (with its tab) lifts and is dropped on the middle of the outer one's row.
+    const from = await innerButton.boundingBox()
+    const to = await outerButton.boundingBox()
+    if (!from || !to) throw new Error('No folder rows')
+    await page.mouse.move(from.x + 40, from.y + from.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(to.x + 40, to.y + to.height / 2, { steps: 6 })
+    await expect(page.getByTestId('drag-clone')).toHaveCount(1)
+    // The outer folder's row is lit: the drop goes into it.
+    await expect(pinned.getByTestId('folder').first().locator('[data-drop-target]')).toHaveCount(1)
+    await page.mouse.up()
+
+    const outerRow = pinned
+      .getByTestId('folder')
+      .filter({ has: page.getByRole('button', { name: 'Outer', exact: true }) })
+    await expect(outerRow.getByRole('button', { name: 'Inner', exact: true })).toBeVisible()
+    await expect(outerRow.getByTestId('folder').getByTestId('tab')).toHaveText(['Page A'])
+    const folders = await page.evaluate(() =>
+      window.bigBrowser
+        .invoke('browser.state')
+        .then((state) => state.folders.map((f) => ({ name: f.name, parentId: f.parentId }))),
+    )
+    expect(folders).toContainEqual({ name: 'Inner', parentId: outer.id })
+    // The release did not fold the dropped folder (its click is swallowed).
+    await expect(outerButton).toHaveAttribute('aria-expanded', 'true')
+  })
+})
+
 /** Counts web contents main creates from now on (a tab's view is one). */
 const countCreatedContents = (app: ElectronApplication) =>
   app.evaluate(({ app: electronApp }) => {

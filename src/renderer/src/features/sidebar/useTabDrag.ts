@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -17,13 +18,14 @@ import {
   type SidebarNode,
   type SidebarSections,
 } from '../workspace/workspace'
+import { DragLift, layoutBox } from './dragLift'
 
 // ---------- drop maths (pure) ----------
 
-/** Where a drop on one side of a row goes in the store's order, and where its line is drawn. */
+/** Where a drop on one side of a row goes in the store's order, and where its gap opens. */
 export interface DropEdge {
   index: number
-  /** Client Y of the line. */
+  /** Client Y of the boundary between rows where the gap opens. */
   y: number
 }
 
@@ -41,12 +43,18 @@ export interface DropRow {
   folderId: string | null
   top: number
   height: number
-  /** The dragged tab, its subtree or its own list: a drop on it is no move. */
+  /** A favourite tile's horizontal extent: tiles share rows of the grid. */
+  left?: number
+  width?: number
+  /** The dragged row or its subtree: a drop on it is no move. */
   self?: boolean
   snap?: { before: DropEdge; after: DropEdge }
 }
 
-/** Where a drop moves the tab: `browser.moveTab`'s section, folder and index. */
+/** What is dragged: a tab (a row or a tile) or a pinned folder, by its `data-drop` key. */
+export type DragKey = `${'tab' | 'folder'}:${string}`
+
+/** Where a drop goes: a list's section, folder and index (see moveOf for the call it makes). */
 export interface DropTarget {
   section: TabSection
   folderId: string | null
@@ -56,15 +64,25 @@ export interface DropTarget {
 /** The `data-drop` key of a measured element: a tab, a folder, an automatic folder, a list. */
 export type DropKey = `${'tab' | 'folder' | 'auto' | 'list'}:${string}`
 
-/** A drop target and what shows it: the line's client Y, or the folder or list it goes into. */
+/**
+ * A drop target and what shows it: the client Y between two rows where the gap opens (dragLift),
+ * or the folder or list it goes into (highlighted); neither for a place among the tiles.
+ */
 export interface DropHit {
   target: DropTarget
   line: number | null
   zone: DropKey | null
 }
 
-const inside = (y: number, r: DropRow): boolean =>
-  r.height > 0 && y >= r.top && y < r.top + r.height
+/** Whether the pointer is on a drawn row (on a tile, its x counts too when it is known). */
+const inside = (y: number, r: DropRow, x?: number): boolean =>
+  r.height > 0 &&
+  y >= r.top &&
+  y < r.top + r.height &&
+  (x === undefined ||
+    r.left === undefined ||
+    r.width === undefined ||
+    (x >= r.left && x < r.left + r.width))
 
 const bottom = (r: DropRow): number => r.top + r.height
 
@@ -107,9 +125,39 @@ function beside(rows: DropRow[], row: DropRow, after: boolean): DropHit {
   return { target: { ...at, index }, line, zone: null }
 }
 
+/** A favourite is dragged: the tiles reorder among themselves. */
+const reorderingTiles = (rows: DropRow[]): boolean =>
+  rows.some((r) => r.self && r.kind === 'tab' && r.section === 'favorites')
+
+/** Among the tiles, the left half of a tile is before it, the right half after. */
+function onTile(x: number, rows: DropRow[], tile: DropRow): DropHit {
+  const after = x >= (tile.left ?? 0) + (tile.width ?? 0) / 2
+  const index = listRows(rows, 'favorites', null).indexOf(tile) + (after ? 1 : 0)
+  return { target: { section: 'favorites', folderId: null, index }, line: null, zone: null }
+}
+
+/** Between tiles: beside the nearest tile of the grid row the pointer is on, else at the end. */
+function nearTile(x: number, y: number, rows: DropRow[]): DropHit {
+  const band = listRows(rows, 'favorites', null).filter((r) => inside(y, r))
+  const gap = (r: DropRow): number =>
+    Math.max((r.left ?? 0) - x, x - (r.left ?? 0) - (r.width ?? 0), 0)
+  const nearest = band.reduce<DropRow | null>(
+    (best, r) => (best === null || gap(r) < gap(best) ? r : best),
+    null,
+  )
+  if (!nearest) {
+    const index = listRows(rows, 'favorites', null).length
+    return { target: { section: 'favorites', folderId: null, index }, line: null, zone: null }
+  }
+  return onTile(x, rows, nearest)
+}
+
 /** The upper half of a row is before it, the lower half after; a folder's middle half is into. */
-function onRow(y: number, rows: DropRow[], row: DropRow): DropHit {
-  if (row.section === 'favorites') return into(rows, 'favorites', null, 'list:favorites')
+function onRow(y: number, rows: DropRow[], row: DropRow, x?: number): DropHit {
+  if (row.section === 'favorites') {
+    if (x !== undefined && reorderingTiles(rows)) return onTile(x, rows, row)
+    return into(rows, 'favorites', null, 'list:favorites')
+  }
   const rel = (y - row.top) / row.height
   if (row.kind === 'folder' && rel >= 0.25 && rel < 0.75) {
     return into(rows, 'pinned', row.id, `folder:${row.id}`)
@@ -117,14 +165,20 @@ function onRow(y: number, rows: DropRow[], row: DropRow): DropHit {
   return beside(rows, row, row.kind === 'folder' ? rel >= 0.75 : rel >= 0.5)
 }
 
-/** `dropTarget` with what the sidebar draws for it. */
-export function dropHit(pointerY: number, rows: DropRow[]): DropHit | null {
-  if (rows.some((r) => r.self && inside(pointerY, r))) return null
-  const row = rows.find((r) => r.kind !== 'list' && !r.self && inside(pointerY, r))
-  if (row) return onRow(pointerY, rows, row)
+/**
+ * `dropTarget` with what the sidebar draws for it. `pointerX` places a dragged favourite among
+ * the tiles (without it, tiles are told apart by y alone).
+ */
+export function dropHit(pointerY: number, rows: DropRow[], pointerX?: number): DropHit | null {
+  if (rows.some((r) => r.self && inside(pointerY, r, pointerX))) return null
+  const row = rows.find((r) => r.kind !== 'list' && !r.self && inside(pointerY, r, pointerX))
+  if (row) return onRow(pointerY, rows, row, pointerX)
   const zone = rows.find((r) => r.kind === 'list' && inside(pointerY, r))
   if (!zone) return null
-  if (zone.section === 'favorites') return into(rows, 'favorites', null, 'list:favorites')
+  if (zone.section === 'favorites') {
+    if (pointerX !== undefined && reorderingTiles(rows)) return nearTile(pointerX, pointerY, rows)
+    return into(rows, 'favorites', null, 'list:favorites')
+  }
   // Between rows or below the last one: next to the nearest drawn row of the section (a folder's
   // tabs included).
   const distance = (r: DropRow): number => Math.max(r.top - pointerY, pointerY - bottom(r), 0)
@@ -141,20 +195,24 @@ export function dropHit(pointerY: number, rows: DropRow[]): DropHit | null {
 /**
  * Where a tab dropped at `pointerY` goes: the upper half of a row is before it, the lower half
  * after it; the middle 50 % of a folder row is into the folder (at its end); the tiles grid is
- * the end of the favourites. Indices count the list's rows as given (today: its rows' `snap`).
- * null: no move (not over a list, or over the dragged tab itself).
+ * the end of the favourites (a dragged favourite goes by x among them: see dropHit). Indices
+ * count the list's rows as given (today: its rows' `snap`).
+ * null: no move (not over a list, or over the dragged row itself).
  */
 export function dropTarget(pointerY: number, rows: DropRow[]): DropTarget | null {
   return dropHit(pointerY, rows)?.target ?? null
 }
 
-type Measure = (key: DropKey) => { top: number; height: number } | null
+/** A measured element: its client box (a tile's x too), null when it is not drawn. */
+type Measure = (
+  key: DropKey,
+) => { top: number; height: number; left?: number; width?: number } | null
 
 /**
  * Today's rows in drawn order, each with the store's index for a drop before or after it.
  * `skip` (the dragged subtree) is out of the store's order; its drawn rows are `self`.
  * - A top-level row: before it, or after its subtree (where the store puts a drop on any of
- *   its tabs, children included — the line is drawn there).
+ *   its tabs, children included — the gap opens there).
  * - An automatic folder of another site than the dragged tab's is one block: before its first
  *   tab, or before the next drawn row — where the dropped tab is drawn. For a tab of its own
  *   site, its rows are plain today rows (the tab joins the folder wherever it lands).
@@ -235,54 +293,67 @@ function todayRows(
   return rows
 }
 
+/** A pinned folder's own id and those of everything in it (folders and tabs, at any depth). */
+function folderSubtree(nodes: SidebarNode[], folderId: string): Set<string> {
+  const ids = new Set<string>()
+  const collect = (node: SidebarNode): void => {
+    if (node.kind === 'tab') ids.add(node.tab.id)
+    else {
+      if (node.kind === 'folder') ids.add(node.folder.id)
+      node.children.forEach(collect)
+    }
+  }
+  const find = (list: SidebarNode[]): boolean =>
+    list.some((node) => {
+      if (node.kind !== 'folder') return false
+      if (node.folder.id !== folderId) return find(node.children)
+      collect(node)
+      return true
+    })
+  find(nodes)
+  return ids
+}
+
 /**
- * The drop rows of a space's sidebar while `draggedId` is dragged. The dragged tab, its today
- * subtree (they move together) and, for a favourite, the favourites are `self`: a drop on them
- * is no move. Today's rows map to the store's order (`todayOrder`) whatever automatic folders
- * regroup on screen, so indices are the store's (see todayRows).
+ * The drop rows of a space's sidebar while `dragged` is dragged. The dragged row and what moves
+ * with it (a today tab's subtree, everything in a folder) are `self`: a drop on them is no move.
+ * A folder only goes into pinned: today and the favourites are left out. Today's rows map to the
+ * store's order (`todayOrder`) whatever automatic folders regroup on screen, so indices are the
+ * store's (see todayRows).
  */
-export function dropRows(
-  sections: SidebarSections,
-  draggedId: string,
-  measure: Measure,
-): DropRow[] {
-  const skip = todaySubtree(sections.todayOrder, draggedId).add(draggedId)
-  const dragged = [
-    ...sections.favorites,
-    ...tabsOf(sections.pinned),
-    ...tabsOf(sections.today),
-  ].find((t) => t.id === draggedId)
-  const favourite = sections.favorites.some((t) => t.id === draggedId)
+export function dropRows(sections: SidebarSections, dragged: DragKey, measure: Measure): DropRow[] {
+  const folder = dragged.startsWith('folder:')
+  const draggedId = dragged.slice(dragged.indexOf(':') + 1)
+  const skip = folder
+    ? folderSubtree(sections.pinned, draggedId)
+    : todaySubtree(sections.todayOrder, draggedId).add(draggedId)
+  const tab = folder
+    ? undefined
+    : [...sections.favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)].find(
+        (t) => t.id === draggedId,
+      )
   const rows: DropRow[] = []
   const add = (key: DropKey, row: Pick<DropRow, 'id' | 'kind' | 'section' | 'folderId'>): void => {
     const box = measure(key)
-    const self = row.kind === 'tab' && skip.has(row.id)
-    rows.push({ ...row, top: box?.top ?? 0, height: box?.height ?? 0, ...(self && { self }) })
+    const self = skip.has(row.id)
+    rows.push({ ...row, top: 0, height: 0, ...box, ...(self && { self }) })
   }
-  const tab = (id: string, section: TabSection, folderId: string | null = null): void =>
+  const tabRow = (id: string, section: TabSection, folderId: string | null = null): void =>
     add(`tab:${id}`, { id, kind: 'tab', section, folderId })
-  const list = (section: TabSection, self = false): void => {
+  const list = (section: TabSection): void => {
     const box = measure(`list:${section}`)
-    if (box) {
-      rows.push({
-        id: section,
-        kind: 'list',
-        section,
-        folderId: null,
-        ...box,
-        ...(self && { self }),
-      })
-    }
+    if (box) rows.push({ id: section, kind: 'list', section, folderId: null, ...box })
   }
 
-  // Favourites can't be reordered by drag: for a favourite the whole grid is no move.
-  list('favorites', favourite)
-  for (const t of sections.favorites) tab(t.id, 'favorites')
+  if (!folder) {
+    list('favorites')
+    for (const t of sections.favorites) tabRow(t.id, 'favorites')
+  }
   list('pinned')
   /** A pinned list's rows in drawn order, each folder followed by its own list. */
   const pinnedRows = (nodes: SidebarNode[], folderId: string | null): void => {
     for (const node of nodes) {
-      if (node.kind === 'tab') tab(node.tab.id, 'pinned', folderId)
+      if (node.kind === 'tab') tabRow(node.tab.id, 'pinned', folderId)
       else if (node.kind === 'folder') {
         add(`folder:${node.folder.id}`, {
           id: node.folder.id,
@@ -295,33 +366,54 @@ export function dropRows(
     }
   }
   pinnedRows(sections.pinned, null)
+  if (folder) return rows
   list('today')
-  rows.push(...todayRows(sections, skip, dragged ? autoFolderHost(dragged.url) : null, measure))
+  rows.push(...todayRows(sections, skip, tab ? autoFolderHost(tab.url) : null, measure))
   return rows
+}
+
+/** The IPC call a drop makes: a tab moves with `browser.moveTab`, a folder `browser.moveFolder`. */
+export type DropMove =
+  | {
+      channel: 'browser.moveTab'
+      input: { tabId: string; section: TabSection; folderId: string | null; index: number }
+    }
+  | {
+      channel: 'browser.moveFolder'
+      input: { folderId: string; parentId: string | null; index: number }
+    }
+
+/** What dropping `dragged` on `target` calls; null when it can't go there (a folder out of pinned). */
+export function moveOf(dragged: DragKey, target: DropTarget): DropMove | null {
+  const id = dragged.slice(dragged.indexOf(':') + 1)
+  if (dragged.startsWith('tab:')) {
+    return { channel: 'browser.moveTab', input: { tabId: id, ...target } }
+  }
+  if (target.section !== 'pinned') return null
+  return {
+    channel: 'browser.moveFolder',
+    input: { folderId: id, parentId: target.folderId, index: target.index },
+  }
 }
 
 // ---------- the drag (pointer events) ----------
 
-/** Pointer travel before a press on a tab becomes a drag (a shorter one stays a click). */
+/** Pointer travel before a press on a row becomes a drag (a shorter one stays a click). */
 const DRAG_THRESHOLD = 4
 
-/** What the sidebar draws while a tab is dragged. */
-export type DropIndicator =
-  /** The 2 px insertion line, `top` in the scroll container's content. */
-  | { kind: 'line'; top: number }
-  /** A folder or a list highlighted: the drop goes into it. */
-  | { kind: 'zone'; key: DropKey }
+/** After a drop, how long the gap may wait for the new order before it closes anyway. */
+const SETTLE_FALLBACK_MS = 500
 
 export interface TabDrag {
-  /** The dragged tab and its today subtree (drawn dimmed); empty when nothing is dragged. */
-  dragging: ReadonlySet<string>
+  /** What is dragged and what moves with it (a today tab's subtree); empty when nothing is. */
+  dragging: ReadonlySet<DragKey>
   /** The highlighted folder or list, if the drop goes into one. */
   zone: DropKey | null
-  /** Starts tracking a press on a tab: it becomes a drag once the pointer has moved. */
-  press: (tabId: string, event: ReactPointerEvent) => void
+  /** Starts tracking a press on a row: it becomes a drag once the pointer has moved. */
+  press: (key: DragKey, event: ReactPointerEvent) => void
 }
 
-const NONE: ReadonlySet<string> = new Set()
+const NONE: ReadonlySet<DragKey> = new Set()
 
 export const TabDragContext = createContext<TabDrag>({
   dragging: NONE,
@@ -329,21 +421,13 @@ export const TabDragContext = createContext<TabDrag>({
   press: () => undefined,
 })
 
-/** A tab's side of the drag: whether it is dragged and the handler that starts a drag. */
-export function useTabDragHandle(tabId: string): {
+/** A row's side of the drag (a tab, a tile or a folder): whether it is dragged, and its handler. */
+export function useDragHandle(key: DragKey): {
   dragged: boolean
   onPointerDown: (event: ReactPointerEvent) => void
 } {
   const { dragging, press } = useContext(TabDragContext)
-  return { dragged: dragging.has(tabId), onPointerDown: (event) => press(tabId, event) }
-}
-
-/** The sidebar's line or zone for a hit, the line measured against the scroll container. */
-function indicatorOf(hit: DropHit, container: HTMLElement): DropIndicator | null {
-  if (hit.zone !== null) return { kind: 'zone', key: hit.zone }
-  if (hit.line === null) return null
-  const box = container.getBoundingClientRect()
-  return { kind: 'line', top: hit.line - box.top + container.scrollTop }
+  return { dragged: dragging.has(key), onPointerDown: (event) => press(key, event) }
 }
 
 /** A click that follows a drag (released over the pressed row) must not activate the tab. */
@@ -356,39 +440,77 @@ function swallowNextClick(): void {
   setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0)
 }
 
+/** Sends a drop's move. */
+function send(move: DropMove): Promise<void> {
+  return move.channel === 'browser.moveTab'
+    ? window.bigBrowser.invoke('browser.moveTab', move.input)
+    : window.bigBrowser.invoke('browser.moveFolder', move.input)
+}
+
 /**
- * Drag tabs in the sidebar to reorder them, pin, favourite or file them into a folder: on drop
- * it calls `browser.moveTab`. Pointer events (not HTML5 drag and drop); Esc cancels. Rows are
- * found in `container` by their `data-drop` key.
+ * Drag tabs, tiles and pinned folders in the sidebar to reorder them, pin, favourite or file them
+ * into a folder: on drop it calls `browser.moveTab` or `browser.moveFolder`. Pointer events (not
+ * HTML5 drag and drop). The row lifts (a clone with `cloneClass` follows the pointer) and the
+ * others move aside where it will land (dragLift.ts); Esc cancels and the clone flies back. Rows
+ * are found in `container` by their `data-drop` key.
  */
 export function useTabDrag(
   sections: SidebarSections | undefined,
   container: RefObject<HTMLElement | null>,
-): { drag: TabDrag; indicator: DropIndicator | null } {
-  const [dragging, setDragging] = useState<ReadonlySet<string>>(NONE)
-  const [indicator, setIndicator] = useState<DropIndicator | null>(null)
+  cloneClass: string | undefined,
+): TabDrag {
+  const [dragging, setDragging] = useState<ReadonlySet<DragKey>>(NONE)
+  const [zone, setZone] = useState<DropKey | null>(null)
   const sectionsRef = useRef(sections)
   useEffect(() => {
     sectionsRef.current = sections
   }, [sections])
-  /** Ends the drag in progress (listeners removed, indicator cleared). */
+  /** Ends the drag in progress at once (listeners removed, visuals reset). */
   const stop = useRef<(() => void) | null>(null)
   useEffect(() => () => stop.current?.(), [])
+  /** After a drop: closes the gap once the new order is drawn (before it is painted). */
+  const settle = useRef<(() => void) | null>(null)
+  useLayoutEffect(() => {
+    settle.current?.()
+  }, [sections])
 
   const press = useCallback(
-    (tabId: string, event: ReactPointerEvent): void => {
+    (key: DragKey, event: ReactPointerEvent): void => {
       if (event.button !== 0 || !sectionsRef.current) return
       stop.current?.()
       const from = { x: event.clientX, y: event.clientY }
+      const id = key.slice(key.indexOf(':') + 1)
       let started = false
+      let cancelled = false
+      let done = false
+      let lifted: DragLift | null = null
       let hit: DropHit | null = null
 
-      const measure: Measure = (key) => {
-        const el = container.current?.querySelector(`[data-drop="${CSS.escape(key)}"]`)
+      const find = (k: DropKey): HTMLElement | null =>
+        container.current?.querySelector<HTMLElement>(`[data-drop="${CSS.escape(k)}"]`) ?? null
+      const measure: Measure = (k) => {
+        const box = container.current
+        const el = find(k)
         // A row that is folded away or leaving (inert) is not drawn: no height, but still counts.
-        if (!el || el.closest('[inert]')) return null
-        const { top, height } = el.getBoundingClientRect()
-        return { top, height }
+        if (!box || !el || el.closest('[inert]')) return null
+        const at = layoutBox(el, box)
+        if (!at) return null
+        // Only tiles share rows: elsewhere a drop goes by y alone, wherever the pointer is across.
+        const tile = k.startsWith('tab:') && el.closest('[data-drop="list:favorites"]') !== null
+        return tile ? at : { top: at.top, height: at.height }
+      }
+      /** Lifts the row: false when it is not drawn. */
+      const begin = (current: SidebarSections, box: HTMLElement): boolean => {
+        const keys: DragKey[] = key.startsWith('tab:')
+          ? [...todaySubtree(current.todayOrder, id).add(id)].map((t): DragKey => `tab:${t}`)
+          : [key]
+        const moving = keys.map(find).filter((el): el is HTMLElement => el !== null)
+        // A folder lifts with its rows; its header carries its key.
+        const root = key.startsWith('folder:') ? (moving[0]?.closest('li') ?? null) : find(key)
+        if (!root) return false
+        lifted = new DragLift(box, root, [root, ...moving], cloneClass)
+        setDragging(new Set(keys))
+        return true
       }
       const move = (e: PointerEvent): void => {
         const current = sectionsRef.current
@@ -397,51 +519,79 @@ export function useTabDrag(
         if (!started) {
           if (Math.hypot(e.clientX - from.x, e.clientY - from.y) < DRAG_THRESHOLD) return
           started = true
-          setDragging(todaySubtree(current.todayOrder, tabId).add(tabId))
+          if (!begin(current, box)) return
         }
+        if (!lifted) return
         e.preventDefault()
-        const rows = dropRows(current, tabId, measure)
+        lifted.follow(e.clientX - from.x, e.clientY - from.y)
         // The last hit is the drop: the release lands where the pointer last moved to.
-        hit = dropHit(e.clientY, rows)
-        setIndicator(hit ? indicatorOf(hit, box) : null)
+        const next = dropHit(e.clientY, dropRows(current, key, measure), e.clientX)
+        hit = next && moveOf(key, next.target) ? next : null
+        setZone(hit?.zone ?? null)
+        lifted.shift(hit)
       }
-      const up = (): void => {
-        end()
-        if (!started) return
-        // Released over the pressed row (also after Esc): that click must not activate it.
-        swallowNextClick()
-        if (hit) {
-          void window.bigBrowser.invoke('browser.moveTab', { tabId, ...hit.target })
-        }
-      }
-      /** Esc: no drop, but the release is still awaited so its click can be swallowed. */
-      const key = (e: KeyboardEvent): void => {
-        if (e.key !== 'Escape') return
-        window.removeEventListener('pointermove', move)
-        window.removeEventListener('keydown', key)
-        hit = null
-        setDragging(NONE)
-        setIndicator(null)
-      }
-      const end = (): void => {
+      const detach = (): void => {
         window.removeEventListener('pointermove', move)
         window.removeEventListener('pointerup', up)
-        window.removeEventListener('pointercancel', end)
-        window.removeEventListener('keydown', key)
-        stop.current = null
-        setDragging(NONE)
-        setIndicator(null)
+        window.removeEventListener('pointercancel', abort)
+        window.removeEventListener('keydown', escape)
+      }
+      /** Resets the visuals and the state (once; a later drag's state is left alone). */
+      const finish = (): void => {
+        if (done) return
+        done = true
+        lifted?.clear()
+        lifted = null
+        if (settle.current === finish) settle.current = null
+        if (stop.current === abort) {
+          stop.current = null
+          setDragging(NONE)
+          setZone(null)
+        }
+      }
+      const abort = (): void => {
+        detach()
+        finish()
+      }
+      /** No drop: the rows close the gap and the clone flies back to the row. */
+      const flyBack = (): void => {
+        cancelled = true
+        hit = null
+        setZone(null)
+        const flying = lifted
+        if (!flying) return finish()
+        void flying.cancel().then(finish)
+      }
+      const up = (): void => {
+        detach()
+        if (!started) return finish()
+        // Released over the pressed row (also after Esc): that click must not activate it.
+        swallowNextClick()
+        if (cancelled) return
+        const call = hit ? moveOf(key, hit.target) : null
+        if (!call || !lifted) return flyBack()
+        // The gap stays until the new order is drawn, so nothing jumps.
+        lifted.drop()
+        settle.current = finish
+        send(call).then(
+          () => setTimeout(finish, SETTLE_FALLBACK_MS),
+          () => finish(),
+        )
+      }
+      /** Esc: no drop, but the release is still awaited so its click can be swallowed. */
+      const escape = (e: KeyboardEvent): void => {
+        if (e.key !== 'Escape' || !started || cancelled) return
+        window.removeEventListener('pointermove', move)
+        flyBack()
       }
       window.addEventListener('pointermove', move)
       window.addEventListener('pointerup', up)
-      window.addEventListener('pointercancel', end)
-      window.addEventListener('keydown', key)
-      stop.current = end
+      window.addEventListener('pointercancel', abort)
+      window.addEventListener('keydown', escape)
+      stop.current = abort
     },
-    [container],
+    [container, cloneClass],
   )
 
-  const zone = indicator?.kind === 'zone' ? indicator.key : null
-  const drag = useMemo(() => ({ dragging, zone, press }), [dragging, zone, press])
-  return { drag, indicator }
+  return useMemo(() => ({ dragging, zone, press }), [dragging, zone, press])
 }

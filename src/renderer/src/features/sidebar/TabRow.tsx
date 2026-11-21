@@ -6,7 +6,7 @@ import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
-import { useTabDragHandle } from './useTabDrag'
+import { useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './TabRow.module.css'
 
@@ -26,7 +26,7 @@ export function TabRow({
   /** The tab is closed: the row plays its exit animation, inert and not counted as a tab. */
   exiting?: boolean
 }) {
-  const drag = useTabDragHandle(tab.id)
+  const drag = useDragHandle(`tab:${tab.id}`)
   const compact = useCompact()
   const trail = useContext(FolderTrailContext)
   const enterTooltip = useTooltipEnter()
@@ -40,6 +40,8 @@ export function TabRow({
       inert={exiting}
       aria-hidden={exiting || undefined}
       data-drop={exiting ? undefined : `tab:${tab.id}`}
+      // A row that moves aside while another is dragged (dragLift).
+      data-drag-row={exiting ? undefined : true}
       data-dragged={drag.dragged || undefined}
       onContextMenu={(e) => {
         e.preventDefault()

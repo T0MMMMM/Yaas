@@ -34,7 +34,8 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
 /**
  * Arc-style vertical sidebar: favourite tiles, the space section (its header over the pinned tabs
  * and folders, which it folds), a separator, today's tabs, then the spaces. No data logic here —
- * the tree comes from the workspace. Tabs are dragged between the lists (useTabDrag).
+ * the tree comes from the workspace. Tabs, tiles and folders are dragged between the lists
+ * (useTabDrag): the row lifts and the others move aside where it will land.
  */
 export function Sidebar({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspace()
@@ -51,7 +52,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
   const exits = useMemo(() => exitsWhenGone(openTabIds ?? new Set()), [openTabIds])
   const scroll = useRef<HTMLDivElement>(null)
-  const { drag, indicator } = useTabDrag(sections, scroll)
+  const drag = useTabDrag(sections, scroll, styles.dragClone)
   const dragging = drag.dragging.size > 0
   const dropOn = (key: string): true | undefined => drag.zone === key || undefined
   const nav = useRef<HTMLElement>(null)
@@ -140,15 +141,6 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
               >
                 {sections && <Rows nodes={sections.today} activeId={activeId} exits={exits} />}
               </ul>
-
-              {indicator?.kind === 'line' && (
-                <div
-                  className={styles.dropLine}
-                  style={{ top: indicator.top }}
-                  data-testid="drop-line"
-                  aria-hidden="true"
-                />
-              )}
             </div>
 
             <div className={styles.bottom}>

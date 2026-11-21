@@ -70,9 +70,10 @@
   color: var(--text-muted);
 }
 
-/* Drag and drop (useTabDrag): the dragged tile is dimmed; the grid is lit when a drop goes in. */
+/* Drag and drop (useTabDrag): the dragged tile lifts (its slot stays until the others move
+   into it); the grid is lit when a tab dropped on it goes in. */
 .item[data-dragged] {
-  opacity: var(--opacity-dragged);
+  visibility: hidden;
 }
 
 .tiles[data-drop-target] {

@@ -128,16 +128,23 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
 - Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
   move to folder ▸, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
   (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
-- **Drag and drop** (`useTabDrag`, pointer events): drag a tab row or tile to reorder it, pin it,
-  favourite it or file it into a folder. The upper half of a row drops before it, the lower half
-  after it; the middle half of a pinned folder's row files into it; the tiles grid adds it to the
-  end of the favourites. A `--drop-line-w` `--accent` line marks the insertion point, a folder or
-  list the drop goes into gets the `--accent-soft` fill, the dragged row is at
-  `--opacity-dragged`. Empty favourites and pinned lists appear while dragging so a tab can be
+- **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to
+  reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before
+  it, the lower half after it; the middle half of a pinned folder's row files into it; the tiles
+  grid adds a tab to the end of the favourites, and a dragged tile moves among the tiles (the
+  left half of a tile is before it, the right half after). **Lifted drag**: the dragged row lifts
+  — a clone at `scale: 1.03` with `--shadow-lift` follows the pointer while the row keeps its
+  slot, hidden — and the other rows move aside (`translate`, `--dur-base`) to open a gap where it
+  will land (`flip.ts`: `gapOffsets` for rows, `slotShifts` for the wrapping tiles); a list it
+  comes into grows by its height. A folder or list the drop goes into gets the `--accent-soft`
+  fill instead. Empty favourites and pinned lists appear while a tab is dragged so it can be
   dropped on them. A today tab moves with its subtree; a drop on a nested tab lands after its
-  top-level tab's subtree (the line is drawn there). For a tab of another site, an automatic
-  folder is one block (before or after it); a tab of its own site joins it. A drop on the dragged
-  tab itself, or of a favourite on the favourites, is no move. Esc cancels.
+  top-level tab's subtree. For a tab of another site, an automatic folder is one block (before or
+  after it); a tab of its own site joins it. A folder moves with its rows, only within pinned
+  (`browser.moveFolder`); a drop on itself or one of its descendants is no move, like a drop on
+  the dragged tab itself. Esc (or a release outside the lists) cancels: the rows close the gap
+  and the clone flies back to the row. Under reduced motion the clone still follows the pointer;
+  nothing else animates.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-menu`,
@@ -269,6 +276,7 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-raised` | Cards, approval sheet, palette, menus |
 | `--bg-menu` / `--bg-menu-hover` | Opaque menu and popover card (light grey; dark grey in the dark scheme) and its hovered row |
 | `--border-menu` / `--shadow-menu` | Menu card hairline and shadow |
+| `--shadow-lift` | A sidebar row lifted while it is dragged (light and dark) |
 | `--bg-tile` | Favourite tile card |
 | `--border` / `--border-strong` | Hairlines |
 | `--text` / `--text-muted` / `--text-faint` | Text hierarchy |
@@ -333,8 +341,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
-| Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
-| Drag and drop | `--drop-line-w` 2 (the `--accent` insertion line of a tab dragged in the sidebar) |
+| Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform
 

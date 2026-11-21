@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { BrowserState } from '@shared/ipc/contract'
 import type { BrowserFolder, BrowserTab } from '@shared/model'
 import { sidebarSections } from '../workspace/workspace'
-import { dropHit, dropRows, dropTarget, type DropRow } from './useTabDrag'
+import { dropHit, dropRows, dropTarget, moveOf, type DropRow } from './useTabDrag'
 
 /** A row of the given list, `height` 10 at `top`. */
 const row = (id: string, top: number, extra: Partial<DropRow> = {}, height = 10): DropRow => ({
@@ -171,7 +171,7 @@ describe('dropRows', () => {
 
   it("counts today in the store's order for a tab of the automatic folder's site", () => {
     const sections = regrouped(tab('drag', 0, { section: 'pinned', url: 'https://a.com/4' }))
-    const rows = dropRows(sections, 'drag', measure)
+    const rows = dropRows(sections, 'tab:drag', measure)
     // Before a3 (drawn 6th): a3 is 6th in the store's order → index 5, not the visual 3.
     expect(dropTarget(51, rows)).toEqual(today(5))
     expect(lineAt(51, rows)).toBe(50)
@@ -181,7 +181,7 @@ describe('dropRows', () => {
 
   it('treats an automatic folder as one block for a tab of another site', () => {
     const sections = regrouped(tab('drag', 0, { section: 'pinned', url: 'https://y.com/3' }))
-    const rows = dropRows(sections, 'drag', measure)
+    const rows = dropRows(sections, 'tab:drag', measure)
     // The block spans 20..60. Its lower half (on a3): before y1, where the tab is drawn too.
     expect(dropTarget(55, rows)).toEqual(today(2))
     expect(lineAt(55, rows)).toBe(60)
@@ -196,7 +196,7 @@ describe('dropRows', () => {
       's1',
       { autoFolders: true },
     )
-    const rows = dropRows(sections, 'drag', stacked(['tab:a', 'tab:kid', 'tab:b', 'tab:drag']))
+    const rows = dropRows(sections, 'tab:drag', stacked(['tab:a', 'tab:kid', 'tab:b', 'tab:drag']))
     // Upper half of a: before it. Lower half of a, or anywhere on kid: after a's subtree.
     expect(dropTarget(2, rows)).toEqual(today(0))
     expect(lineAt(2, rows)).toBe(0)
@@ -212,7 +212,7 @@ describe('dropRows', () => {
       's1',
       { autoFolders: true },
     )
-    const rows = dropRows(sections, 'a', stacked(['tab:a', 'tab:kid', 'tab:b', 'tab:c']))
+    const rows = dropRows(sections, 'tab:a', stacked(['tab:a', 'tab:kid', 'tab:b', 'tab:c']))
     expect(dropTarget(5, rows)).toBeNull()
     expect(dropTarget(15, rows)).toBeNull()
     // After b: index 1 among today without a and its child.
@@ -225,7 +225,7 @@ describe('dropRows', () => {
       's1',
       { autoFolders: true },
     )
-    const rows = dropRows(sections, 'kid', stacked(['tab:a', 'tab:kid', 'tab:b']))
+    const rows = dropRows(sections, 'tab:kid', stacked(['tab:a', 'tab:kid', 'tab:b']))
     expect(dropTarget(15, rows)).toBeNull()
     expect(lineAt(15, rows)).toBeNull()
   })
@@ -256,7 +256,7 @@ describe('dropRows', () => {
     const drawnPinned = ['folder:fo', 'tab:in1', 'tab:in2', 'tab:p1']
     const rows = dropRows(
       sections,
-      'in1',
+      'tab:in1',
       withSpans(drawnPinned, { 'list:pinned': ['folder:fo', 'tab:p1'] }),
     )
     expect(dropTarget(15, rows)).toBeNull()
@@ -264,7 +264,7 @@ describe('dropRows', () => {
     expect(dropTarget(28, rows)).toEqual({ section: 'pinned', folderId: 'fo', index: 1 })
   })
 
-  it('makes a favourite dropped on the favourites no move', () => {
+  it('makes a favourite dropped on itself no move', () => {
     const sections = sidebarSections(
       stateOf([
         tab('f1', 0, { section: 'favorites' }),
@@ -280,7 +280,7 @@ describe('dropRows', () => {
         : key === 'tab:t1'
           ? { top: 30, height: 10 }
           : null
-    const rows = dropRows(sections, 'f1', measureTiles)
+    const rows = dropRows(sections, 'tab:f1', measureTiles)
     expect(dropTarget(5, rows)).toBeNull()
     expect(dropTarget(39, rows)).toEqual(today(1))
   })
@@ -308,7 +308,7 @@ describe('dropRows', () => {
       's1',
       { autoFolders: true },
     )
-    const rows = dropRows(sections, 't1', stacked(['folder:fo', 'tab:t1']))
+    const rows = dropRows(sections, 'tab:t1', stacked(['folder:fo', 'tab:t1']))
     expect(dropTarget(5, rows)).toEqual({ section: 'pinned', folderId: 'fo', index: 2 })
   })
 
@@ -335,7 +335,7 @@ describe('dropRows', () => {
       { autoFolders: true },
     )
     const drawn = ['folder:outer', 'tab:in1', 'folder:inner', 'tab:deep', 'tab:t1']
-    const rows = dropRows(sections, 't1', stacked(drawn))
+    const rows = dropRows(sections, 'tab:t1', stacked(drawn))
     // The middle of the inner folder's row: at its end.
     expect(dropTarget(25, rows)).toEqual({ section: 'pinned', folderId: 'inner', index: 1 })
     // The middle of the outer folder's row: after its tab and its child folder.
@@ -347,5 +347,112 @@ describe('dropRows', () => {
       target: { section: 'pinned', folderId: 'outer', index: 2 },
       line: 40,
     })
+  })
+})
+
+// ---------- folders and tiles as drag sources ----------
+
+const folderOf = (id: string, position: number, parentId: string | null = null) => ({
+  id,
+  spaceId: 's1',
+  name: id,
+  position,
+  collapsed: false,
+  parentId,
+  icon: null,
+})
+
+describe('dragging a folder', () => {
+  // Drawn: folder a, folder b (its tab in1, its child folder c with deep), p1, then today t1.
+  const sections = sidebarSections(
+    stateOf(
+      [
+        tab('in1', 0, { section: 'pinned', folderId: 'b' }),
+        tab('deep', 0, { section: 'pinned', folderId: 'c' }),
+        tab('p1', 2, { section: 'pinned' }),
+        tab('t1', 0),
+      ],
+      [folderOf('a', 0), folderOf('b', 1), folderOf('c', 1, 'b')],
+    ),
+    's1',
+    { autoFolders: true },
+  )
+  const drawn = ['folder:a', 'folder:b', 'tab:in1', 'folder:c', 'tab:deep', 'tab:p1', 'tab:t1']
+  const measure = withSpans(drawn, {
+    'list:pinned': ['folder:a', 'tab:p1'],
+    'list:today': ['tab:t1', 'tab:t1'],
+  })
+
+  it('moves it into a folder dropped on the middle of its row', () => {
+    const rows = dropRows(sections, 'folder:b', measure)
+    const target = dropTarget(5, rows)
+    expect(target).toEqual({ section: 'pinned', folderId: 'a', index: 0 })
+    expect(target && moveOf('folder:b', target)).toEqual({
+      channel: 'browser.moveFolder',
+      input: { folderId: 'b', parentId: 'a', index: 0 },
+    })
+  })
+
+  it('moves it before or after a row of pinned', () => {
+    const rows = dropRows(sections, 'folder:c', measure)
+    // The lower half of p1: after it, at the top level (b's subtree stays one row).
+    const target = dropTarget(58, rows)
+    expect(target).toEqual({ section: 'pinned', folderId: null, index: 3 })
+    expect(target && moveOf('folder:c', target)).toEqual({
+      channel: 'browser.moveFolder',
+      input: { folderId: 'c', parentId: null, index: 3 },
+    })
+  })
+
+  it('makes a drop on itself or one of its descendants no move', () => {
+    const rows = dropRows(sections, 'folder:b', measure)
+    for (const y of [15, 25, 35, 45]) expect(dropTarget(y, rows)).toBeNull()
+  })
+
+  it('never drops it in today or the favourites', () => {
+    const rows = dropRows(sections, 'folder:b', measure)
+    expect(dropTarget(65, rows)).toBeNull()
+    expect(moveOf('folder:b', { section: 'today', folderId: null, index: 0 })).toBeNull()
+  })
+
+  it('moves a tab with browser.moveTab', () => {
+    expect(moveOf('tab:t1', { section: 'pinned', folderId: 'a', index: 1 })).toEqual({
+      channel: 'browser.moveTab',
+      input: { tabId: 't1', section: 'pinned', folderId: 'a', index: 1 },
+    })
+  })
+})
+
+describe('dragging a favourite', () => {
+  // Two tiles per row: f1 f2 / f3, 50 px wide and 20 px high, the grid 0..44.
+  const sections = sidebarSections(
+    stateOf([
+      tab('f1', 0, { section: 'favorites' }),
+      tab('f2', 1, { section: 'favorites' }),
+      tab('f3', 2, { section: 'favorites' }),
+    ]),
+    's1',
+    { autoFolders: true },
+  )
+  const tiles: Record<string, { top: number; height: number; left: number; width: number }> = {
+    'list:favorites': { top: 0, height: 44, left: 0, width: 104 },
+    'tab:f1': { top: 0, height: 20, left: 0, width: 50 },
+    'tab:f2': { top: 0, height: 20, left: 54, width: 50 },
+    'tab:f3': { top: 24, height: 20, left: 0, width: 50 },
+  }
+  const measure = (key: string) => tiles[key] ?? null
+  const favourites = (index: number) => ({ section: 'favorites', folderId: null, index })
+
+  it('reorders the tiles by x: the left half of a tile is before it, the right half after', () => {
+    const rows = dropRows(sections, 'tab:f1', measure)
+    expect(dropHit(10, rows, 60)?.target).toEqual(favourites(0))
+    expect(dropHit(10, rows, 90)?.target).toEqual(favourites(1))
+    expect(dropHit(30, rows, 40)?.target).toEqual(favourites(2))
+    expect(dropHit(30, rows, 10)?.target).toEqual(favourites(1))
+  })
+
+  it('makes a drop on its own tile no move, even beside another tile of its row', () => {
+    const rows = dropRows(sections, 'tab:f1', measure)
+    expect(dropHit(10, rows, 20)).toBeNull()
   })
 })

@@ -64,9 +64,19 @@
   padding-left: var(--space-3);
 }
 
-/* A tab dragged onto the folder's row files into it (useTabDrag). */
+/* A tab or folder dragged onto the folder's row files into it (useTabDrag). */
 .header[data-drop-target] .row::before {
   background: var(--accent-soft);
+}
+
+/* A dragged folder lifts with its rows (useTabDrag); its slot stays. */
+.folder[data-dragged] {
+  visibility: hidden;
+}
+
+/* While a row is dragged, an open folder's rows that move aside are not clipped by its fold. */
+:global([data-dragging]) .fold[data-collapsed='false'] > .children {
+  overflow-y: visible;
 }
 
 /* Icon-only sidebar: the folder is its icon; its tabs stay listed under it, unindented. */

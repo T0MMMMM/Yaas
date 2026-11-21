@@ -153,9 +153,9 @@
   background: var(--hover-fill);
 }
 
-/* Being dragged (useTabDrag): dimmed where it was. */
+/* Being dragged (useTabDrag): its lifted clone follows the pointer; the row keeps its slot. */
 .item[data-dragged] {
-  opacity: var(--opacity-dragged);
+  visibility: hidden;
 }
 
 /* Icon-only sidebar: the favicon alone, centred, never indented; no × (use the menu or ⌘W). */
