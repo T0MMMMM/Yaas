@@ -730,57 +730,59 @@ async function clickPage(app: ElectronApplication, page: Page, tabId: string): P
   }, id)
 }
 
+/** Opens `/a` and `/b` and splits them, `/a` first; returns their ids. */
+async function splitAB(app: ElectronApplication, page: Page, site: Site) {
+  const open = (input: string) =>
+    page.evaluate((input) => window.bigBrowser.invoke('browser.openTab', { input }), input)
+  const a = await open(site.url('/a'))
+  const b = await open(site.url('/b'))
+  await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
+    firstId: a.id,
+    secondId: b.id,
+  })
+  await expect.poll(async () => (await shownPages(app)).length).toBe(2)
+  return { a, b }
+}
+
+/** The stored ratio of the split whose first tab is `firstId`. */
+const storedRatio = async (page: Page, firstId: string) =>
+  (await browserState(page)).tabs.find((t) => t.id === firstId)?.splitRatio ?? 0.5
+
+/** The middle of the divider, in window coordinates. */
+async function dividerCentre(page: Page): Promise<{ x: number; y: number }> {
+  const box = await page.getByTestId('split-divider').boundingBox()
+  if (!box) throw new Error('divider not found')
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
 test('a split shows two pages', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    const a = await page.evaluate(
-      (input) => window.bigBrowser.invoke('browser.openTab', { input }),
-      site.url('/a'),
-    )
-    const b = await page.evaluate(
-      (input) => window.bigBrowser.invoke('browser.openTab', { input }),
-      site.url('/b'),
-    )
-    await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
-      firstId: a.id,
-      secondId: b.id,
-    })
-    await page.evaluate((tabId) => window.bigBrowser.invoke('browser.activateTab', { tabId }), a.id)
-    await expect(page.getByTestId('url-rest')).toHaveText('/a')
+    const { a, b } = await splitAB(app, page, site)
+    // The left page's view was just made by the split: its first click waits for it to load.
+    await expect(async () => {
+      await clickPage(app, page, a.id)
+      await expect(page.getByTestId('url-rest')).toHaveText('/a', { timeout: 500 })
+    }).toPass()
 
     // Both pages are shown, side by side, at the same height.
-    await expect.poll(async () => (await shownPages(app)).length).toBe(2)
     const [left, right] = await shownPages(app)
     if (!left || !right) throw new Error('views not shown')
     expect(right.x).toBeGreaterThan(left.x + left.width)
     expect(right.y).toBe(left.y)
 
-    // A real drag: pressed on the divider, then the overlay's capture layer gets the pointer even
-    // over the pages; both views follow before release, the ratio is stored on release.
-    const box = await page.getByTestId('split-divider').boundingBox()
-    if (!box) throw new Error('divider not found')
-    const y = box.y + box.height / 2
-    await page.mouse.move(box.x + box.width / 2, y)
+    // A drag as a user makes it: pressed, moved and released on the UI only (the divider captures
+    // the pointer). Both pages follow before release; the ratio is stored on release.
+    const { x, y } = await dividerCentre(page)
+    await page.mouse.move(x, y)
     await page.mouse.down()
-    const overlay = await overlayPage(app)
-    const layer = overlay.getByTestId('split-drag-layer')
-    await expect(layer).toBeVisible()
-    await overlay.mouse.move(box.x + box.width / 2, y)
-    await overlay.mouse.down()
-    await overlay.mouse.move(box.x - 150, y, { steps: 5 })
+    await page.mouse.move(x - 150, y, { steps: 5 })
     await expect.poll(async () => (await shownPages(app))[0]?.width ?? 0).toBeLessThan(left.width)
-    const [movedLeft, movedRight] = await shownPages(app)
-    expect(movedRight?.x).toBeLessThan(right.x)
-    expect(movedLeft?.width).toBeLessThan(left.width)
-    await overlay.mouse.up()
-    await expect(layer).toBeHidden()
-    await expect
-      .poll(async () => {
-        const { tabs } = await browserState(page)
-        return tabs.find((t) => t.id === a.id)?.splitRatio ?? 0.5
-      })
-      .toBeLessThan(0.45)
+    expect((await shownPages(app))[1]?.x).toBeLessThan(right.x)
+    await page.mouse.up()
+    await expect.poll(() => storedRatio(page, a.id)).toBeLessThan(0.45)
+    await expect((await overlayPage(app)).getByTestId('split-drag-layer')).toBeHidden()
 
-    // A click into the right page makes it the active tab: the address bar follows.
+    // A real click into the right page makes it the active tab: the address bar follows.
     await clickPage(app, page, b.id)
     await expect(page.getByTestId('url-rest')).toHaveText('/b')
     await clickPage(app, page, a.id)
@@ -789,42 +791,79 @@ test('a split shows two pages', async () => {
   })
 })
 
-test('Escape cancels a split divider drag', async () => {
+test('the overlay layer drives a split drag, Escape cancels one', async () => {
   await withBrowser(async ({ app, page, site }) => {
-    const tabs = []
-    for (const path of ['/a', '/b']) {
-      tabs.push(
-        await page.evaluate(
-          (input) => window.bigBrowser.invoke('browser.openTab', { input }),
-          site.url(path),
-        ),
+    const { a } = await splitAB(app, page, site)
+    const before = await shownPages(app)
+    const overlay = await overlayPage(app)
+    const layer = overlay.getByTestId('split-drag-layer')
+
+    // The pointer's events reach the overlay's capture layer instead of the UI.
+    const { x, y } = await dividerCentre(page)
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await expect(layer).toBeVisible()
+    await overlay.mouse.move(x, y)
+    await overlay.mouse.down()
+    await overlay.mouse.move(x + 200, y, { steps: 3 })
+    await expect
+      .poll(async () => (await shownPages(app))[0]?.width ?? 0)
+      .toBeGreaterThan(before[0]?.width ?? 0)
+    await overlay.mouse.up()
+    await page.mouse.up() // the UI's release too: main ends the drag once
+    await expect(layer).toBeHidden()
+    await expect.poll(() => storedRatio(page, a.id)).toBeGreaterThan(0.55)
+    const stored = await storedRatio(page, a.id)
+    const after = await shownPages(app)
+
+    // Escape puts the stored ratio back.
+    await page.mouse.move(...(Object.values(await dividerCentre(page)) as [number, number]))
+    await page.mouse.down()
+    await expect(layer).toBeVisible()
+    await overlay.mouse.move(x - 200, y, { steps: 3 })
+    await expect.poll(async () => (await shownPages(app))[0]?.width).not.toBe(after[0]?.width)
+    await overlay.keyboard.press('Escape')
+    await expect(layer).toBeHidden()
+    await page.mouse.up()
+    await expect.poll(async () => JSON.stringify(await shownPages(app))).toBe(JSON.stringify(after))
+    expect(await storedRatio(page, a.id)).toBe(stored)
+  })
+})
+
+test('a split drag never leaves its layer behind', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    const { a, b } = await splitAB(app, page, site)
+    const overlay = await overlayPage(app)
+    const layer = overlay.getByTestId('split-drag-layer')
+    const start = (tabId: string) =>
+      page.evaluate(
+        (tabId) => window.bigBrowser.invoke('browser.splitDrag', { phase: 'start', tabId }),
+        tabId,
       )
-    }
-    const [a, b] = tabs
-    if (!a || !b) throw new Error('tabs not opened')
+
+    // The split goes away mid-drag (its tab closed): the release drops the layer, stores nothing.
+    await start(a.id)
+    await expect(layer).toBeVisible()
+    await page.evaluate((tabId) => window.bigBrowser.invoke('browser.closeTab', { tabId }), b.id)
+    await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.splitDrag', { phase: 'end', x: 300 }),
+    )
+    await expect(layer).toBeHidden()
+
+    // A tab outside any split starts no drag.
+    await start(a.id)
+    await expect(layer).toBeHidden()
+
+    // The window losing focus cancels a drag.
+    const c = await page.evaluate(() => window.bigBrowser.invoke('browser.openTab', {}))
     await page.evaluate((ids) => window.bigBrowser.invoke('browser.splitTabs', ids), {
       firstId: a.id,
-      secondId: b.id,
+      secondId: c.id,
     })
-    await expect.poll(async () => (await shownPages(app)).length).toBe(2)
-    const before = await shownPages(app)
-
-    const box = await page.getByTestId('split-divider').boundingBox()
-    if (!box) throw new Error('divider not found')
-    await page.mouse.move(box.x + 2, box.y + 100)
-    await page.mouse.down()
-    const overlay = await overlayPage(app)
-    await expect(overlay.getByTestId('split-drag-layer')).toBeVisible()
-    await overlay.mouse.move(box.x + 2, box.y + 100)
-    await overlay.mouse.down()
-    await overlay.mouse.move(box.x + 200, box.y + 100, { steps: 3 })
-    await expect.poll(async () => (await shownPages(app))[0]?.width).not.toBe(before[0]?.width)
-    await overlay.keyboard.press('Escape')
-    await expect(overlay.getByTestId('split-drag-layer')).toBeHidden()
-    await expect
-      .poll(async () => JSON.stringify(await shownPages(app)))
-      .toBe(JSON.stringify(before))
-    const { tabs: stored } = await browserState(page)
-    expect(stored.find((t) => t.id === a.id)?.splitRatio ?? 0.5).toBe(0.5)
+    await start(a.id)
+    await expect(layer).toBeVisible()
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.emit('blur'))
+    await expect(layer).toBeHidden()
+    expect(await storedRatio(page, a.id)).toBe(0.5)
   })
 })

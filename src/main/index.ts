@@ -35,6 +35,7 @@ import { DownloadsStore } from '@core/browser/downloadsStore'
 import { HistoryStore } from '@core/browser/historyStore'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
+import { shownSplit } from '@core/browser/splitBounds'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
 import {
@@ -107,14 +108,26 @@ function emitBrowserState(): void {
 /** The split whose divider is being dragged (its first or second tab), or null. */
 let splitDrag: { tabId: string } | null = null
 
-/** Ends a divider drag: stores the ratio under `x`, or (no `x`) goes back to the stored one. */
+/** Whether `tabId` is (still) a half of a split. */
+const inSplit = (tabId: string): boolean => shownSplit(browser.snapshot().tabs, tabId) !== null
+
+/**
+ * Ends a divider drag: stores the ratio under `x`, or (no `x`) goes back to the stored one. Runs
+ * once per drag (the UI and the overlay may both report the release); the capture layer always goes,
+ * even when the split vanished mid-drag.
+ */
 function endSplitDrag(x: number | null): void {
   const drag = splitDrag
   if (!drag) return
   splitDrag = null
-  if (x !== null && tabViews) browser.setSplitRatio(drag.tabId, tabViews.splitRatioAt(x))
-  tabViews?.previewSplitRatio(null)
-  overlay?.close()
+  try {
+    if (x !== null && tabViews && inSplit(drag.tabId)) {
+      browser.setSplitRatio(drag.tabId, tabViews.splitRatioAt(x))
+    }
+  } finally {
+    tabViews?.previewSplitRatio(null)
+    overlay?.close()
+  }
 }
 
 function overlayView(): OverlayView {
@@ -340,6 +353,8 @@ function openMainWindow(): void {
     emit(overlayView.webContents, 'overlay.closed', undefined)
   })
   overlay = overlayView
+  // A release outside the window never arrives: drop the drag rather than store it later.
+  win.on('blur', () => endSplitDrag(null))
   win.on('maximize', () => emit(win.webContents, 'window.maximized', true))
   win.on('unmaximize', () => emit(win.webContents, 'window.maximized', false))
   tabViews = new TabViews(
@@ -385,6 +400,7 @@ registerCommands(
     'browser.setSplitRatio': ({ tabId, ratio }) => browser.setSplitRatio(tabId, ratio),
     'browser.splitDrag': (drag) => {
       if (drag.phase === 'start') {
+        if (!inSplit(drag.tabId)) return
         splitDrag = { tabId: drag.tabId }
         overlayView().open({ kind: 'split-drag' })
       } else if (drag.phase === 'move') {

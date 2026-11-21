@@ -14,8 +14,13 @@ export function SplitDragLayer() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') drag({ phase: 'cancel' })
     }
+    const onBlur = () => drag({ phase: 'cancel' })
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('blur', onBlur)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('blur', onBlur)
+    }
   }, [])
 
   return (
