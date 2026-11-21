@@ -1,7 +1,14 @@
 // THE IPC contract. Every command and event crossing the preload bridge is declared here.
 // Main validates every input with these schemas; the renderer gets the types for free.
 import { z } from 'zod'
-import type { Account, BrowserFolder, BrowserSnapshot, BrowserSpace, BrowserTab } from '../model'
+import type {
+  Account,
+  BrowserFolder,
+  BrowserSnapshot,
+  BrowserSpace,
+  BrowserTab,
+  HistoryEntry,
+} from '../model'
 import { menuSpecSchema, pointSchema } from '../menuSpec'
 import type { CommandChannel, EventChannel } from './channels'
 
@@ -110,6 +117,15 @@ export const browserTabSchema = z.object({
   parentId: z.string().nullable(),
   lastActiveAt: z.string().nullable(),
 }) satisfies z.ZodType<BrowserTab>
+
+export const historyEntrySchema = z.object({
+  id: z.string(),
+  spaceId: z.string(),
+  url: z.string(),
+  title: z.string(),
+  visitCount: z.number().int(),
+  lastVisit: z.string(),
+}) satisfies z.ZodType<HistoryEntry>
 
 export const browserFolderSchema = z.object({
   id: z.string(),
@@ -400,6 +416,18 @@ export const commands = {
   },
   /** Deletes a space with its tabs, folders and browsing data; the last space can't be deleted. */
   'browser.deleteSpace': { input: z.object({ spaceId: id }).strict(), output: z.void() },
+  /** The most visited pages of a space (the active one by default), for the new-tab dock. */
+  'history.frequent': {
+    input: z.object({ spaceId: id.optional() }).strict(),
+    output: z.array(historyEntrySchema),
+  },
+  /** Pages of any space whose title or URL contains the query. */
+  'history.search': {
+    input: z.object({ query: z.string().max(500) }).strict(),
+    output: z.array(historyEntrySchema),
+  },
+  /** Forgets one page. */
+  'history.forget': { input: z.object({ id }).strict(), output: z.void() },
   'browser.setPageBounds': { input: pageBoundsSchema, output: z.void() },
   'browser.setPageVisible': {
     input: z.object({ visible: z.boolean() }).strict(),

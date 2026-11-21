@@ -28,6 +28,7 @@ import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
 import { folderMenu, spaceMenu, tabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
 import { MenuRegistry, menuRequest, type MenuItemDef, type MenuWhere } from './menus/menuRegistry'
+import { HistoryStore } from '@core/browser/historyStore'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
 import { emit, registerCommands } from './ipc/router'
@@ -72,6 +73,7 @@ const accounts = new Accounts({
   },
   defaultColor: () => settings.get().accent,
 })
+const history = new HistoryStore(db)
 const browser = new BrowserStore(db, {
   defaultSpace: { name: 'Personal', color: settings.get().accent },
 })
@@ -307,8 +309,14 @@ function openMainWindow(): void {
   overlay = overlayView
   win.on('maximize', () => emit(win.webContents, 'window.maximized', true))
   win.on('unmaximize', () => emit(win.webContents, 'window.maximized', false))
-  tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, showMenu, () =>
-    overlayView.raise(),
+  tabViews = new TabViews(
+    win,
+    browser,
+    spaceSessions,
+    emitBrowserState,
+    showMenu,
+    () => overlayView.raise(),
+    history,
   )
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
@@ -375,9 +383,22 @@ registerCommands(
       // The store's change event runs TabViews.sync: the deleted tabs' views are destroyed and
       // the next space's active tab is shown.
       browser.deleteSpace(spaceId)
-      await spaceSessions.wipe(spaceId)
-      // Task 7 adds the space's history wipe here.
+      // The space is gone: a failing wipe must not fail the command, only be logged.
+      try {
+        await spaceSessions.wipe(spaceId)
+      } catch (error) {
+        console.warn("Could not wipe the deleted space's browsing data:", error)
+      }
+      try {
+        history.wipeSpace(spaceId)
+      } catch (error) {
+        console.warn("Could not wipe the deleted space's history:", error)
+      }
     },
+    'history.frequent': ({ spaceId }) =>
+      history.frequent(spaceId ?? browser.snapshot().activeSpaceId),
+    'history.search': ({ query }) => history.search(query),
+    'history.forget': ({ id }) => history.forget(id),
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
     'browser.copyLink': ({ tabId }) => {

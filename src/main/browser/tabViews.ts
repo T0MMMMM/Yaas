@@ -1,6 +1,7 @@
 // One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
 // mirrors it: creates views lazily, shows the active one, and reports what the pages do.
 import { clipboard, WebContentsView, type BrowserWindow, type WebContents } from 'electron'
+import type { HistoryStore } from '@core/browser/historyStore'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
@@ -121,6 +122,7 @@ export class TabViews {
     private readonly showMenu: (where: MenuWhere, items: MenuItemDef[]) => void,
     /** Called after a view joins the window, so the overlay can go back on top. */
     private readonly onViewAdded: () => void = () => undefined,
+    private readonly history?: HistoryStore,
   ) {
     // A view's web contents outlive its window unless closed: their renderers would hold up quit.
     win.on('closed', () => {
@@ -293,16 +295,24 @@ export class TabViews {
         canGoForward: contents.navigationHistory.canGoForward(),
       })
 
+    // Visits go to the tab's space history: top-level navigations only (not in-page, not frames).
+    const spaceId = (): string | undefined => this.views.get(tabId)?.spaceId
     contents.on('did-navigate', (_event, url) => {
       update({ url })
       updateHistory()
+      const space = spaceId()
+      if (space && isCurrent()) this.history?.record(space, url, contents.getTitle() || url)
     })
     contents.on('did-navigate-in-page', (_event, url, isMainFrame) => {
       if (!isMainFrame) return
       update({ url })
       updateHistory()
     })
-    contents.on('page-title-updated', (_event, title) => update({ title }))
+    contents.on('page-title-updated', (_event, title) => {
+      update({ title })
+      const space = spaceId()
+      if (space && isCurrent()) this.history?.setTitle(space, contents.getURL(), title)
+    })
     // Only the latest page's icon is kept: an older, slower request is dropped.
     let faviconRequest = 0
     contents.on('page-favicon-updated', (_event, favicons) => {

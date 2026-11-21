@@ -462,6 +462,12 @@ web page swallows renderer key events. `Mod+Z` is the exception: a keydown handl
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.
 
+### Privacy note: browsing history
+
+Browsing history (pages visited, per space) is personal data. It is kept only in the local
+database, never sent anywhere, shown only in the new-tab dock's suggestions, and each entry can be
+forgotten there. Deleting a space deletes its history.
+
 ## 9. Accessibility
 
 - Body text contrast ≥ 4.5:1 in both schemes. Body text never sits on the accent; labels on the

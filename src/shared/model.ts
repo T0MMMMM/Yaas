@@ -104,6 +104,17 @@ export interface BrowserTab {
   lastActiveAt: string | null
 }
 
+/** A page visited in a space (personal data, kept in the local database only). */
+export interface HistoryEntry {
+  id: string
+  spaceId: string
+  url: string
+  title: string
+  visitCount: number
+  /** ISO. */
+  lastVisit: string
+}
+
 /**
  * A folder of pinned tabs, at the top of pinned or in another folder. The tabs and child folders
  * of one parent (pinned's top level, or a folder) share one ordering.

@@ -428,6 +428,12 @@ results come back to the lead as a short summary + branch name, never the full c
   `icon` (`hue:<deg>` or an emoji; null = a hue from its name), a space an `icon` (an emoji;
   null = its colour dot) and `sectionCollapsed`, and a tab `lastActiveAt` (set by `activateTab`
   and by `openTab` when it activates; Recent Tabs sorts by it) — migration 5.
+- **History.** `core/browser/historyStore.ts` keeps one `history` row per page (URL) per space
+  with a visit count and last visit (migration 6; rows go with their space). `TabViews` records
+  on a tab's top-level `did-navigate` (http(s) only, not in-page or frames) and updates the title
+  on `page-title-updated`. Commands `history.frequent` (a space's most visited, for the new-tab
+  dock), `history.search` (all spaces) and `history.forget`; deleting a space wipes its rows.
+  History is personal data: it stays in this SQLite file and is never sent anywhere.
 - **Sections.** A space's tabs sit in `favorites` (tiles), `pinned` (a tree of folders: a folder
   is at the top level or in another folder, `parentId`; the tabs and child folders of one parent
   share one ordering; `moveFolder` moves a folder with its subtree, never into itself or a

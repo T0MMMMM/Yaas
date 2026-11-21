@@ -54,6 +54,12 @@ const MIGRATIONS: string[] = [
    ALTER TABLE spaces ADD COLUMN section_collapsed INTEGER NOT NULL DEFAULT 0;
    ALTER TABLE tabs ADD COLUMN last_active_at TEXT;
    CREATE INDEX folders_parent ON folders(parent_id);`,
+  // 6 — browsing history, one row per page per space (personal data: stays in this file)
+  `CREATE TABLE history (
+     id TEXT PRIMARY KEY, space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+     url TEXT NOT NULL, title TEXT NOT NULL, visit_count INTEGER NOT NULL,
+     last_visit TEXT NOT NULL, UNIQUE(space_id, url)
+   );`,
 ]
 
 export type Database = DatabaseSync
