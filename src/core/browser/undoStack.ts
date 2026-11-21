@@ -15,4 +15,13 @@ export class UndoStack<T> {
   pop(): T | undefined {
     return this.entries.pop()
   }
+
+  /** Replaces each entry with `map(entry)`, in place; an entry mapped to null is dropped. */
+  rewrite(map: (entry: T) => T | null): void {
+    const kept = this.entries.flatMap((entry) => {
+      const next = map(entry)
+      return next === null ? [] : [next]
+    })
+    this.entries.splice(0, this.entries.length, ...kept)
+  }
 }

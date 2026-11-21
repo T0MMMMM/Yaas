@@ -539,6 +539,25 @@ describe('BrowserStore space model', () => {
     expect(store.reopenClosed()).toBeNull()
   })
 
+  it("forgets the deleted space's closed tabs and folders, keeping other spaces'", () => {
+    const { store, spaceId } = setup()
+    const second = store.createSpace('Work', '#fff')
+    const kept = store.openTab(spaceId, 'https://home.test')
+    store.closeTab(kept.id)
+    const gone = store.openTab(second.id, 'https://work.test')
+    store.closeTab(gone.id)
+    const folder = store.createFolder(second.id, 'F')
+    store.moveTab(store.openTab(second.id, 'https://in-folder.test').id, {
+      section: 'pinned',
+      folderId: folder.id,
+      index: 0,
+    })
+    store.deleteFolder(folder.id)
+    store.deleteSpace(second.id)
+    expect(store.reopenClosed()?.url).toBe('https://home.test')
+    expect(store.reopenClosed()).toBeNull()
+  })
+
   it('activates the previous space when the last one is deleted', () => {
     const { store, spaceId } = setup()
     const second = store.createSpace('Work', '#fff')

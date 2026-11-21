@@ -237,9 +237,10 @@ export class BrowserStore {
   }
 
   /**
-   * Deletes a space with its tabs and folders (cascade). Not reopenable. When it was the active
-   * space the next one by position becomes active, else the previous one. The last space stays
-   * (`last_space`).
+   * Deletes a space with its tabs and folders (cascade). Not reopenable: the tabs and folders
+   * closed earlier in it are forgotten too, so ⌘⇧T never brings them back elsewhere. When it was
+   * the active space the next one by position becomes active, else the previous one. The last
+   * space stays (`last_space`).
    */
   deleteSpace(id: string): void {
     this.requireSpace(id)
@@ -251,6 +252,11 @@ export class BrowserStore {
     this.transaction(() => {
       this.db.prepare('DELETE FROM spaces WHERE id = ?').run(id)
       if (wasActive && successor) this.setActiveSpace(successor.id)
+    })
+    this.closed.rewrite((entry) => {
+      const tabs = entry.tabs.filter((t) => t.spaceId !== id)
+      const folders = entry.folders.filter((f) => f.spaceId !== id)
+      return tabs.length > 0 || folders.length > 0 ? { tabs, folders } : null
     })
     this.emit()
   }

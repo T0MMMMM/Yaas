@@ -20,4 +20,13 @@ describe('UndoStack', () => {
     expect(popped[0]).toBe(25)
     expect(popped.at(-1)).toBe(6)
   })
+
+  it('rewrites its entries in place, dropping those mapped to null', () => {
+    const stack = new UndoStack<number>()
+    for (const n of [1, 2, 3, 4]) stack.push(n)
+    stack.rewrite((n) => (n % 2 === 0 ? null : n * 10))
+    expect(stack.pop()).toBe(30)
+    expect(stack.pop()).toBe(10)
+    expect(stack.pop()).toBeUndefined()
+  })
 })
