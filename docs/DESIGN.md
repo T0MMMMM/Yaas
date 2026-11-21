@@ -213,11 +213,14 @@ match across **all spaces** (picking another space's tab switches space). A foot
 Enter does with the selected row: "Switch to Tab ↵" or "Open in New Tab ↵". The list scrolls
 inside the window; no tab is created until Enter.
 
-**Address bar buttons** — left: the sidebar switch (icons only ↔ the width it had,
-`sidebarExpandedWidth`), Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a check
-mark for 1.2 s), the site menu (below; it holds the extensions) and Design, which opens Settings
-at Appearance for now (the browser's style editor comes later). Both groups are four buttons wide
-so the URL stays centred.
+**Address bar buttons** — left: Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a
+check mark for 1.2 s) and the site menu (below; it holds the extensions). Both groups are three
+buttons wide so the URL stays centred.
+
+**Sidebar title row** — the drag row at the top of the sidebar holds its own buttons: the icons-only
+switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Design on the right,
+which opens Settings at Appearance for now (the browser's style editor comes later). Icon-only
+mode keeps only the switch, centred.
 
 **Site menu** — the sliders button at the right of the address bar opens it, right-aligned under
 the button (`features/browser/SiteMenu`). yab's shape, top to bottom:

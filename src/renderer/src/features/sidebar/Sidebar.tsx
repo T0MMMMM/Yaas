@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { DownloadSimple, Plus } from '@phosphor-icons/react'
+import { DownloadSimple, PaintBrush, Plus, SidebarSimple } from '@phosphor-icons/react'
+import { useSidebarToggle } from '../../app/useSidebarResize'
+import { useUi } from '../../stores/ui'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
@@ -44,6 +46,8 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
  */
 export function Sidebar({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspace()
+  const sidebarToggle = useSidebarToggle()
+  const openSettings = useUi((s) => s.openSettings)
   const magnet = useMagnetic<HTMLButtonElement>()
   /** Whether the + menu is open in the overlay. */
   const [menuOpen, setMenuOpen] = useState(false)
@@ -88,7 +92,27 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             onPointerLeave={tooltip.leave}
             onPointerDownCapture={tooltip.press}
           >
-            <div className={`${styles.titlebar} drag`} />
+            {/* The sidebar's own controls: icons only (left), the browser's look (right). */}
+            <div className={`${styles.titlebar} drag`}>
+              <button
+                className={`${styles.iconButton} ${styles.titleButton} no-drag`}
+                aria-label={sidebarToggle.compact ? 'Expand sidebar' : 'Icons only'}
+                title={sidebarToggle.compact ? 'Expand sidebar' : 'Icons-only sidebar'}
+                onClick={sidebarToggle.toggle}
+              >
+                <SidebarSimple size={16} weight="regular" />
+              </button>
+              {!compact && (
+                <button
+                  className={`${styles.iconButton} ${styles.titleButton} no-drag`}
+                  aria-label="Design"
+                  title="Edit the browser's look"
+                  onClick={() => openSettings('appearance')}
+                >
+                  <PaintBrush size={16} weight="regular" />
+                </button>
+              )}
+            </div>
 
             <div className={styles.scroll} ref={scroll}>
               {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}

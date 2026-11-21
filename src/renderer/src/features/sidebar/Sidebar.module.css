@@ -9,9 +9,22 @@
 }
 
 .titlebar {
-  /* A drag handle: the rows start where they did before the window's top margin sat above. */
+  /* A drag handle holding the sidebar's own buttons; the rows start where they did before the
+     window's top margin sat above. */
   height: calc(40px - var(--frame-gap));
   flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar[data-compact='true'] .titlebar {
+  justify-content: center;
+}
+
+/* No tilt in the title row: these are tools, not playful buttons. */
+.titleButton:hover {
+  transform: none;
 }
 
 /* Neutral hover/selected fills: a light lift on the frame, never the accent. */

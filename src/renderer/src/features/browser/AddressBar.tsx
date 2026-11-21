@@ -5,11 +5,8 @@ import {
   ArrowRight,
   Check,
   LinkSimple,
-  PaintBrush,
-  SidebarSimple,
   SlidersHorizontal,
 } from '@phosphor-icons/react'
-import { useSidebarToggle } from '../../app/useSidebarResize'
 import { isHex, onAccentColor } from '../../theme/color'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
@@ -29,10 +26,8 @@ function tint(themeColor: string | null | undefined): CSSProperties | undefined 
 }
 
 /**
- * yab-style address bar (spec, "Browser chrome"): the sidebar's icons-only switch, back, forward,
- * reload, and the URL centred with the host bright and the path dimmed. Clicking the URL (or ⌘L,
- * ⌘T) edits it. On the right: Copy link, the site menu (its extensions and settings) and Design
- * (the browser's look). Always shown.
+ * yab-style address bar (spec, "Browser chrome"): back, forward, reload, and the URL centred with the host bright and the path dimmed. Clicking the URL (or ⌘L,
+ * ⌘T) edits it. On the right: Copy link and the site menu (its extensions and settings). Always shown.
  */
 export function AddressBar() {
   const tab = useWorkspace()?.activeTab ?? null
@@ -42,8 +37,6 @@ export function AddressBar() {
   const input = useRef<HTMLInputElement>(null)
   /** Whether the site menu is open in the overlay. */
   const [siteMenuOpen, setSiteMenuOpen] = useState(false)
-  const sidebar = useSidebarToggle()
-  const openSettings = useUi((s) => s.openSettings)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => window.bigBrowser.on('overlay.closed', () => setSiteMenuOpen(false)), [])
@@ -94,14 +87,6 @@ export function AddressBar() {
       data-testid="address-bar"
     >
       <div className={`${styles.nav} no-drag`}>
-        <button
-          className={styles.button}
-          aria-label={sidebar.compact ? 'Expand sidebar' : 'Icons only'}
-          title={sidebar.compact ? 'Expand sidebar' : 'Icons-only sidebar'}
-          onClick={sidebar.toggle}
-        >
-          <SidebarSimple size={15} weight="bold" />
-        </button>
         <button
           className={styles.button}
           aria-label="Back"
@@ -200,14 +185,6 @@ export function AddressBar() {
           }}
         >
           <SlidersHorizontal size={15} weight="bold" />
-        </button>
-        <button
-          className={styles.button}
-          aria-label="Design"
-          title="Edit the browser's look"
-          onClick={() => openSettings('appearance')}
-        >
-          <PaintBrush size={15} weight="bold" />
         </button>
       </div>
     </header>
