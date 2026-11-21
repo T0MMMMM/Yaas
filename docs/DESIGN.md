@@ -106,15 +106,16 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   no accelerator; disabled for the last space), which asks first in a card: "Delete “name”? Its
   tabs, sign-ins, cookies and extensions will be deleted." with Cancel (focused) and Delete
   (`--danger`). The cards open from the "…" button with the funnel. Icon-only, the header is only
-  the emoji or dot.
+  the emoji or dot, and Rename Space… (from a right-click) does nothing.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (the folder glyph, or an emoji)
   opens and closes on click; opening swings the glyph's front flap up from its bottom edge and
-  lifts the paper (`--dur-base`, `--ease-bounce`, still under reduced motion). "Change Icon…" opens
-  a card from the row: the 7 folder hues, an emoji field (letters are refused with a hint;
-  choosing the current emoji closes the card) and Default (the hue of the name). Icon-only, the
-  filed-tab bars use the chosen hue (the name's hue for an emoji); a closed folder shows its tab count on the right. Its tabs are listed
-  one `--space-3` indent below. "New Folder…" and "Rename" (its menus) put its name in an
-  inline field: Enter or leaving it saves, Esc cancels.
+  lifts the paper (`--dur-base`, `--ease-bounce`; instant under reduced motion, where those tokens
+  are zeroed). "Change Icon…" opens a card from the row: the 7 folder hues, an emoji field
+  (letters are refused with a hint; choosing the current emoji closes the card) and Default (the
+  hue of the name). Icon-only, the filed-tab bars use the chosen hue (the name's hue for an
+  emoji); a closed folder shows its tab count on the right. Its tabs are listed one `--space-3`
+  indent below. "New Folder…" and "Rename" (its menus) put its name in an inline field: Enter or
+  leaving it saves, Esc cancels.
 - **Separator**: a hairline, with **Clear** on the right when today has tabs — shown only while
   the separator is hovered or Clear has keyboard focus. It closes all of today's tabs (children
   first), and ⌘⇧T reopens them one by one. **New tab** sits right under it, above today's rows.
