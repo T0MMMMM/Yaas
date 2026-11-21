@@ -4,9 +4,13 @@ import type { MenuSpecItem } from '@shared/menuSpec'
 import { SiteMenu } from '../features/browser/SiteMenu'
 import { CommandField } from '../features/finder/CommandField'
 import { TabFinder } from '../features/finder/TabFinder'
+import { EmojiField } from '../features/sidebar/EmojiField'
 import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
+import { AnchoredCard } from '../ui/AnchoredCard'
+import { ColorPicker } from '../ui/ColorPicker'
+import { ConfirmCard } from '../ui/ConfirmCard'
 import { Menu } from '../ui/Menu'
 import { OverlayTooltip } from './OverlayTooltip'
 
@@ -169,6 +173,72 @@ export function Overlay() {
           items={NEW_MENU}
           closing={closing}
           onChoose={(id) => actions[id]?.()}
+          onClose={close}
+        />
+      )
+    }
+    // A space menu's cards: they run their change from here, the overlay being a trusted sender.
+    case 'space-icon': {
+      const { spaceId } = request
+      const space = workspace?.spaces.find((s) => s.id === spaceId)
+      return (
+        <AnchoredCard
+          anchor={request.anchor}
+          label="Space icon"
+          testId="space-icon"
+          closing={closing}
+          onClose={close}
+        >
+          {space && (
+            <EmojiField
+              value={space.icon}
+              onPick={(icon) => {
+                if (closing) return
+                void window.bigBrowser.invoke('browser.setSpaceIcon', { spaceId, icon })
+                close()
+              }}
+            />
+          )}
+        </AnchoredCard>
+      )
+    }
+    case 'space-color': {
+      const { spaceId } = request
+      const space = workspace?.spaces.find((s) => s.id === spaceId)
+      return (
+        <AnchoredCard
+          anchor={request.anchor}
+          label="Space look"
+          testId="space-color"
+          closing={closing}
+          onClose={close}
+        >
+          {space && (
+            <ColorPicker
+              value={space.color}
+              onChange={(color) =>
+                void window.bigBrowser.invoke('browser.setSpaceColor', { spaceId, color })
+              }
+            />
+          )}
+        </AnchoredCard>
+      )
+    }
+    case 'confirm': {
+      const { action } = request
+      return (
+        <ConfirmCard
+          anchor={request.anchor}
+          message={request.message}
+          confirmLabel={request.confirmLabel}
+          closing={closing}
+          onConfirm={() => {
+            if (action.kind === 'delete-space') {
+              void window.bigBrowser
+                .invoke('browser.deleteSpace', { spaceId: action.spaceId })
+                .catch((error: unknown) => console.warn('Delete Space failed:', error))
+            }
+          }}
           onClose={close}
         />
       )

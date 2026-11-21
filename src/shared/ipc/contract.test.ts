@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { COMMAND_CHANNELS, EVENT_CHANNELS } from './channels'
-import { commands, events, TOOLTIP_TEXT_MAX } from './contract'
+import { commands, events, shortcutSchema, TOOLTIP_TEXT_MAX } from './contract'
 
 describe('IPC contract', () => {
   it('declares exactly the channels listed for the preload', () => {
@@ -72,6 +72,28 @@ describe('IPC contract', () => {
     expect(input.safeParse({ kind: 'command' }).success).toBe(true)
     const anchor = { x: 0, y: 0, width: 10, height: 10 }
     expect(input.safeParse({ kind: 'command', anchor }).success).toBe(false)
+  })
+
+  it("opens a space's cards from a button: its icon, its colour, a confirmation", () => {
+    const input = commands['overlay.open'].input
+    const anchor = { x: 0, y: 0, width: 10, height: 10 }
+    expect(input.safeParse({ kind: 'space-icon', anchor, spaceId: 's1' }).success).toBe(true)
+    expect(input.safeParse({ kind: 'space-color', anchor, spaceId: 's1' }).success).toBe(true)
+    expect(input.safeParse({ kind: 'space-icon', anchor }).success).toBe(false)
+    const confirm = {
+      kind: 'confirm',
+      anchor,
+      message: 'Delete “Work”?',
+      confirmLabel: 'Delete',
+      action: { kind: 'delete-space', spaceId: 's1' },
+    }
+    expect(input.safeParse(confirm).success).toBe(true)
+    expect(input.safeParse({ ...confirm, action: { kind: 'format-disk' } }).success).toBe(false)
+  })
+
+  it('asks the sidebar to rename a space', () => {
+    expect(shortcutSchema.safeParse({ kind: 'rename-space', spaceId: 's1' }).success).toBe(true)
+    expect(shortcutSchema.safeParse({ kind: 'rename-space' }).success).toBe(false)
   })
 
   it('takes a tooltip with an anchor, or null, on overlay.tooltip', () => {

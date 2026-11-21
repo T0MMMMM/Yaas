@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { BrowserStore } from '@core/browser/browserStore'
 import { openDatabase } from '@core/store/database'
 import type { MenuItemDef } from '../menus/menuRegistry'
-import { endOf, folderMenu, tabMenu, type SidebarMenuHost } from './sidebarMenus'
+import { endOf, folderMenu, spaceMenu, tabMenu, type SidebarMenuHost } from './sidebarMenus'
 
 vi.mock('electron', () => ({ clipboard: { writeText: vi.fn() } }))
 
@@ -10,7 +10,12 @@ function setup() {
   const store = new BrowserStore(openDatabase(':memory:'), {
     defaultSpace: { name: 'Personal', color: '#7C5CFF' },
   })
-  const host: SidebarMenuHost = { store, closeTab: vi.fn(), emitShortcut: vi.fn() }
+  const host: SidebarMenuHost = {
+    store,
+    closeTab: vi.fn(),
+    emitShortcut: vi.fn(),
+    openOverlay: vi.fn(),
+  }
   return { store, host, spaceId: store.snapshot().activeSpaceId }
 }
 
@@ -109,5 +114,68 @@ describe('folderMenu', () => {
     const folder = store.createFolder(spaceId, 'Reading')
     find(folderMenu(host, folder.id), 'Rename').run?.()
     expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'rename-folder', folderId: folder.id })
+  })
+})
+
+describe('spaceMenu', () => {
+  const anchor = { x: 10, y: 20, width: 24, height: 24 }
+
+  it('lists the filter, the space actions and Delete Space…, disabled for the last space', () => {
+    const { host, spaceId } = setup()
+    const items = spaceMenu(host, spaceId, anchor)
+    expect(labels(items)).toEqual([
+      'filter',
+      'Rename Space…',
+      'Change Space Icon…',
+      'Edit Look…',
+      'New Folder',
+      'Space Settings…',
+      'separator',
+      'Delete Space…',
+    ])
+    expect(find(items, 'Delete Space…')).toMatchObject({ shortcut: '⌘⌫', enabled: false })
+  })
+
+  it('renames in the sidebar, opens the icon and colour cards and Settings', () => {
+    const { host, spaceId } = setup()
+    const items = spaceMenu(host, spaceId, anchor)
+    find(items, 'Rename Space…').run?.()
+    expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'rename-space', spaceId })
+    find(items, 'Change Space Icon…').run?.()
+    expect(host.openOverlay).toHaveBeenCalledWith({ kind: 'space-icon', anchor, spaceId })
+    find(items, 'Edit Look…').run?.()
+    expect(host.openOverlay).toHaveBeenCalledWith({ kind: 'space-color', anchor, spaceId })
+    find(items, 'Space Settings…').run?.()
+    expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'settings' })
+  })
+
+  it('New Folder creates a folder in that space and asks the sidebar to name it', () => {
+    const { store, host, spaceId } = setup()
+    find(spaceMenu(host, spaceId, anchor), 'New Folder').run?.()
+    const [folder] = store.snapshot().folders
+    expect(folder?.spaceId).toBe(spaceId)
+    expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'rename-folder', folderId: folder?.id })
+  })
+
+  it('Delete Space… asks for a confirmation naming the space', () => {
+    const { store, host } = setup()
+    const work = store.createSpace('Work', '#2D9CDB')
+    const items = spaceMenu(host, work.id, anchor)
+    expect(find(items, 'Delete Space…').enabled).toBe(true)
+    find(items, 'Delete Space…').run?.()
+    expect(host.openOverlay).toHaveBeenCalledWith({
+      kind: 'confirm',
+      anchor,
+      message: 'Delete “Work”? Its tabs, sign-ins, cookies and extensions will be deleted.',
+      confirmLabel: 'Delete',
+      action: { kind: 'delete-space', spaceId: work.id },
+    })
+    // Nothing is deleted until the card's Delete.
+    expect(store.snapshot().spaces).toHaveLength(2)
+  })
+
+  it('a vanished space opens no menu', () => {
+    const { host } = setup()
+    expect(() => spaceMenu(host, 'gone', anchor)).toThrow()
   })
 })

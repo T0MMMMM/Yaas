@@ -21,6 +21,7 @@ export const COMMAND_CHANNELS = [
   'browser.reopenClosed',
   'browser.showTabMenu',
   'browser.showFolderMenu',
+  'browser.showSpaceMenu',
   'browser.activateTab',
   'browser.navigate',
   'browser.goBack',

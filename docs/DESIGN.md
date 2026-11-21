@@ -89,11 +89,24 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   is 48) and sets `data-compact="true"` on it. Stored widths are normalised by `snapWidth`. A tab
   filed in a folder shows one `--folder-bar-w` bar per folder, in the folder's hue, on its left.
   Only favicons show, in one column: tiles stack, rows lose title and ×, folders show their icon
-  (tabs stay listed under them, unindented), spaces stack as dots, New tab is an icon.
+  (tabs stay listed under them, unindented), spaces stack as dots (an emoji when the space has one), New tab is an icon.
   The overlay's tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
   past 120 px restores the normal layout.
 - **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 44, favicon
   `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
+- **Space section** (`SpaceHeader`, then the pinned list): a header with the space's emoji (or its
+  `--space-dot` colour dot), its name and a "…" button (shown on hover, while its menu is open or
+  focused). Hovering the header turns the emoji into a chevron that folds the section like a
+  folder (`grid-template-rows` 1fr ↔ 0fr, rows kept mounted and `inert`; stored per space,
+  `sectionCollapsed`). "…" (or a right-click on the header) opens the **space menu** below it:
+  a filter field, Rename Space… (the name becomes an inline field: Enter or leaving it saves, Esc
+  cancels), Change Space Icon… (a card: an emoji field keeping the first character typed, 16
+  common emojis, No icon), Edit Look… (a card with the colour picker, applied live), New Folder
+  (its name edited at once), Space Settings… (opens Settings), then Delete Space… (`⌘⌫` shown,
+  no accelerator; disabled for the last space), which asks first in a card: "Delete “name”? Its
+  tabs, sign-ins, cookies and extensions will be deleted." with Cancel (focused) and Delete
+  (`--danger`). The cards open from the "…" button with the funnel. Icon-only, the header is only
+  the emoji or dot.
 - **Pinned**: pinned tabs and folders in one ordering. A folder row (folder / open-folder icon)
   opens and closes on click; a closed folder shows its tab count on the right. Its tabs are listed
   one `--space-3` indent below. "New Folder…" and "Rename" (its menus) put its name in an
@@ -152,7 +165,8 @@ when there is no room), opened by hovering the row, → or Enter, closed by ← 
 row for 250 ms (`SUBMENU_GRACE_MS`: the pointer can cross rows on its way into the submenu); its
 row keeps the hover fill while open. Keyboard: ↓/↑ within a card (↓ from a menu opened at
 the pointer reaches its first row), Enter or Space chooses, Escape or a click outside closes every
-card.
+card. Hovering a row moves the keyboard to it, except while a filter field has it: typing still
+goes to the field.
 
 **Page menu** — right-clicking a page draws its menu at the pointer: spelling suggestions (at most
 5, or a disabled "No Suggestions") for a misspelled word, then the link, image, edit or selection
@@ -307,7 +321,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
 | Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
-| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
+| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
 | Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) · `--opacity-dragged` 0.5 (a sidebar tab while it is dragged) |
 | Drag and drop | `--drop-line-w` 2 (the `--accent` insertion line of a tab dragged in the sidebar) |

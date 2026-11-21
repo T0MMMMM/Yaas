@@ -143,6 +143,32 @@ kbd {
   gap: var(--row-gap);
 }
 
+/* ---------- the space section (SpaceHeader over the pinned list) ---------- */
+
+/* Folds like a folder (FolderRow.module.css): a grid row animating 1fr to 0fr, its rows kept
+   mounted, hidden once the fold has played. */
+.fold {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease),
+    visibility 0s;
+}
+
+.fold[data-collapsed='true'] {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--dur-base) var(--ease),
+    visibility 0s linear var(--dur-base);
+}
+
+.foldInner {
+  min-height: 0;
+  /* Clips the fold only vertically, so the rows' shadows keep spilling sideways. */
+  overflow-y: clip;
+}
+
 /* Between pinned and today: a hairline, with "Clear" (closes today's tabs) on the right. */
 .separator {
   display: flex;
@@ -276,10 +302,16 @@ kbd {
 }
 
 .dot {
-  width: 7px;
-  height: 7px;
+  width: var(--space-dot);
+  height: var(--space-dot);
   border-radius: var(--radius-pill);
   background: currentColor;
+}
+
+/* A space with an emoji shows it instead of its dot. */
+.emoji {
+  font-size: var(--text-sm);
+  line-height: 1;
 }
 
 /* ---------- drag and drop (useTabDrag) ---------- */

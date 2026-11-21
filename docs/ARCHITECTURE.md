@@ -462,6 +462,15 @@ results come back to the lead as a short summary + branch name, never the full c
   every folder of the space outside its own subtree; where it is now is checked and disabled),
   Delete Folder. Rename (and New Folder…) emit
   `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in place.
+- **Space menu.** `browser.showSpaceMenu { spaceId, anchor }` (anchor = the space header's "…"
+  button) builds `spaceMenu` (`sidebarMenus.ts`) and draws it below the button (`anchored-menu`):
+  filter, Rename Space… (`browser.shortcut` `{ kind: 'rename-space', spaceId }`: the header edits
+  the name in place), Change Space Icon… / Edit Look… (overlay kinds `space-icon` / `space-color`
+  `{ anchor, spaceId }`, opened from the same button; the overlay calls `setSpaceIcon` /
+  `setSpaceColor`), New Folder (created in that space, then `rename-folder`), Space Settings…
+  (`settings`), Delete Space… (disabled for the last space) → overlay kind `confirm`
+  `{ anchor, message, confirmLabel, action: { kind: 'delete-space', spaceId } }`, whose confirm
+  button calls `browser.deleteSpace` from the overlay.
 - **Page menu.** A page's `context-menu` event (`TabViews.showPageMenu`) builds the entries of
   `core/browser/pageMenu.ts` (spelling suggestions first — at most 5, each running
   `replaceMisspelling`, or a disabled "No Suggestions" —, then link, image, edit or selection
@@ -569,7 +578,8 @@ results come back to the lead as a short summary + branch name, never the full c
   (store, then `SpaceSessions.wipe`: cookies, storage, cache; the last space throws `last_space`) /
   `createFolder` (optional `parentId`) / `moveFolder` / `renameFolder` / `setFolderCollapsed` /
   `deleteFolder` / `reopenClosed` /
-  `showTabMenu` / `showFolderMenu` (`{ id, at }`: drawn in the overlay) / `setPageBounds` /
+  `showTabMenu` / `showFolderMenu` (`{ id, at }`: drawn in the overlay) / `showSpaceMenu`
+  (`{ spaceId, anchor }`) / `setPageBounds` /
   `setPageVisible`. Overlay: `overlay.open` / `overlay.close` / `overlay.choose` /
   `overlay.tooltip`.
   Address-bar text goes through `shared/url.ts` `resolveInput` (URL or search).
@@ -591,7 +601,8 @@ results come back to the lead as a short summary + branch name, never the full c
   `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`)
   and `command` (`Mod+T`), plus main's menus `context-menu` (at a point: a sidebar row's
   right-click) and `anchored-menu` (from a button), both popovers like the others (see **Drawn
-  menus**). Their menu items emit `browser.shortcut`
+  menus**), and a space menu's cards `space-icon`, `space-color` and `confirm` (from its button).
+  Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
   only when the command field is submitted (`browser.openTab { input }`).
 - **Overlay modes.** The overlay is either a **popover** (above: the whole window, focused) or a

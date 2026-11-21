@@ -1,8 +1,8 @@
-// The menus of the sidebar's tabs and folders: main builds the items (and what each runs), the
-// overlay draws them at the pointer (menus/menuRegistry).
+// The menus of the sidebar's tabs, folders and spaces: main builds the items (and what each
+// runs), the overlay draws them at the pointer or from a button (menus/menuRegistry).
 import { clipboard } from 'electron'
 import { BrowserError, type BrowserStore } from '@core/browser/browserStore'
-import type { Shortcut } from '@shared/ipc/contract'
+import type { OverlayRequest, PageBounds, Shortcut } from '@shared/ipc/contract'
 import type { BrowserSnapshot, TabSection } from '@shared/model'
 import type { MenuItemDef } from '../menus/menuRegistry'
 
@@ -14,6 +14,8 @@ export interface SidebarMenuHost {
   /** The user's close (unloads a favourite or pinned tab). */
   closeTab: (tabId: string) => void
   emitShortcut: (shortcut: Shortcut) => void
+  /** Shows a card in the overlay (a space's icon or colour, a confirmation). */
+  openOverlay: (request: OverlayRequest) => void
 }
 
 /** Index just past the last entry of a list (a pinned list counts its child folders). */
@@ -211,6 +213,94 @@ export function folderMenu(host: SidebarMenuHost, folderId: string): MenuItemDef
       label: 'Delete Folder',
       icon: 'Trash',
       run: () => store.deleteFolder(folderId),
+    },
+  ]
+}
+
+/** What a space's Delete Space… asks before anything is deleted. */
+export function deleteSpaceMessage(name: string): string {
+  return `Delete “${name}”? Its tabs, sign-ins, cookies and extensions will be deleted.`
+}
+
+/**
+ * The space header's menu (from its "…" button, `anchor`): a filter field, Rename Space… (edited
+ * in the header), Change Space Icon… and Edit Look… (cards opened from the same button), New Folder
+ * (named in the sidebar), Space Settings…, then Delete Space… behind a confirmation; the last
+ * space can't be deleted. ⌘⌫ is only a label: no accelerator.
+ */
+export function spaceMenu(
+  host: SidebarMenuHost,
+  spaceId: string,
+  anchor: PageBounds,
+): MenuItemDef[] {
+  const { store } = host
+  const snapshot = store.snapshot()
+  const space = snapshot.spaces.find((s) => s.id === spaceId)
+  if (!space) throw new BrowserError('not_found', `Unknown space ${spaceId}`)
+  const exists = (): boolean => store.snapshot().spaces.some((s) => s.id === spaceId)
+  /** Runs `run` only if the space is still there when the item is chosen. */
+  const live = (run: () => void) => (): void => {
+    if (exists()) run()
+  }
+  return [
+    { kind: 'filter' },
+    {
+      kind: 'item',
+      id: 'rename',
+      label: 'Rename Space…',
+      icon: 'PencilSimple',
+      run: live(() => host.emitShortcut({ kind: 'rename-space', spaceId })),
+    },
+    {
+      kind: 'item',
+      id: 'icon',
+      label: 'Change Space Icon…',
+      icon: 'Smiley',
+      run: live(() => host.openOverlay({ kind: 'space-icon', anchor, spaceId })),
+    },
+    {
+      kind: 'item',
+      id: 'look',
+      label: 'Edit Look…',
+      icon: 'Palette',
+      run: live(() => host.openOverlay({ kind: 'space-color', anchor, spaceId })),
+    },
+    {
+      kind: 'item',
+      id: 'new-folder',
+      label: 'New Folder',
+      icon: 'FolderSimplePlus',
+      run: () => {
+        const folder = store.createFolder(spaceId, NEW_FOLDER_NAME)
+        host.emitShortcut({ kind: 'rename-folder', folderId: folder.id })
+      },
+    },
+    {
+      kind: 'item',
+      id: 'settings',
+      label: 'Space Settings…',
+      icon: 'GearSix',
+      run: () => host.emitShortcut({ kind: 'settings' }),
+    },
+    { kind: 'separator' },
+    {
+      kind: 'item',
+      id: 'delete',
+      label: 'Delete Space…',
+      icon: 'Trash',
+      shortcut: '⌘⌫',
+      enabled: snapshot.spaces.length > 1,
+      run: () => {
+        const current = store.snapshot().spaces.find((s) => s.id === spaceId)
+        if (!current) return
+        host.openOverlay({
+          kind: 'confirm',
+          anchor,
+          message: deleteSpaceMessage(current.name),
+          confirmLabel: 'Delete',
+          action: { kind: 'delete-space', spaceId },
+        })
+      },
     },
   ]
 }

@@ -744,3 +744,198 @@ test('the folder menu moves a folder', async () => {
     await expect(outerRow.getByRole('button', { name: 'Inner', exact: true })).toBeVisible()
   })
 })
+
+/** The active space as main stores it. */
+const activeSpace = (page: Page) =>
+  page.evaluate(async () => {
+    const state = await window.bigBrowser.invoke('browser.state')
+    const space = state.spaces.find((s) => s.id === state.activeSpaceId)
+    if (!space) throw new Error('no active space')
+    return space
+  })
+
+/** Opens the active space's menu from its header's "…" button. */
+async function openSpaceMenu(app: ElectronApplication, page: Page) {
+  const header = page.getByTestId('space-header')
+  await header.hover()
+  await header.getByRole('button', { name: 'Space options' }).click()
+  const overlay = await overlayPage(app)
+  const menu = overlay.getByTestId('menu')
+  await expect(menu).toBeVisible()
+  return { overlay, menu }
+}
+
+test('the space section holds pinned items', async () => {
+  await withBrowser(async ({ page, site }) => {
+    const pinnedTab = await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await page.evaluate(
+      (tabId) =>
+        window.bigBrowser.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
+      pinnedTab.id,
+    )
+    const space = await activeSpace(page)
+    await expect(page.getByTestId('space-header')).toContainText(space.name)
+
+    const section = page.getByTestId('space-section')
+    await expect(section.getByTestId('pinned').getByTestId('tab')).toHaveText(['Page A'])
+    await expect(section.getByTestId('today')).toHaveCount(0)
+    await expect(page.getByTestId('today').getByTestId('tab')).toHaveText(['Page B'])
+  })
+})
+
+test('the space icon becomes a chevron', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    const tab = await openTab(page, site.url('/a'))
+    await page.evaluate(
+      (tabId) =>
+        window.bigBrowser.invoke('browser.moveTab', { tabId, section: 'pinned', index: 0 }),
+      tab.id,
+    )
+
+    // Change Space Icon…: an emoji field and a row of common emojis.
+    const { overlay, menu } = await openSpaceMenu(app, page)
+    await menu.getByRole('menuitem', { name: 'Change Space Icon…' }).click()
+    const card = overlay.getByTestId('space-icon')
+    await expect(card).toBeVisible()
+    await expect(card.getByRole('button', { name: /^Use / })).toHaveCount(16)
+    await card.getByRole('button', { name: 'Use 🚀' }).click()
+    await expect(card).toHaveCount(0)
+    await expect.poll(async () => (await activeSpace(page)).icon).toBe('🚀')
+
+    const header = page.getByTestId('space-header')
+    const space = await activeSpace(page)
+    await expect(header).toContainText('🚀')
+    // The footer's dot shows the emoji too.
+    await expect(
+      page.getByRole('tablist', { name: 'Spaces' }).getByRole('tab', { name: space.name }),
+    ).toHaveText('🚀')
+
+    // The emoji turns into a chevron on hover, which folds the section.
+    await page.mouse.move(600, 400)
+    await expect(header.getByTestId('space-chevron')).toBeHidden()
+    await header.hover()
+    await expect(header.getByTestId('space-chevron')).toBeVisible()
+    await header.getByRole('button', { name: 'Collapse space section' }).click()
+    const section = page.getByTestId('space-section')
+    await expect(section).toHaveAttribute('inert', '')
+    await expect(section.getByTestId('tab')).toHaveCount(1)
+    await expect(section.getByRole('button', { name: 'Page A' })).toHaveCount(0)
+    await expect.poll(async () => (await activeSpace(page)).sectionCollapsed).toBe(true)
+
+    await header.getByRole('button', { name: 'Expand space section' }).click()
+    await expect(section).not.toHaveAttribute('inert')
+    await expect.poll(async () => (await activeSpace(page)).sectionCollapsed).toBe(false)
+
+    // The emoji field keeps the first character typed; No icon goes back to the colour dot.
+    const typed = await openSpaceMenu(app, page)
+    await typed.menu.getByRole('menuitem', { name: 'Change Space Icon…' }).click()
+    await typed.overlay.getByTestId('space-icon').getByLabel('Emoji').fill('🌱🌵')
+    await expect.poll(async () => (await activeSpace(page)).icon).toBe('🌱')
+    const again = await openSpaceMenu(app, page)
+    await again.menu.getByRole('menuitem', { name: 'Change Space Icon…' }).click()
+    await again.overlay.getByTestId('space-icon').getByRole('button', { name: 'No icon' }).click()
+    await expect.poll(async () => (await activeSpace(page)).icon).toBe(null)
+    await expect(header).not.toContainText('🌱')
+  })
+})
+
+test('the space menu', async () => {
+  await withBrowser(async ({ app, page }) => {
+    // One space: it can't be deleted.
+    let { overlay, menu } = await openSpaceMenu(app, page)
+    await expect(menu.getByLabel('Filter')).toBeFocused()
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Rename Space…',
+      'Change Space Icon…',
+      'Edit Look…',
+      'New Folder',
+      'Space Settings…',
+      /^Delete Space…/,
+    ])
+    const remove = menu.getByRole('menuitem', { name: /^Delete Space…/ })
+    await expect(remove).toHaveAttribute('aria-disabled', 'true')
+    await expect(remove).toContainText('⌘⌫')
+
+    // Hovering a row leaves the keyboard in the filter field.
+    await menu.getByRole('menuitem', { name: 'Edit Look…' }).hover()
+    await overlay.keyboard.type('del')
+    await expect(menu.getByLabel('Filter')).toHaveValue('del')
+    await expect(menu.getByRole('menuitem')).toHaveText([/^Delete Space…/])
+    await overlay.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+
+    // Edit Look…: the colour picker recolours the space.
+    ;({ overlay, menu } = await openSpaceMenu(app, page))
+    await menu.getByRole('menuitem', { name: 'Edit Look…' }).click()
+    const look = overlay.getByTestId('space-color')
+    await expect(look).toBeVisible()
+    await look.getByRole('radio', { name: '#2BB673' }).click()
+    await expect.poll(async () => (await activeSpace(page)).color).toBe('#2BB673')
+    await overlay.keyboard.press('Escape')
+    await expect(look).toHaveCount(0)
+
+    // New Folder: created in this space, its name edited at once.
+    ;({ menu } = await openSpaceMenu(app, page))
+    await menu.getByRole('menuitem', { name: 'New Folder' }).click()
+    const folderName = page.getByTestId('pinned').getByLabel('Folder name')
+    await expect(folderName).toBeFocused()
+    await folderName.press('Escape')
+
+    // Space Settings… opens Settings.
+    ;({ menu } = await openSpaceMenu(app, page))
+    await menu.getByRole('menuitem', { name: 'Space Settings…' }).click()
+    await expect(page.getByTestId('settings')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page.getByTestId('settings')).toHaveCount(0)
+
+    // Two spaces: Delete Space… asks first, then deletes and shows the other space.
+    const first = await activeSpace(page)
+    const second = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.createSpace', { name: 'Work', color: '#2D9CDB' }),
+    )
+    await page.evaluate(
+      (spaceId) => window.bigBrowser.invoke('browser.activateSpace', { spaceId }),
+      second.id,
+    )
+    await expect(page.getByTestId('space-header')).toContainText('Work')
+    ;({ overlay, menu } = await openSpaceMenu(app, page))
+    await menu.getByLabel('Filter').pressSequentially('del')
+    await expect(menu.getByRole('menuitem')).toHaveText([/^Delete Space…/])
+    await menu.getByRole('menuitem', { name: /^Delete Space…/ }).click()
+    const confirm = overlay.getByTestId('confirm')
+    await expect(confirm).toContainText(
+      'Delete “Work”? Its tabs, sign-ins, cookies and extensions will be deleted.',
+    )
+    await confirm.getByRole('button', { name: 'Delete' }).click()
+    await expect(confirm).toHaveCount(0)
+    const spaceIds = async () =>
+      (await page.evaluate(() => window.bigBrowser.invoke('browser.state'))).spaces.map((s) => s.id)
+    await expect.poll(spaceIds).toEqual([first.id])
+    expect((await activeSpace(page)).id).toBe(first.id)
+    await expect(page.getByTestId('space-header')).toContainText(first.name)
+  })
+})
+
+test('rename in place', async () => {
+  await withBrowser(async ({ app, page }) => {
+    const { menu } = await openSpaceMenu(app, page)
+    await menu.getByRole('menuitem', { name: 'Rename Space…' }).click()
+    const name = page.getByTestId('space-header').getByLabel('Space name')
+    await expect(name).toBeFocused()
+    await name.fill('Reading')
+    await name.press('Enter')
+    await expect(name).toHaveCount(0)
+    await expect(page.getByTestId('space-header')).toContainText('Reading')
+    await expect.poll(async () => (await activeSpace(page)).name).toBe('Reading')
+
+    // Escape keeps the name.
+    const again = await openSpaceMenu(app, page)
+    await again.menu.getByRole('menuitem', { name: 'Rename Space…' }).click()
+    await expect(name).toBeFocused()
+    await name.fill('Other')
+    await name.press('Escape')
+    await expect(name).toHaveCount(0)
+    expect((await activeSpace(page)).name).toBe('Reading')
+  })
+})

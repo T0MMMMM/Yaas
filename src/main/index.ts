@@ -26,7 +26,7 @@ import {
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
 import { OverlayView } from './browser/overlayView'
-import { folderMenu, tabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
+import { folderMenu, spaceMenu, tabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
 import { MenuRegistry, menuRequest, type MenuItemDef, type MenuWhere } from './menus/menuRegistry'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
@@ -222,7 +222,12 @@ function shareTab(tabId: string): void {
 
 const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
 
-const sidebarMenuHost: SidebarMenuHost = { store: browser, closeTab, emitShortcut }
+const sidebarMenuHost: SidebarMenuHost = {
+  store: browser,
+  closeTab,
+  emitShortcut,
+  openOverlay: (request) => overlayView().open(request),
+}
 
 /** The menu drawn in the overlay and what its items run. */
 const menus = new MenuRegistry()
@@ -348,6 +353,8 @@ registerCommands(
     'browser.showTabMenu': ({ tabId, at }) => showMenu({ at }, tabMenu(sidebarMenuHost, tabId)),
     'browser.showFolderMenu': ({ folderId, at }) =>
       showMenu({ at }, folderMenu(sidebarMenuHost, folderId)),
+    'browser.showSpaceMenu': ({ spaceId, anchor }) =>
+      showMenu({ anchor, placement: 'below' }, spaceMenu(sidebarMenuHost, spaceId, anchor)),
     'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),
     'browser.navigate': ({ tabId, input }) => views().navigate(tabId, resolveInput(input)),
     'browser.goBack': ({ tabId }) => views().goBack(tabId),

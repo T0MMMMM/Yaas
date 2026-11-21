@@ -170,8 +170,9 @@ export const pageBoundsSchema = z
 
 /**
  * What the overlay view shows: the + menu or the site menu of the address bar (popovers anchored
- * to a button), the tab finder (⌘K) or the command field (⌘T) (cards centred over the window), or
- * a menu built by main (`MenuSpec`): at the pointer (a right-click) or from a button.
+ * to a button), the tab finder (⌘K) or the command field (⌘T) (cards centred over the window), a
+ * menu built by main (`MenuSpec`): at the pointer (a right-click) or from a button, or a card a
+ * space menu opens from its button (the space's icon or colour, a confirmation).
  */
 export const overlayKindSchema = z.enum([
   'new-menu',
@@ -180,13 +181,40 @@ export const overlayKindSchema = z.enum([
   'command',
   'context-menu',
   'anchored-menu',
+  'space-icon',
+  'space-color',
+  'confirm',
 ])
 export type OverlayKind = z.infer<typeof overlayKindSchema>
+
+/** What a confirmation card's confirm button runs (from the overlay, a trusted sender). */
+export const confirmActionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('delete-space'), spaceId: z.string().min(1) }).strict(),
+])
+export type ConfirmAction = z.infer<typeof confirmActionSchema>
 
 /** A popover and the rect (window DIP) of the button it opens from, or a centred card. */
 export const overlayRequestSchema = z.union([
   z.object({ kind: z.enum(['new-menu', 'site-menu']), anchor: pageBoundsSchema }).strict(),
   z.object({ kind: z.enum(['tab-finder', 'command']) }).strict(),
+  /** A space's icon (an emoji) or colour, edited from the button its menu opened from. */
+  z
+    .object({
+      kind: z.enum(['space-icon', 'space-color']),
+      anchor: pageBoundsSchema,
+      spaceId: z.string().min(1),
+    })
+    .strict(),
+  /** A question with Cancel and `confirmLabel`, which runs `action`. */
+  z
+    .object({
+      kind: z.literal('confirm'),
+      anchor: pageBoundsSchema,
+      message: z.string().min(1).max(500),
+      confirmLabel: z.string().min(1).max(40),
+      action: confirmActionSchema,
+    })
+    .strict(),
   /** Main's menu, opened at a point (window DIP): the pointer of a right-click. */
   z.object({ kind: z.literal('context-menu'), at: pointSchema, menu: menuSpecSchema }).strict(),
   /** Main's menu, joined to the button it opens from. */
@@ -230,6 +258,8 @@ export const shortcutSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('focus-address') }).strict(),
   z.object({ kind: z.literal('settings') }).strict(),
   z.object({ kind: z.literal('rename-folder'), folderId: z.string().min(1) }).strict(),
+  /** The space menu's Rename Space…: the space header turns into a field. */
+  z.object({ kind: z.literal('rename-space'), spaceId: z.string().min(1) }).strict(),
   /** ⌘K: open the tab finder. */
   z.object({ kind: z.literal('tab-finder') }).strict(),
   /** ⌘T: open the command field (a tab is created only when it is submitted). */
@@ -309,6 +339,14 @@ export const commands = {
   /** The folder's menu, drawn at the pointer (rename, move to folder, delete). */
   'browser.showFolderMenu': {
     input: z.object({ folderId: id, at: pointSchema }).strict(),
+    output: z.void(),
+  },
+  /**
+   * The space's menu, joined to the button it opens from (`anchor`, window DIP): rename, icon,
+   * look, new folder, settings, delete. Its cards open from the same button.
+   */
+  'browser.showSpaceMenu': {
+    input: z.object({ spaceId: id, anchor: pageBoundsSchema }).strict(),
     output: z.void(),
   },
   'browser.activateTab': { input: tabRef, output: z.void() },

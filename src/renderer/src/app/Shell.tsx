@@ -33,6 +33,7 @@ export function Shell() {
         if (shortcut.kind === 'focus-address') ui.focusAddress()
         else if (shortcut.kind === 'settings') ui.openSettings()
         else if (shortcut.kind === 'rename-folder') ui.renameFolder(shortcut.folderId)
+        else if (shortcut.kind === 'rename-space') ui.renameSpace(shortcut.spaceId)
         else void window.bigBrowser.invoke('overlay.open', { kind: shortcut.kind })
       }),
     [],

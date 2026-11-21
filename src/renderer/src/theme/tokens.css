@@ -52,6 +52,7 @@
   --control-size-sm: 28px; /* address bar buttons and field */
   --control-size-xs: 24px; /* in-row buttons (close tab) */
   --icon-size: 16px; /* the dots' hit width, folder glyphs */
+  --space-dot: 7px; /* a space without an emoji: its colour dot (footer, space header) */
   --favicon-size: 18px; /* tab favicons */
   --tile-h: 44px; /* favourite tiles */
   --tile-icon-size: 22px; /* the favicon of a favourite tile */

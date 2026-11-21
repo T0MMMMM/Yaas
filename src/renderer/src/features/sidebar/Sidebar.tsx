@@ -8,6 +8,7 @@ import { CompactContext } from './CompactContext'
 import { FavoriteTiles } from './FavoriteTiles'
 import { exitsWhenGone } from './rows'
 import { Rows } from './SidebarRows'
+import { SpaceHeader } from './SpaceHeader'
 import { tilt } from './tilt'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import { TooltipContext, useTooltip } from './useTooltip'
@@ -31,9 +32,9 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
 }
 
 /**
- * Arc-style vertical sidebar: favourite tiles, pinned tabs and folders, a separator, today's tabs,
- * then the spaces. No data logic here — the tree comes from the workspace. Tabs are dragged
- * between the lists (useTabDrag).
+ * Arc-style vertical sidebar: favourite tiles, the space section (its header over the pinned tabs
+ * and folders, which it folds), a separator, today's tabs, then the spaces. No data logic here —
+ * the tree comes from the workspace. Tabs are dragged between the lists (useTabDrag).
  */
 export function Sidebar({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspace()
@@ -45,6 +46,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
 
   const sections = workspace?.sections
   const activeId = workspace?.activeTab?.id ?? null
+  const sectionCollapsed = workspace?.space.sectionCollapsed ?? false
   const openTabIds = workspace?.openTabIds
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
   const exits = useMemo(() => exitsWhenGone(openTabIds ?? new Set()), [openTabIds])
@@ -76,21 +78,33 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             <div className={styles.scroll} ref={scroll}>
               {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
 
-              {/* While a tab is dragged, an empty pinned list is drawn to drop it on. */}
-              {sections && (sections.pinned.length > 0 || dragging) && (
-                <ul
-                  className={styles.list}
-                  aria-label="Pinned"
-                  data-testid="pinned"
-                  data-drop="list:pinned"
-                  data-drop-target={dropOn('list:pinned')}
-                >
-                  <Rows nodes={sections.pinned} activeId={activeId} exits={exits} />
-                  {sections.pinned.length === 0 && (
-                    <li className={styles.dropHint}>Drop here to pin</li>
+              {/* The space section: its header, then the pinned tabs and folders, which it folds
+                  (always mounted so the fold animates; inert while folded). */}
+              {workspace && <SpaceHeader space={workspace.space} />}
+              <div
+                className={styles.fold}
+                data-collapsed={sectionCollapsed}
+                inert={sectionCollapsed}
+                data-testid="space-section"
+              >
+                <div className={styles.foldInner}>
+                  {/* While a tab is dragged, an empty pinned list is drawn to drop it on. */}
+                  {sections && (sections.pinned.length > 0 || dragging) && (
+                    <ul
+                      className={styles.list}
+                      aria-label="Pinned"
+                      data-testid="pinned"
+                      data-drop="list:pinned"
+                      data-drop-target={dropOn('list:pinned')}
+                    >
+                      <Rows nodes={sections.pinned} activeId={activeId} exits={exits} />
+                      {sections.pinned.length === 0 && (
+                        <li className={styles.dropHint}>Drop here to pin</li>
+                      )}
+                    </ul>
                   )}
-                </ul>
-              )}
+                </div>
+              </div>
 
               <div className={styles.separator} data-testid="today-header">
                 <span className={styles.rule} />
@@ -156,7 +170,11 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                     }
                     {...magnet}
                   >
-                    <span className={styles.dot} />
+                    {s.icon ? (
+                      <span className={styles.emoji}>{s.icon}</span>
+                    ) : (
+                      <span className={styles.dot} />
+                    )}
                   </button>
                 ))}
               </div>
