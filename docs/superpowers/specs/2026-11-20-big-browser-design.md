@@ -89,8 +89,9 @@ The repo is renamed to Big Browser in step 1; the YAAS docs stay as the referenc
 ### 5.1 Step 1 — daily-driver browser
 
 Plans for this step: 1 browser core, 2 extensions and site menu, 3 organisation, **3b sidebar
-finish** (3b-A look and motion: done; 3b-B structure; spec
-`2026-11-20-big-browser-sidebar-finish-design.md`), 4 window features, then 5 settings and 6 onboarding.
+finish** (done: 3b-A look and motion, 3b-B structure, including downloads, which moved here from
+plan 4; spec `2026-11-20-big-browser-sidebar-finish-design.md`), 4 window features (split view,
+several windows, default browser), then 5 settings and 6 onboarding.
 
 Goal: the owner can leave Arc the next day without missing anything. Day-one list [Claude's
 proposal, accepted by the owner 2026-11-20]:

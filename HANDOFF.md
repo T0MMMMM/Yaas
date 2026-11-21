@@ -39,27 +39,32 @@
 3. ~~Plan 2 (Extensions & site menu)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-extensions-site-menu.md`.
 4. ~~Plan 3 (Organisation)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-organisation.md`.
 5. ~~Plan 3b-A (sidebar look and motion)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-sidebar-finish-look.md`.
-6. Write and follow **plan 3b-B** (`2026-11-20-big-browser-sidebar-finish-structure.md`; spec
-   `docs/superpowers/specs/2026-11-20-big-browser-sidebar-finish-design.md`, goals 1 and 3–10, 26, 28).
-   The space section's expand/collapse height animation (goal 24) belongs here, with the space
-   section itself (goal 7).
-7. Then write and follow **plan 4** (window features: split view, downloads, several windows, default
-   browser) in `docs/superpowers/plans/` (superpowers:writing-plans), from the design spec's
-   roadmap.
+6. ~~Plan 3b-B (sidebar structure, with downloads)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-sidebar-finish-structure.md`.
+   Plan 3b (A and B) is finished.
+7. Next: write and follow **plan 4** (window features: split view, several windows, default
+   browser; downloads moved into 3b) in `docs/superpowers/plans/` (superpowers:writing-plans),
+   from the design spec's roadmap.
 
 ## To check by hand
 
 - Hover a tab, move straight right onto the page and click a link at once: the first click must
   land (the tooltip overlay hides on entry). Playwright cannot drive real cross-view input. Check
   on macOS and Windows.
-- macOS icon-only mode at 48, 56 and 72 px: hover the top-left corner; the three traffic lights
-  must stay visible and clickable. The hover zone (`.controlsZone`) may be narrower than the
-  buttons: if they hide under the cursor, widen the zone to `--controls-zone-w` while the controls
-  are shown.
+- macOS: the traffic lights show in the top margin when it opens and stay clickable (also with the
+  sidebar icons-only at 48, 56 and 72 px).
+- Both platforms, real mouse: the top margin opens after 120 ms of rest, drags the window once
+  open, and closes 250 ms after the pointer leaves.
+- Page right-click: spelling suggestions on a misspelled word.
+- An extension's context-menu item with an icon shows in the page menu and runs.
+- Delete a space while a download runs: the download finishes and stays in the list.
 
 ## Gotchas
 
-- On Windows, `cli.test.ts` "findCli prefers PATH" fails; it is pre-existing and unrelated to 3b-A.
+- On Windows, `cli.test.ts` "findCli prefers PATH" fails; it is pre-existing.
+- On the owner's Windows machine the e2e tests "reopen closed tab" and the two tooltip tests fail
+  even on older commits (environmental: window focus while the PC is in use).
+- Never create two files whose names differ only by case (Windows and macOS file systems are
+  case-insensitive).
 - The owner speaks **French**; docs, code and commits stay in English (`CLAUDE.md`).
 - Electron 45 downloads its binary on first run, not in `postinstall`. After `npm ci`, run
   `node node_modules/electron/install.js` if `npm run dev` complains.
