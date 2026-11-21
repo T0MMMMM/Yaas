@@ -409,6 +409,9 @@ registerCommands(
     'browser.splitTabs': ({ firstId, secondId }) => browser.splitTabs(firstId, secondId),
     'browser.splitActive': splitActive,
     'browser.separate': ({ tabId }) => browser.separate(tabId),
+    'browser.closeSplit': ({ tabId }) => {
+      for (const id of browser.closeSplit(tabId).unloaded) tabViews?.unload(id)
+    },
     'browser.setSplitRatio': ({ tabId, ratio }) => browser.setSplitRatio(tabId, ratio),
     'browser.splitDrag': (drag) => {
       if (drag.phase === 'start') {

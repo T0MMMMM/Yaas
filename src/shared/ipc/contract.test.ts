@@ -209,6 +209,8 @@ describe('IPC contract', () => {
     expect(split.safeParse({ firstId: 'a', secondId: 'b' }).success).toBe(true)
     expect(split.safeParse({ firstId: 'a' }).success).toBe(false)
     expect(commands['browser.separate'].input.safeParse({ tabId: 'a' }).success).toBe(true)
+    expect(commands['browser.closeSplit'].input.safeParse({ tabId: 'a' }).success).toBe(true)
+    expect(commands['browser.closeSplit'].input.safeParse({}).success).toBe(false)
     const ratio = commands['browser.setSplitRatio'].input
     expect(ratio.safeParse({ tabId: 'a', ratio: 0.25 }).success).toBe(true)
     expect(ratio.safeParse({ tabId: 'a', ratio: 0.75 }).success).toBe(true)

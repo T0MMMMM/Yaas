@@ -46,11 +46,9 @@ export function SplitRow({
     if (half === 'second' || (half === undefined && activeId === second.id)) return second
     return first
   }
+  /** Both halves: a pinned or favourite split is unloaded and stays a split. */
   const close = (): void => {
-    // One after the other: closing a half first ends the split.
-    void window.bigBrowser
-      .invoke('browser.closeTab', { tabId: second.id })
-      .then(() => window.bigBrowser.invoke('browser.closeTab', { tabId: first.id }))
+    void window.bigBrowser.invoke('browser.closeSplit', { tabId: first.id })
   }
   const titleHalf = (tab: TabView, half: 'first' | 'second') => (
     <button

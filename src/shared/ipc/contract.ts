@@ -358,6 +358,11 @@ export const commands = {
   'browser.splitActive': { input: z.void(), output: z.void() },
   /** Ends the split either half belongs to: the second goes right after the first. */
   'browser.separate': { input: tabRef, output: z.void() },
+  /**
+   * A split row's ×: closes both halves of the split either half belongs to. A pinned or favourite
+   * split is unloaded and stays a split; a today split's tabs are deleted.
+   */
+  'browser.closeSplit': { input: tabRef, output: z.void() },
   /** The first page's share of a split's width, either half naming the split. */
   'browser.setSplitRatio': {
     input: z.object({ tabId: id, ratio: z.number().min(0.25).max(0.75) }).strict(),

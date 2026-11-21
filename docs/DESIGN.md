@@ -130,14 +130,16 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   place — both favicons, then "Title A | Title B". A click on a half's title shows the split with
   that half active (it is bold while the split is shown; elsewhere on the row, the half already
   active or the first). Its tooltip names both; right-click opens the menu of the half under the
-  pointer (Separate instead of Open in Split View). Its × closes **both** tabs (to keep one, use
-  Separate or close a half with ⌘W). Icon-only: the two favicons stacked. A favourite split is one
+  pointer (Separate instead of Open in Split View). Its × closes **both** tabs
+  (`browser.closeSplit`; to keep one, use Separate or close a half with ⌘W). A pinned or favourite
+  split is only unloaded — by its × or ⌘W on a half — and stays a split; a today split's tabs are
+  deleted, and ⌘⇧T reopens them one by one as two plain tabs. Icon-only: the two favicons stacked. A favourite split is one
   tile with both favicons. **Creating a split**: `⌃⌘\` (Windows: `Ctrl+Shift+\`) or the + menu's
   Split View pairs the active tab with the next row of its list, else the previous (rows already
   split are skipped; nothing with no such row); Open in Split View (a tab's menu, hidden on the
   active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half
   of the shown tab's row pairs them (the row gets the `--accent-soft` fill; not onto or from a
-  split, nor onto a tile).
+  split or a favourite tile).
 - Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
   move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
   (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.

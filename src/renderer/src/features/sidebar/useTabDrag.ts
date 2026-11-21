@@ -350,7 +350,7 @@ function nodeOf(nodes: SidebarNode[], id: string): SidebarNode | undefined {
 
 /**
  * Whether the tab `draggedId` may be dropped on the shown tab `activeId` to split them: two
- * tabs, neither a split, the shown one a row of pinned or today (not a favourite tile).
+ * rows of pinned or today (no favourite tile, dragged or shown), neither a split.
  */
 function splittable(
   sections: SidebarSections,
@@ -358,7 +358,8 @@ function splittable(
   activeId: string | null,
 ): boolean {
   if (activeId === null || activeId === draggedId) return false
-  if (sections.favoriteSeconds.has(draggedId)) return false
+  // A favourite tile is never split by a drag (Open in Split View pairs one).
+  if (sections.favorites.some((t) => t.id === draggedId)) return false
   const lists = [...sections.pinned, ...sections.today]
   return nodeOf(lists, activeId)?.kind === 'tab' && nodeOf(lists, draggedId)?.kind !== 'split'
 }

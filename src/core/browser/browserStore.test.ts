@@ -638,6 +638,43 @@ describe('BrowserStore splits', () => {
     expect(store.visibleOrder(spaceId)).toEqual([c.id, a.id])
   })
 
+  it('closing a half of a pinned or favourite split only unloads it: the pair stays', () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(a.id, b.id)
+    store.moveTab(a.id, { section: 'pinned', index: 0 })
+    store.activateTab(b.id)
+    expect(store.closeTab(b.id)).toBe('unloaded')
+    expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'pinned' })
+    // The focus leaves the split for the next row.
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
+    store.moveTab(a.id, { section: 'favorites', index: 0 })
+    expect(store.closeTab(a.id)).toBe('unloaded')
+    expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'favorites' })
+  })
+
+  it('closeSplit unloads both halves of a pinned split, deletes both of a today split', () => {
+    const { store, spaceId, a, b, c } = three()
+    store.splitTabs(a.id, b.id)
+    store.moveTab(a.id, { section: 'pinned', index: 0 })
+    store.activateTab(a.id)
+    expect(store.closeSplit(b.id)).toEqual({ unloaded: [a.id, b.id] })
+    expect(tab(store, b.id)?.splitOf).toBe(a.id)
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
+
+    store.separate(a.id)
+    store.moveTab(a.id, { section: 'today', index: 0 })
+    store.moveTab(b.id, { section: 'today', index: 1 })
+    store.splitTabs(a.id, b.id)
+    store.activateTab(b.id)
+    expect(store.closeSplit(a.id)).toEqual({ unloaded: [] })
+    expect(store.snapshot().tabs.map((t) => t.id)).toEqual([c.id])
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
+    // Reopened one by one, as plain tabs.
+    expect(store.reopenClosed()?.splitOf).toBeNull()
+    expect(store.reopenClosed()?.splitOf).toBeNull()
+    expect(() => store.closeSplit(c.id)).toThrow(BrowserError)
+  })
+
   it("closing one half leaves the other in the row's place, no split left", () => {
     const { store, spaceId, a, b, c } = three()
     store.splitTabs(b.id, a.id)

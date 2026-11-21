@@ -1215,7 +1215,7 @@ test('a split is one row', async () => {
       await expect(page.getByTestId('tab')).toHaveCount(1)
       await expect(splitRow.getByTestId('split-half')).toHaveCount(2)
       const halves = await splitRow.getByTestId('split-half').allTextContents()
-      expect(halves).toContain('Page C')
+      expect(new Set(halves).size).toBe(2)
 
       // Dragged into a folder, the row takes both tabs with it.
       const folder = await page.evaluate(() =>
@@ -1235,13 +1235,26 @@ test('a split is one row', async () => {
       await expect(page.getByTestId('split-row')).toHaveCount(0)
       await expect(pinned.getByTestId('folder').getByTestId('tab')).toHaveText(halves)
 
-      // Open in Split View (a tab's menu) pairs it with the active tab; the split survives a
-      // relaunch.
-      await page.getByTestId('today').getByTestId('tab').click({ button: 'right' })
-      await overlay
+      // Open in Split View (a tab's menu, on a tab other than the active one) pairs it with the
+      // active tab; the split survives a relaunch.
+      const activeTitle = await page.evaluate(async () => {
+        const state = await window.bigBrowser.invoke('browser.state')
+        return state.tabs.find((t) => t.id === state.activeTabIds[state.activeSpaceId])?.title
+      })
+      const other = page
+        .getByTestId('tab')
+        .filter({ hasNotText: activeTitle ?? '' })
+        .first()
+      const openInSplit = overlay
         .getByTestId('menu')
         .getByRole('menuitem', { name: 'Open in Split View' })
-        .click()
+      // The last menu's overlay may still be hiding: right-click again until this one shows (a
+      // right-click while it is open would close it, as a click outside).
+      await expect(async () => {
+        if (!(await openInSplit.isVisible())) await other.click({ button: 'right' })
+        await expect(openInSplit).toBeVisible({ timeout: 2000 })
+      }).toPass()
+      await openInSplit.click()
       await expect(page.getByTestId('split-row')).toHaveCount(1)
       await expect(page.getByTestId('tab')).toHaveCount(1)
     } finally {
@@ -1260,4 +1273,40 @@ test('a split is one row', async () => {
     await site.close()
     rmSync(userData, { recursive: true, force: true })
   }
+})
+
+test("a pinned split's × unloads both pages and keeps the split", async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    await page.evaluate(() => window.bigBrowser.invoke('browser.splitActive'))
+    const pinned = page.getByTestId('pinned')
+    await page.evaluate(async () => {
+      const state = await window.bigBrowser.invoke('browser.state')
+      const first = state.tabs.find((t) => state.tabs.some((o) => o.splitOf === t.id))
+      if (!first) throw new Error('no split')
+      await window.bigBrowser.invoke('browser.moveTab', {
+        tabId: first.id,
+        section: 'pinned',
+        index: 0,
+      })
+    })
+    const row = pinned.getByTestId('split-row')
+    await expect(row).toHaveCount(1)
+    await expect(row.locator('[data-loaded]')).toHaveAttribute('data-loaded', 'true')
+
+    await row.hover()
+    await row.getByRole('button', { name: 'Close split' }).click()
+    await expect(row).toHaveCount(1)
+    await expect(row.locator('[data-loaded]')).toHaveAttribute('data-loaded', 'false')
+    const state = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
+    const second = state.tabs.find((t) => t.splitOf !== null)
+    expect(second?.section).toBe('pinned')
+    const halves = state.tabs.filter((t) => t.id === second?.splitOf || t.id === second?.id)
+    expect(halves.map((t) => state.runtime[t.id]?.loaded ?? false)).toEqual([false, false])
+    // The focus left the pair for the remaining today tab.
+    expect(state.activeTabIds[state.activeSpaceId]).not.toBe(second?.id)
+    expect(state.activeTabIds[state.activeSpaceId]).not.toBe(second?.splitOf)
+  })
 })

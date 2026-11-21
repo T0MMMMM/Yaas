@@ -437,8 +437,11 @@ results come back to the lead as a short summary + branch name, never the full c
   (the second goes right after the first), `browser.setSplitRatio` (clamped) and
   `browser.splitActive` (`⌃⌘\` and the + menu: the active tab with the next row of its list, else
   the previous — `core/browser/splitPartner.ts`; nothing when there is none). `moveTab` of
-  either half moves the pair; closing or removing one half first ends the split, the other half
-  taking the row's place (and the focus, when the closed one had it). Undo brings a closed half
+  either half moves the pair; removing one half (or closing a today half) first ends the split,
+  the other half taking the row's place (and the focus, when the closed one had it). Closing a
+  half of a pinned or favourite split only unloads it and keeps the pair; `browser.closeSplit`
+  (a split row's ×) unloads both halves of such a split, or deletes both of a today split, and
+  moves the focus off the pair. Undo brings a closed half
   back as a normal tab; a deleted folder's splits are separated first, so they come back as two
   normal tabs. A broken pair (first gone, in another space, itself a second) is repaired at
   startup into a normal tab at the end of its list.

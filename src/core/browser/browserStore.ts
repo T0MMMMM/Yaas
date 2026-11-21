@@ -314,10 +314,10 @@ export class BrowserStore {
 
   /**
    * Closes a tab as the user's close does: a favourite or pinned tab is only unloaded (its entry
-   * stays; main destroys its view), a today tab is deleted and can be reopened.
+   * stays, and its split too; main destroys its view), a today tab is deleted and can be reopened
+   * (a today split ends first, see removeTab).
    */
   closeTab(id: string): 'deleted' | 'unloaded' {
-    this.leaveSplit(id)
     const tab = this.requireTab(id)
     if (tab.section === 'today') {
       this.removeTab(id)
@@ -329,6 +329,29 @@ export class BrowserStore {
     }
     this.emit()
     return 'unloaded'
+  }
+
+  /**
+   * Closes both halves of the split `id` is a half of (a split row's ×): a pinned or favourite
+   * split is only unloaded and stays a split (`unloaded`: the ids whose views main destroys); a
+   * today split's tabs are deleted, each reopenable as a plain tab. The focus leaves the pair.
+   */
+  closeSplit(id: string): { unloaded: string[] } {
+    const pair = this.pairOf(this.requireTab(id))
+    if (!pair) throw new BrowserError('invalid_move', `Not in a split: ${id}`)
+    const { first, second } = pair
+    if (first.section === 'today') {
+      this.removeTab(second.id)
+      this.removeTab(first.id)
+      return { unloaded: [] }
+    }
+    const space = this.requireSpace(first.space_id)
+    if (space.active_tab_id === first.id || space.active_tab_id === second.id) {
+      const pairIds = new Set([first.id, second.id])
+      this.setActiveTab(first.space_id, this.nextActive(first.space_id, first.id, pairIds))
+    }
+    this.emit()
+    return { unloaded: [first.id, second.id] }
   }
 
   /** Deletes a tab whatever its section; its children move up to its parent. Reopenable. */

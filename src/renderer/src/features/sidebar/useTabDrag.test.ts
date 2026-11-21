@@ -500,7 +500,7 @@ describe('splits', () => {
     expect(dropTarget(24, rows)).toEqual(today(2))
   })
 
-  it('never splits onto or from a split, nor a folder or onto a favourite tile', () => {
+  it('never splits onto or from a split or a favourite tile, nor a folder', () => {
     // The shown tab is a half of a split: its row's middle is after it, as on any row.
     expect(dropHit(15, dropRows(sections, 'tab:d', measure, 'b'))?.target).toEqual(today(2))
     expect(dropHit(15, dropRows(sections, 'tab:d', measure, 'c'))?.target).toEqual(today(2))
@@ -524,5 +524,7 @@ describe('splits', () => {
       folderId: null,
       index: 1,
     })
+    // A favourite tile dragged onto the shown tab's row moves there, never splits.
+    expect(dropHit(35, dropRows(withTile, 'tab:f', tiles, 't'))?.target).toEqual(today(1))
   })
 })
