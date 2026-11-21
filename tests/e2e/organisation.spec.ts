@@ -354,6 +354,29 @@ test('Escape cancels a drag', async () => {
   })
 })
 
+test('leaving the window cancels a drag', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    await openTab(page, site.url('/b'))
+    await openTab(page, site.url('/c'))
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+
+    await liftFirstOntoThird(page)
+    const clone = page.getByTestId('drag-clone')
+    await expect(clone).toHaveCount(1)
+
+    // Alt-Tab mid-drag: the window loses focus (dispatched here, OS focus is not reliable).
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')))
+    await expect(clone).toHaveCount(0)
+    await expect.poll(() => rowTranslate(page, 1)).toBe('none')
+    // A release much later moves nothing.
+    await page.mouse.up()
+    await expect(today.getByTestId('tab').first()).toHaveCSS('visibility', 'visible')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
+  })
+})
+
 test('a folder drags into a folder', async () => {
   await withBrowser(async ({ page, site }) => {
     const tab = await openTab(page, site.url('/a'))

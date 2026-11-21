@@ -535,6 +535,7 @@ export function useTabDrag(
         window.removeEventListener('pointerup', up)
         window.removeEventListener('pointercancel', abort)
         window.removeEventListener('keydown', escape)
+        window.removeEventListener('blur', leave)
       }
       /** Resets the visuals and the state (once; a later drag's state is left alone). */
       const finish = (): void => {
@@ -584,10 +585,20 @@ export function useTabDrag(
         window.removeEventListener('pointermove', move)
         flyBack()
       }
+      /**
+       * The window lost focus (Alt-Tab mid-drag): no drop, and nothing waits for a release that
+       * may come much later, elsewhere.
+       */
+      const leave = (): void => {
+        detach()
+        if (!started) finish()
+        else if (!cancelled) flyBack()
+      }
       window.addEventListener('pointermove', move)
       window.addEventListener('pointerup', up)
       window.addEventListener('pointercancel', abort)
       window.addEventListener('keydown', escape)
+      window.addEventListener('blur', leave)
       stop.current = abort
     },
     [container, cloneClass],
