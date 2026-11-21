@@ -3,6 +3,7 @@ import { CaretDown, DotsThree } from '@phosphor-icons/react'
 import type { SpaceSummary } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
+import { useCompact } from './CompactContext'
 import styles from './SpaceHeader.module.css'
 
 /** Same bounds as the contract's space names. */
@@ -52,16 +53,24 @@ function NameField({ space }: { space: SpaceSummary }) {
  * The head of the space section (spec goals 4, 7, 8): the space's emoji (or its colour dot), its
  * name and a "…" button that opens the space menu. On hover the emoji turns into a chevron that
  * folds the section (kept in main). Rename Space… turns the name into a field. Icon-only, only
- * the emoji (or dot) remains; a right-click still opens the menu.
+ * the emoji (or dot) remains; a right-click still opens the menu, but Rename Space… does nothing
+ * there (the name field is hidden).
  */
 export function SpaceHeader({ space }: { space: SpaceSummary }) {
-  const renaming = useUi((s) => s.renamingSpaceId === space.id)
+  const compact = useCompact()
+  const renamingRequested = useUi((s) => s.renamingSpaceId === space.id)
+  const renaming = renamingRequested && !compact
+  const stopRenaming = useUi((s) => s.renameSpace)
   const more = useRef<HTMLButtonElement>(null)
   /** Whether the space menu (or one of its cards) is open from the "…" button. */
   const [menuOpen, setMenuOpen] = useState(false)
   const collapsed = space.sectionCollapsed
 
   useEffect(() => window.bigBrowser.on('overlay.closed', () => setMenuOpen(false)), [])
+  // A rename asked for while icon-only is dropped, not kept for when the sidebar widens.
+  useEffect(() => {
+    if (renamingRequested && compact) stopRenaming(null)
+  }, [renamingRequested, compact, stopRenaming])
 
   const open = (button: HTMLElement): void => {
     setMenuOpen(true)

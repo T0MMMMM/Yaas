@@ -1126,6 +1126,24 @@ test('the space menu', async () => {
   })
 })
 
+test('rename space is ignored while the sidebar is icon-only', async () => {
+  await withBrowser(async ({ app, page }) => {
+    const sidebar = page.getByTestId('sidebar')
+    await page.getByRole('button', { name: 'Icons only' }).click()
+    await expect(sidebar).toHaveAttribute('data-compact', 'true')
+    // Icon-only, the "…" button is hidden: the menu opens from a right-click on the header.
+    await page.getByTestId('space-header').click({ button: 'right' })
+    const menu = (await overlayPage(app)).getByTestId('menu')
+    await menu.getByRole('menuitem', { name: 'Rename Space…' }).click()
+    await expect(menu).toHaveCount(0)
+
+    // Widened again, no stale field comes back unfocused.
+    await page.getByRole('button', { name: 'Expand sidebar' }).click()
+    await expect(sidebar).toHaveAttribute('data-compact', 'false')
+    await expect(page.getByTestId('space-header').getByLabel('Space name')).toHaveCount(0)
+  })
+})
+
 test('rename in place', async () => {
   await withBrowser(async ({ app, page }) => {
     const { menu } = await openSpaceMenu(app, page)
