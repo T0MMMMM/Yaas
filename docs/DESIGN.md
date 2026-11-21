@@ -195,9 +195,15 @@ centred `--finder-top` (20 % of the window) from the top, in the overlay: a fiel
 ↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`)
 ranks the tabs of every space — every word must be in the title or the host and path; a title
 that starts with the query first, then title matches, then URL matches — and activates the one
-picked, switching space; an empty query lists the space's tabs. The command field (`Mod+T`)
-offers "Go to <url>" when the text is a URL, else "Search Google for "…"", then up to six open
-tabs it matches ("Switch to tab"); no tab is created until Enter.
+picked, switching space; an empty query lists the space's tabs. The command field (`Mod+T`) is
+the **new-tab dock** (`dock.ts`): titled sections (small, faint) — **Recent Tabs** (this space's
+open tabs, most recently active first, up to six, "In <folder>" on the right when filed),
+**Frequent** (the space's six most visited pages, each with a "−" on the selected row that forgets
+it) and **Quick Actions** (docs.new, meet.new, sheets.new, github.com/new). Typing puts "Go to
+<url>" (or "Search Google for "…"") first and filters every section; open tabs and history then
+match across **all spaces** (picking another space's tab switches space). A footer names what
+Enter does with the selected row: "Switch to Tab ↵" or "Open in New Tab ↵". The list scrolls
+inside the window; no tab is created until Enter.
 
 **Address bar buttons** — left: the sidebar switch (icons only ↔ the width it had,
 `sidebarExpandedWidth`), Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a check

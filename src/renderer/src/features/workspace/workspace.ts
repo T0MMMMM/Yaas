@@ -37,6 +37,10 @@ export interface TabView {
   webContentsId: number | null
   /** Main has a view for it: shown since launch and not unloaded since. */
   loaded: boolean
+  /** The pinned folder it is filed in, or null. */
+  folderId: string | null
+  /** When it was last activated (ISO), or null when it never was. */
+  lastActiveAt: string | null
 }
 
 /** A row of the sidebar's pinned or today list. */
@@ -139,7 +143,23 @@ function toTab(tab: BrowserTab, runtime: TabRuntime | undefined): TabView {
     siteHost: hostOf(tab.url),
     connection: connectionOf(tab.url),
     ...(runtime ?? IDLE),
+    folderId: tab.folderId,
+    lastActiveAt: tab.lastActiveAt,
   }
+}
+
+/**
+ * Tabs most recently active first (the new-tab dock's Recent Tabs); tabs never active come last,
+ * in the order given. Returns a new array.
+ */
+export function recentFirst<T extends { lastActiveAt: string | null }>(tabs: readonly T[]): T[] {
+  const time = (t: T) => (t.lastActiveAt === null ? -Infinity : Date.parse(t.lastActiveAt))
+  // Array.prototype.sort is stable: ties (never active) keep their order.
+  return [...tabs].sort((a, b) => {
+    const ta = time(a)
+    const tb = time(b)
+    return ta === tb ? 0 : tb > ta ? 1 : -1
+  })
 }
 
 /** Deepest indent of a nested tab. */

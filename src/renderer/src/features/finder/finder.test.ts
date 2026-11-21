@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { commandSuggestions, rankTabs, type FinderTab } from './finder'
+import { rankTabs, type FinderTab } from './finder'
 
 const tab = (id: string, title: string, url: string, current = true): FinderTab => ({
   id,
   title,
   url,
+  spaceId: current ? 's1' : 's2',
   spaceName: current ? 'Personal' : 'Work',
   current,
+  lastActiveAt: null,
+  folder: null,
 })
 
 const TABS: FinderTab[] = [
@@ -48,43 +51,5 @@ describe('rankTabs', () => {
   it('lists the current space’s tabs in their order for an empty query', () => {
     expect(ids(rankTabs('', TABS))).toEqual(['docs', 'mail', 'news'])
     expect(ids(rankTabs('   ', TABS))).toEqual(['docs', 'mail', 'news'])
-  })
-})
-
-describe('commandSuggestions', () => {
-  it('offers to go to what looks like a URL first', () => {
-    expect(commandSuggestions('example.com/a', TABS)[0]).toEqual({
-      kind: 'go',
-      label: 'Go to https://example.com/a',
-    })
-  })
-
-  it('offers a search for anything else', () => {
-    expect(commandSuggestions('hello world', TABS)[0]).toEqual({
-      kind: 'search',
-      label: 'Search Google for "hello world"',
-    })
-  })
-
-  it('then offers the matching open tabs, at most six', () => {
-    const many = Array.from({ length: 8 }, (_, i) =>
-      tab(`t${i}`, `Page ${i}`, `https://site.test/${i}`),
-    )
-    const suggestions = commandSuggestions('page', many)
-    expect(suggestions).toHaveLength(7)
-    expect(suggestions.slice(1)).toEqual(
-      many
-        .slice(0, 6)
-        .map((t) => ({ kind: 'tab', id: t.id, label: t.title, hint: 'Switch to tab' })),
-    )
-    expect(
-      commandSuggestions('docs', TABS)
-        .slice(1)
-        .map((s) => s.kind === 'tab' && s.id),
-    ).toEqual(['work', 'docs'])
-  })
-
-  it('offers nothing for an empty query', () => {
-    expect(commandSuggestions('  ', TABS)).toEqual([])
   })
 })

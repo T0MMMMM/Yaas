@@ -93,12 +93,62 @@ test('⌘T switches to an open tab it matches', async () => {
     await clickMenu(app, 'newTab')
     const field = overlay.getByLabel('Search or enter address')
     await field.fill('page a')
-    const tab = overlay.getByRole('option', { name: /Page A/ })
-    await expect(tab).toContainText('Switch to tab')
+    await expect(overlay.getByRole('option', { name: /Page A/ }).first()).toBeVisible()
     await field.press('ArrowDown')
+    await expect(overlay.getByTestId('command-field-footer')).toHaveText('Switch to Tab ↵')
     await field.press('Enter')
 
     await expect.poll(() => activeUrl(page)).toBe(site.url('/a'))
+    await expect(page.getByTestId('tab')).toHaveCount(2)
+  })
+})
+
+test('the dock shows recent, frequent and quick actions', async () => {
+  await withTabs(async ({ app, page, overlay }) => {
+    // Both visits are in the history before the dock reads it.
+    await expect
+      .poll(async () =>
+        (await page.evaluate(() => window.bigBrowser.invoke('history.frequent', {})))
+          .map((e) => e.title)
+          .sort(),
+      )
+      .toEqual(['Page A', 'Page B'])
+
+    await clickMenu(app, 'newTab')
+    const field = overlay.getByLabel('Search or enter address')
+    await expect(field).toBeFocused()
+    const dock = overlay.getByTestId('command-field')
+    const recent = dock.getByRole('group', { name: 'Recent Tabs' })
+    const frequent = dock.getByRole('group', { name: 'Frequent' })
+    const actions = dock.getByRole('group', { name: 'Quick Actions' })
+    await expect(dock.getByRole('group')).toHaveCount(3)
+    // The active tab was activated last.
+    await expect(recent.getByRole('option')).toHaveText(['Page B', 'Page A'])
+    await expect(frequent.getByRole('option')).toHaveCount(2)
+    await expect(actions.getByRole('option')).toHaveText([
+      'docs.new',
+      'meet.new',
+      'sheets.new',
+      'github.com/new',
+    ])
+
+    // The footer names what Enter does with the selected row.
+    const footer = overlay.getByTestId('command-field-footer')
+    await expect(recent.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
+    await expect(footer).toHaveText('Switch to Tab ↵')
+    await actions.getByRole('option', { name: 'docs.new' }).hover()
+    await expect(footer).toHaveText('Open in New Tab ↵')
+
+    // "−" forgets a page, for good.
+    const pageA = frequent.getByRole('option', { name: /Page A/ })
+    await pageA.hover()
+    await pageA.getByRole('button', { name: 'Forget Page A' }).click()
+    await expect(frequent.getByRole('option')).toHaveText([/Page B/])
+    await expect(field).toBeFocused()
+    await field.press('Escape')
+    await expect(dock).toHaveCount(0)
+    await clickMenu(app, 'newTab')
+    await expect(frequent.getByRole('option')).toHaveText([/Page B/])
     await expect(page.getByTestId('tab')).toHaveCount(2)
   })
 })

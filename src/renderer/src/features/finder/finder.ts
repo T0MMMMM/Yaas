@@ -1,6 +1,5 @@
-// What the tab finder (⌘K) and the command field (⌘T) list for a query. Pure, so the ranking is
-// unit-tested; the components only render it.
-import { DEFAULT_SEARCH, resolveInput } from '@shared/url'
+// How the tab finder (⌘K) and the dock (⌘T, dock.ts) rank open tabs for a query. Pure, so the
+// ranking is unit-tested; the components only render it.
 import type { BrowserView } from '../workspace/workspace'
 
 /** An open tab as the finder sees it: any space, in the spaces' drawn order. */
@@ -8,19 +7,28 @@ export interface FinderTab {
   id: string
   title: string
   url: string
+  spaceId: string
   spaceName: string
   /** In the active space: the tabs an empty query lists. */
   current: boolean
+  /** When it was last activated (ISO), or null when it never was. */
+  lastActiveAt: string | null
+  /** The name of the pinned folder it is filed in, or null. */
+  folder: string | null
 }
 
 /** Every open tab, as the finder ranks them. */
 export function finderTabs(workspace: BrowserView): FinderTab[] {
+  const folders = new Map(workspace.folders.map((f) => [f.id, f.name]))
   return workspace.allTabs.map((t) => ({
     id: t.id,
     title: t.title,
     url: t.url,
+    spaceId: t.space.id,
     spaceName: t.space.label,
     current: t.space.id === workspace.space.id,
+    lastActiveAt: t.lastActiveAt,
+    folder: t.folderId === null ? null : (folders.get(t.folderId) ?? null),
   }))
 }
 
@@ -43,6 +51,13 @@ function hostAndPath(url: string): string {
   return url.toLowerCase()
 }
 
+/** Every word of the query (lower-cased, split on spaces) is in the title or the host and path. */
+export function matchesWords(words: string[], title: string, url: string): boolean {
+  const t = title.toLowerCase()
+  const where = hostAndPath(url)
+  return words.every((w) => t.includes(w) || where.includes(w))
+}
+
 /**
  * The tabs matching `query`, best first: case-insensitive, every word must be in the title or in
  * the host and path. Equal scores keep the tabs' order. An empty query lists the active space's
@@ -55,43 +70,11 @@ export function rankTabs(query: string, tabs: FinderTab[]): RankedTab[] {
 
   const ranked: RankedTab[] = []
   for (const tab of tabs) {
+    if (!matchesWords(words, tab.title, tab.url)) continue
     const title = tab.title.toLowerCase()
-    const where = hostAndPath(tab.url)
-    if (!words.every((w) => title.includes(w) || where.includes(w))) continue
     const score = title.startsWith(q) ? 3 : words.every((w) => title.includes(w)) ? 2 : 1
     ranked.push({ id: tab.id, score })
   }
   // Array.prototype.sort is stable: ties stay in the tabs' order.
   return ranked.sort((a, b) => b.score - a.score)
-}
-
-/** Open tabs the command field offers to switch to, at most. */
-export const COMMAND_TAB_LIMIT = 6
-
-export type CommandSuggestion =
-  | { kind: 'go'; label: string }
-  | { kind: 'search'; label: string }
-  | { kind: 'tab'; id: string; label: string; hint: string }
-
-/**
- * The command field's rows: go to the URL typed (or search for it), then the open tabs it
- * matches. Both of the first kinds open `query` with `browser.openTab`, which resolves it again.
- */
-export function commandSuggestions(query: string, tabs: FinderTab[]): CommandSuggestion[] {
-  const q = query.trim()
-  if (q === '') return []
-  const url = resolveInput(q)
-  const isSearch = url === DEFAULT_SEARCH.replace('%s', encodeURIComponent(q))
-  const first: CommandSuggestion = isSearch
-    ? { kind: 'search', label: `Search Google for "${q}"` }
-    : { kind: 'go', label: `Go to ${url}` }
-
-  const byId = new Map(tabs.map((t) => [t.id, t]))
-  const matches = rankTabs(q, tabs)
-    .slice(0, COMMAND_TAB_LIMIT)
-    .flatMap(({ id }) => {
-      const tab = byId.get(id)
-      return tab ? [{ kind: 'tab' as const, id, label: tab.title, hint: 'Switch to tab' }] : []
-    })
-  return [first, ...matches]
 }

@@ -6,6 +6,7 @@ import {
   browserView,
   CONTEXT_LIMIT,
   openSession,
+  recentFirst,
   sidebarSections,
   sidebarTree,
   todayCloseOrder,
@@ -178,6 +179,8 @@ describe('browserView', () => {
       themeColor: '#123456',
       webContentsId: 7,
       loaded: true,
+      folderId: null,
+      lastActiveAt: null,
     })
   })
 
@@ -463,6 +466,21 @@ describe('sidebarSections', () => {
   it('only looks at the given space', () => {
     const sections = sidebarSections(stateOf([at('t1', 0)]), 's2', on)
     expect(sections.today.map(shape)).toEqual(['x@0'])
+  })
+})
+
+describe('recentFirst', () => {
+  it('orders tabs most recently active first, never-active last in their order', () => {
+    const at = (id: string, lastActiveAt: string | null) => ({ id, lastActiveAt })
+    const tabs = [
+      at('never1', null),
+      at('old', '2026-11-20T08:00:00.000Z'),
+      at('never2', null),
+      at('new', '2026-11-20T10:00:00.000Z'),
+    ]
+    expect(recentFirst(tabs).map((t) => t.id)).toEqual(['new', 'old', 'never1', 'never2'])
+    // The input is left as it was.
+    expect(tabs[0]?.id).toBe('never1')
   })
 })
 
