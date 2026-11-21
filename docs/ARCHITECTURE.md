@@ -434,6 +434,16 @@ results come back to the lead as a short summary + branch name, never the full c
   on `page-title-updated`. Commands `history.frequent` (a space's most visited, for the new-tab
   dock), `history.search` (all spaces) and `history.forget`; deleting a space wipes its rows.
   History is personal data: it stays in this SQLite file and is never sent anywhere.
+- **Downloads.** `main/browser/downloads.ts` hooks `will-download` once on every space session
+  (`SpaceSessions` `onSession`) and saves straight to `app.getPath('downloads')`, no dialog, under
+  `uniqueDownloadPath` (`a (1).pdf` when `a.pdf` is taken). `core/browser/downloadsStore.ts` keeps
+  one `downloads` list for all spaces (migration 7, no space id); a row still `progressing` at
+  startup becomes `interrupted`. Progress events are throttled to one per 250 ms per download.
+  Commands `downloads.list`, `downloads.clear` (finished rows only, never the files) and
+  `downloads.show` (`shell.showItemInFolder`); event `downloads.changed` (the whole list) goes to
+  the UI and the overlay. Deleting a space wipes its session but not its downloads: the
+  `DownloadItem` outlives the session's storage, so a running download finishes and is recorded.
+  Downloads are personal data: local SQLite only.
 - **Sections.** A space's tabs sit in `favorites` (tiles), `pinned` (a tree of folders: a folder
   is at the top level or in another folder, `parentId`; the tabs and child folders of one parent
   share one ordering; `moveFolder` moves a folder with its subtree, never into itself or a
@@ -607,7 +617,8 @@ results come back to the lead as a short summary + branch name, never the full c
   `site-menu` (the address bar's menu, opens downward), and the centred cards `tab-finder` (`Mod+K`)
   and `command` (`Mod+T`), plus main's menus `context-menu` (at a point: a sidebar row's
   right-click) and `anchored-menu` (from a button), both popovers like the others (see **Drawn
-  menus**), and a space menu's cards `space-icon`, `space-color` and `confirm` (from its button).
+  menus**), and a space menu's cards `space-icon`, `space-color` and `confirm` (from its button), plus
+  `downloads` (the footer's Downloads button, a card opening upward).
   Their menu items emit `browser.shortcut`
   `{ kind: 'tab-finder' }` / `{ kind: 'command' }`, and the UI opens the overlay: a tab is created
   only when the command field is submitted (`browser.openTab { input }`).

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { OverlayRequest, Tooltip } from '@shared/ipc/contract'
 import type { MenuSpecItem } from '@shared/menuSpec'
+import { DownloadsMenu } from '../features/downloads/DownloadsMenu'
 import { SiteMenu } from '../features/browser/SiteMenu'
 import { CommandField } from '../features/finder/CommandField'
 import { TabFinder } from '../features/finder/TabFinder'
@@ -8,6 +9,7 @@ import { EmojiField } from '../features/sidebar/EmojiField'
 import { FolderIconPicker } from '../features/sidebar/FolderIconPicker'
 import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
+import { useDownloads } from '../stores/downloads'
 import { useSettings } from '../stores/settings'
 import { AnchoredCard } from '../ui/AnchoredCard'
 import { ColorPicker } from '../ui/ColorPicker'
@@ -55,10 +57,12 @@ export function Overlay() {
   /** The pending `overlay.close`, while the exit animation plays. */
   const exit = useRef<number | null>(null)
   const initBrowser = useBrowser((s) => s.init)
+  const initDownloads = useDownloads((s) => s.init)
   const workspace = useWorkspace()
   const accent = useSettings((s) => s.settings?.accent)
 
   useEffect(() => initBrowser(), [initBrowser])
+  useEffect(() => initDownloads(), [initDownloads])
   /** Drops a pending exit: a new popover replaces the closing one, or main already hid the view. */
   const cancelExit = useCallback(() => {
     if (exit.current !== null) window.clearTimeout(exit.current)
@@ -249,6 +253,20 @@ export function Overlay() {
         </AnchoredCard>
       )
     }
+    // Live: the list updates from `downloads.changed` while the card is open.
+    case 'downloads':
+      return (
+        <AnchoredCard
+          anchor={request.anchor}
+          label="Downloads"
+          testId="downloads"
+          placement="above"
+          closing={closing}
+          onClose={close}
+        >
+          <DownloadsMenu />
+        </AnchoredCard>
+      )
     case 'confirm': {
       const { action } = request
       return (

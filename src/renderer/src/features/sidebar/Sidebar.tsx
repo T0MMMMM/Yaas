@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Plus } from '@phosphor-icons/react'
+import { DownloadSimple, Plus } from '@phosphor-icons/react'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
@@ -24,6 +24,11 @@ function openNewMenu(button: HTMLElement): Promise<void> {
   return window.bigBrowser.invoke('overlay.open', { kind: 'new-menu', anchor: anchorOf(button) })
 }
 
+/** Opens the downloads card in the overlay view, above the button. */
+function openDownloads(button: HTMLElement): Promise<void> {
+  return window.bigBrowser.invoke('overlay.open', { kind: 'downloads', anchor: anchorOf(button) })
+}
+
 /** Closes every today tab in `todayCloseOrder`; ⌘⇧T reopens them one by one. */
 async function clearToday(nodes: SidebarNode[], activeId: string | null): Promise<void> {
   for (const tabId of todayCloseOrder(nodes, activeId)) {
@@ -42,8 +47,17 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   const magnet = useMagnetic<HTMLButtonElement>()
   /** Whether the + menu is open in the overlay. */
   const [menuOpen, setMenuOpen] = useState(false)
+  /** Whether the downloads card is open in the overlay. */
+  const [downloadsOpen, setDownloadsOpen] = useState(false)
 
-  useEffect(() => window.bigBrowser.on('overlay.closed', () => setMenuOpen(false)), [])
+  useEffect(
+    () =>
+      window.bigBrowser.on('overlay.closed', () => {
+        setMenuOpen(false)
+        setDownloadsOpen(false)
+      }),
+    [],
+  )
 
   const sections = workspace?.sections
   const activeId = workspace?.activeTab?.id ?? null
@@ -144,8 +158,20 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             </div>
 
             <div className={styles.bottom}>
-              {/* Downloads (plan 4). */}
-              <div className={styles.slot} />
+              <button
+                className={`${styles.iconButton} ${styles.downloads} no-drag`}
+                aria-label="Downloads"
+                aria-haspopup="dialog"
+                aria-expanded={downloadsOpen}
+                title="Downloads"
+                onClick={(e) => {
+                  setDownloadsOpen(true)
+                  openDownloads(e.currentTarget).catch(() => setDownloadsOpen(false))
+                }}
+                {...magnet}
+              >
+                <DownloadSimple size={18} weight="regular" />
+              </button>
 
               <div className={styles.spaces} role="tablist" aria-label="Spaces">
                 {workspace?.spaces.map((s) => (

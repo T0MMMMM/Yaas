@@ -20,6 +20,7 @@ describe('openDatabase', () => {
       'tabs',
       'folders',
       'history',
+      'downloads',
     ])
   })
 

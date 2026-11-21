@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   app,
@@ -6,6 +7,7 @@ import {
   Menu,
   screen,
   session,
+  shell,
   ShareMenu,
   type WebContents,
 } from 'electron'
@@ -25,9 +27,11 @@ import {
 } from '@shared/ipc/contract'
 import { resolveInput } from '@shared/url'
 import { AdBlocker } from './browser/adBlocker'
+import { Downloads } from './browser/downloads'
 import { OverlayView } from './browser/overlayView'
 import { folderMenu, spaceMenu, tabMenu, type SidebarMenuHost } from './browser/sidebarMenus'
 import { MenuRegistry, menuRequest, type MenuItemDef, type MenuWhere } from './menus/menuRegistry'
+import { DownloadsStore } from '@core/browser/downloadsStore'
 import { HistoryStore } from '@core/browser/historyStore'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
@@ -149,11 +153,22 @@ const extensionHost: ExtensionHost = {
   window: () => mainWindow,
 }
 
+// One list for every space: each space session hands its downloads over as it is set up.
+const downloads = new Downloads({
+  store: new DownloadsStore(db),
+  directory: () => app.getPath('downloads'),
+  exists: existsSync,
+  onChange: (list) => {
+    for (const contents of trustedContents()) emit(contents, 'downloads.changed', list)
+  },
+})
+
 const testExtension = process.env['BIG_BROWSER_TEST_EXTENSION']
 const spaceSessions = new SpaceSessions({
   userData: app.getPath('userData'),
   mirrorPreload: MIRROR_PRELOAD_PATH,
   host: extensionHost,
+  onSession: (ses) => downloads.attach(ses),
   ...(testExtension ? { testExtension } : {}),
   // Tests run on a throwaway data dir and never touch the network.
   autoUpdate: !userDataOverride,
@@ -399,6 +414,12 @@ registerCommands(
       history.frequent(spaceId ?? browser.snapshot().activeSpaceId),
     'history.search': ({ query }) => history.search(query),
     'history.forget': ({ id }) => history.forget(id),
+    'downloads.list': () => downloads.list(),
+    'downloads.clear': () => downloads.clear(),
+    'downloads.show': ({ id }) => {
+      const path = downloads.pathOf(id)
+      if (path) shell.showItemInFolder(path)
+    },
     'browser.setPageBounds': (bounds) => views().setBounds(bounds),
     'browser.setPageVisible': ({ visible }) => views().setVisible(visible),
     'browser.copyLink': ({ tabId }) => {

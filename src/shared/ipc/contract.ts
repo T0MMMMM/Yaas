@@ -7,6 +7,7 @@ import type {
   BrowserSnapshot,
   BrowserSpace,
   BrowserTab,
+  Download,
   HistoryEntry,
 } from '../model'
 import { menuSpecSchema, pointSchema } from '../menuSpec'
@@ -127,6 +128,17 @@ export const historyEntrySchema = z.object({
   lastVisit: z.string(),
 }) satisfies z.ZodType<HistoryEntry>
 
+export const downloadSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  path: z.string(),
+  filename: z.string(),
+  totalBytes: z.number().int(),
+  receivedBytes: z.number().int(),
+  state: z.enum(['progressing', 'completed', 'interrupted']),
+  startedAt: z.string(),
+}) satisfies z.ZodType<Download>
+
 export const browserFolderSchema = z.object({
   id: z.string(),
   spaceId: z.string(),
@@ -201,6 +213,7 @@ export const overlayKindSchema = z.enum([
   'space-color',
   'folder-icon',
   'confirm',
+  'downloads',
 ])
 export type OverlayKind = z.infer<typeof overlayKindSchema>
 
@@ -212,7 +225,9 @@ export type ConfirmAction = z.infer<typeof confirmActionSchema>
 
 /** A popover and the rect (window DIP) of the button it opens from, or a centred card. */
 export const overlayRequestSchema = z.union([
-  z.object({ kind: z.enum(['new-menu', 'site-menu']), anchor: pageBoundsSchema }).strict(),
+  z
+    .object({ kind: z.enum(['new-menu', 'site-menu', 'downloads']), anchor: pageBoundsSchema })
+    .strict(),
   z.object({ kind: z.enum(['tab-finder', 'command']) }).strict(),
   /** A space's icon (an emoji) or colour, edited from the button its menu opened from. */
   z
@@ -428,6 +443,12 @@ export const commands = {
   },
   /** Forgets one page. */
   'history.forget': { input: z.object({ id }).strict(), output: z.void() },
+  /** The downloads of every space, newest first. */
+  'downloads.list': { input: z.void(), output: z.array(downloadSchema) },
+  /** Forgets the finished downloads (never their files). */
+  'downloads.clear': { input: z.void(), output: z.void() },
+  /** Shows a downloaded file in Finder / Explorer. */
+  'downloads.show': { input: z.object({ id }).strict(), output: z.void() },
   'browser.setPageBounds': { input: pageBoundsSchema, output: z.void() },
   'browser.setPageVisible': {
     input: z.object({ visible: z.boolean() }).strict(),
@@ -482,6 +503,8 @@ export const events = {
   'browser.changed': browserStateSchema,
   /** Something main asks the UI to do (see shortcutSchema). */
   'browser.shortcut': shortcutSchema,
+  /** To the UI and the overlay: the downloads list changed (progress, a finish, Clear). */
+  'downloads.changed': z.array(downloadSchema),
   /** To the overlay only: which popover to show, and where. */
   'overlay.opened': overlayRequestSchema,
   /** To the overlay only: the tooltip to draw, or `null` to fade it out. */

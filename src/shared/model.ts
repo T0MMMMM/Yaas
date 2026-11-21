@@ -115,6 +115,24 @@ export interface HistoryEntry {
   lastVisit: string
 }
 
+/** How a download stands: `interrupted` covers failures, cancellations and a quit mid-way. */
+export type DownloadState = 'progressing' | 'completed' | 'interrupted'
+
+/** A file saved to the system Downloads folder (personal data: the local database only). */
+export interface Download {
+  id: string
+  url: string
+  /** Where the file was saved. */
+  path: string
+  filename: string
+  /** 0 while the size is unknown. */
+  totalBytes: number
+  receivedBytes: number
+  state: DownloadState
+  /** ISO. */
+  startedAt: string
+}
+
 /**
  * A folder of pinned tabs, at the top of pinned or in another folder. The tabs and child folders
  * of one parent (pinned's top level, or a folder) share one ordering.

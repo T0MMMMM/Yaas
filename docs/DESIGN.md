@@ -481,6 +481,15 @@ Browsing history (pages visited, per space) is personal data. It is kept only in
 database, never sent anywhere, shown only in the new-tab dock's suggestions, and each entry can be
 forgotten there. Deleting a space deletes its history.
 
+### Downloads
+
+The sidebar footer's left button (aria-label "Downloads") opens the downloads card (overlay kind
+`downloads`, an `AnchoredCard` opening upward on the funnel). It lists every space's downloads,
+newest first: the saved file name, a progress bar while downloading (it pulses when the size is
+unknown), then size and "Show in Finder" (macOS) / "Show in Explorer" (Windows). Clear forgets the
+finished rows, never the files. Files go straight to the system Downloads folder with no dialog.
+Downloads are personal data: kept only in the local database.
+
 ## 9. Accessibility
 
 - Body text contrast ≥ 4.5:1 in both schemes. Body text never sits on the accent; labels on the

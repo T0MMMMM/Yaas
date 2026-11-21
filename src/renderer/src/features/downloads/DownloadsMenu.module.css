@@ -1,0 +1,128 @@
+/* The downloads card's content (DownloadsMenu), on the shared opaque popover (ui/AnchoredCard). */
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-1);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+}
+
+.clear,
+.link {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease);
+}
+
+.clear:hover:not(:disabled),
+.link:hover {
+  color: var(--text);
+}
+
+.clear:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--space-3) var(--space-1);
+  color: var(--text-faint);
+  font-size: var(--text-sm);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* A long list scrolls inside the card. */
+  max-height: calc(var(--control-size) * 8);
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-hair);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.row:hover {
+  background: var(--bg-menu-hover);
+}
+
+.name {
+  overflow: hidden;
+  color: var(--text);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.detail .link {
+  margin-left: auto;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+.bar {
+  display: block;
+  height: var(--space-1);
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--dur-base) var(--ease);
+}
+
+/* Size unknown: the bar pulses instead of filling. */
+.bar[data-indeterminate] .fill {
+  width: 100% !important;
+  animation: pulse var(--dur-spin) var(--ease) infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.3;
+  }
+}

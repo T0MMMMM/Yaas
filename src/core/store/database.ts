@@ -60,6 +60,12 @@ const MIGRATIONS: string[] = [
      url TEXT NOT NULL, title TEXT NOT NULL, visit_count INTEGER NOT NULL,
      last_visit TEXT NOT NULL, UNIQUE(space_id, url)
    );`,
+  // 7 — downloads, one list for every space (personal data: stays in this file)
+  `CREATE TABLE downloads (
+     id TEXT PRIMARY KEY, url TEXT NOT NULL, path TEXT NOT NULL, filename TEXT NOT NULL,
+     total_bytes INTEGER NOT NULL, received_bytes INTEGER NOT NULL, state TEXT NOT NULL,
+     started_at TEXT NOT NULL
+   );`,
 ]
 
 export type Database = DatabaseSync

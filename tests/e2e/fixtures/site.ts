@@ -10,6 +10,8 @@ const pages: Record<string, string> = {
   '/c': `<!doctype html><html><head><title>Page C</title></head><body>C</body></html>`,
   '/long': `<!doctype html><html><head><title>${'A very long page title '.repeat(4).slice(0, 80)}</title></head><body>Long</body></html>`,
   '/huge': `<!doctype html><html><head><title>${'Huge title '.repeat(300)}</title></head><body>Huge</body></html>`,
+  '/downloads': `<!doctype html><html><head><title>Files</title></head>
+<body><a id="file" href="/report.txt" download>Report</a></body></html>`,
   '/with-ad': `<!doctype html><html><head><title>With Ad</title></head>
 <body><img id="ad" src="/ads/banner.png" alt=""></body></html>`,
   '/with-icon': `<!doctype html><html><head><title>With Icon</title>
@@ -30,6 +32,15 @@ export async function startSite(): Promise<{
   const server = createServer((req, res) => {
     if (req.url === '/ads/banner.png' || req.url === '/favicon.png') {
       res.writeHead(200, { 'content-type': 'image/png' }).end(BANNER_PNG)
+      return
+    }
+    if (req.url === '/report.txt') {
+      res
+        .writeHead(200, {
+          'content-type': 'text/plain',
+          'content-disposition': 'attachment; filename="report.txt"',
+        })
+        .end('the report')
       return
     }
     const body = pages[req.url ?? '']

@@ -30,6 +30,8 @@ export interface SpaceSessionsOptions {
   autoUpdate?: boolean
   /** Installs without asking (e2e): a native dialog would block the test. Defaults to false. */
   autoAllowInstalls?: boolean
+  /** Called once for each session as it is set up (downloads hook in here). */
+  onSession?: (ses: Session) => void
 }
 
 export class SpaceSessions {
@@ -67,6 +69,7 @@ export class SpaceSessions {
     }
 
     this.applyAdBlocking(ses)
+    this.opts.onSession?.(ses)
     void this.loadExtensions(spaceId, ses)
     return ses
   }
