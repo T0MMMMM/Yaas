@@ -1,6 +1,7 @@
 // One Electron session per space (`persist:space-<id>`): its cookies, permissions and Chrome
 // extensions. Each session is set up once, the first time a tab of that space needs it.
-import { join } from 'node:path'
+import { rm } from 'node:fs/promises'
+import { isAbsolute, join, relative, resolve } from 'node:path'
 import { dialog, session, type BrowserWindow, type Session, type WebContents } from 'electron'
 import { ElectronChromeExtensions } from 'electron-chrome-extensions'
 import { installChromeWebStore } from 'electron-chrome-web-store'
@@ -32,6 +33,20 @@ export interface SpaceSessionsOptions {
   autoAllowInstalls?: boolean
   /** Called once for each session as it is set up (downloads hook in here). */
   onSession?: (ses: Session) => void
+  /** Deletes a folder and what it holds (a seam for tests). Defaults to a recursive `rm`. */
+  removeDir?: (path: string) => Promise<void>
+}
+
+/**
+ * The folder holding a space's Web Store extensions, or null when `spaceId` would resolve outside
+ * `userData/extensions` (or to it): a guard before deleting it.
+ */
+export function extensionsDir(userData: string, spaceId: string): string | null {
+  const root = resolve(userData, 'extensions')
+  const dir = resolve(root, spaceId)
+  const rel = relative(root, dir)
+  if (!rel || rel.startsWith('..') || isAbsolute(rel)) return null
+  return dir
 }
 
 export class SpaceSessions {
@@ -86,16 +101,20 @@ export class SpaceSessions {
   }
 
   /**
-   * Erases a deleted space's browsing data (cookies, storage, cache) and forgets its extensions.
-   * Its tab views are already gone.
+   * Erases a deleted space's browsing data (cookies, storage, cache) and its extensions: unloaded
+   * (their workers stop, and the Web Store updater, which checks the loaded ones, has nothing left
+   * to update) and deleted from disk. Its tab views are already gone.
    */
   async wipe(spaceId: string): Promise<void> {
     const ses = session.fromPartition(spacePartition(spaceId))
     this.extensions.delete(spaceId)
     this.windowTabs.delete(spaceId)
     this.spaces.delete(ses)
+    for (const { id } of ses.extensions.getAllExtensions()) ses.extensions.removeExtension(id)
     await ses.clearStorageData()
     await ses.clearCache()
+    const dir = extensionsDir(this.opts.userData, spaceId)
+    if (dir) await (this.opts.removeDir ?? removeTree)(dir)
   }
 
   /** The space whose session this is, or null for any other session (the UI's, the default). */
@@ -181,3 +200,5 @@ export class SpaceSessions {
     }
   }
 }
+
+const removeTree = (path: string): Promise<void> => rm(path, { recursive: true, force: true })
