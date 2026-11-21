@@ -1,9 +1,9 @@
 import { useContext, useMemo, useRef, useState } from 'react'
-import { Folder, FolderOpen } from '@phosphor-icons/react'
 import { MAX_FOLDER_INDENT, type SidebarNode } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { FolderTrailContext } from './FolderTrailContext'
-import { folderHue } from './hash'
+import { FolderGlyph } from './glyphs'
+import { folderHue, folderIcon } from './hash'
 import { showFolderMenu } from './menus'
 import { Rows } from './SidebarRows'
 import { tilt } from './tilt'
@@ -76,9 +76,19 @@ export function FolderRow({
   const key = auto ? `auto:${node.host}` : node.folder.id
   const name = auto ? node.host : node.folder.name
   const collapsed = auto ? Boolean(collapsedHosts[node.host]) : node.folder.collapsed
-  const Icon = collapsed ? Folder : FolderOpen
-  // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue.
-  const hue = String(folderHue(name))
+  // A pinned folder's chosen hue or emoji; an automatic folder takes the hue of its host.
+  const icon = auto ? { kind: 'hue' as const, hue: folderHue(name) } : folderIcon(node.folder)
+  // Icon-only mode marks a filed tab with one bar per folder it sits in: the folder's hue (an
+  // emoji icon keeps the hue of the name).
+  const hue = String(icon.kind === 'hue' ? icon.hue : folderHue(name))
+  const glyph =
+    icon.kind === 'emoji' ? (
+      <span className={styles.emoji} data-testid="folder-emoji" aria-hidden="true">
+        {icon.emoji}
+      </span>
+    ) : (
+      <FolderGlyph hue={icon.hue} open={!collapsed} />
+    )
   // Past the deepest indent, a folder's rows line up with it.
   const indents = node.kind === 'auto-folder' || node.depth < MAX_FOLDER_INDENT
   const trail = useMemo(() => [...outerTrail, hue], [outerTrail, hue])
@@ -110,12 +120,12 @@ export function FolderRow({
         onContextMenu={(e) => {
           if (node.kind !== 'folder') return
           e.preventDefault()
-          showFolderMenu(node.folder.id, e)
+          showFolderMenu(node.folder.id, e, e.currentTarget)
         }}
       >
         {renaming && node.kind === 'folder' ? (
           <div className={styles.row}>
-            <Icon className={styles.icon} weight="fill" />
+            {glyph}
             <NameField folderId={node.folder.id} name={node.folder.name} />
           </div>
         ) : (
@@ -125,7 +135,7 @@ export function FolderRow({
             title={auto ? `${name} — tabs of this site` : name}
             onClick={toggle}
           >
-            <Icon className={styles.icon} weight="fill" />
+            {glyph}
             <span className={styles.title}>{name}</span>
             {/* Visual only: the name stays the folder's (aria-expanded says it is closed). */}
             {collapsed && (

@@ -23,15 +23,24 @@
   transform: translateY(-1px);
 }
 
+/* The flap swings open from its bottom edge: shorter and leaning, the paper showing above it.
+   transform-box makes the origin the path's own box, so nothing shifts in the layout. */
 .front {
   fill: hsl(var(--hue) 85% 64%);
-  transition: d var(--dur-base) var(--ease-bounce);
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform var(--dur-base) var(--ease-bounce);
+}
+
+.folder[data-open='true'] .front {
+  transform: skewX(-8deg) scaleY(0.78);
 }
 
 .shine {
   stroke: rgb(255 255 255 / 0.45);
   stroke-width: 0.8;
   stroke-linecap: round;
+  transition: opacity var(--dur-fast) var(--ease);
 }
 
 .folder[data-open='true'] .shine {

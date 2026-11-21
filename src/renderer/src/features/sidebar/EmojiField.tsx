@@ -1,38 +1,61 @@
 import { useState } from 'react'
-import { COMMON_EMOJIS, firstGrapheme } from './emoji'
+import { COMMON_EMOJIS, ICON_MAX, emojiGrapheme } from './emoji'
 import styles from './EmojiField.module.css'
 
-/** Longest icon the contract takes (`browser.setSpaceIcon`). */
-const ICON_MAX = 16
-
 /**
- * Picks an emoji: a text field that keeps the first character typed or pasted (the system emoji
- * picker types into it too), a row of common emojis, and "No icon" (`null`).
+ * Picks an emoji: a text field that takes the first emoji typed or pasted (the system emoji
+ * picker types into it too; anything else is refused with a hint), a row of common emojis, and
+ * a button for `null` ("No icon", or `noneLabel`). Choosing the current emoji picks it again.
  */
 export function EmojiField({
   value,
   onPick,
+  noneLabel = 'No icon',
+  noneActive = value === null,
 }: {
   value: string | null
   onPick: (emoji: string | null) => void
+  noneLabel?: string
+  /** Whether the `null` button shows as the current choice. */
+  noneActive?: boolean
 }) {
   const [draft, setDraft] = useState(value ?? '')
+  const [refused, setRefused] = useState(false)
   return (
     <div className={styles.field}>
       <input
         className={styles.input}
         aria-label="Emoji"
+        aria-invalid={refused || undefined}
         placeholder="Type or paste an emoji"
         value={draft}
         autoFocus
         spellCheck={false}
         onFocus={(e) => e.currentTarget.select()}
-        onChange={(e) => {
-          const emoji = firstGrapheme(e.target.value)
-          setDraft(emoji ?? '')
-          if (emoji && emoji !== value && emoji.length <= ICON_MAX) onPick(emoji)
+        // onInput, not onChange: typing the current emoji over itself changes no value, and
+        // React's onChange would stay silent (the card must still close).
+        onChange={() => undefined}
+        onInput={(e) => {
+          const typed = e.currentTarget.value.trim()
+          const emoji = emojiGrapheme(typed)
+          if (typed === '') {
+            setDraft('')
+            setRefused(false)
+          } else if (emoji === null || emoji.length > ICON_MAX) {
+            // Not an emoji (or too long to store): keep what was there and say so.
+            setRefused(true)
+          } else {
+            setDraft(emoji)
+            setRefused(false)
+            onPick(emoji)
+          }
         }}
       />
+      {refused && (
+        <p className={styles.hint} role="alert">
+          Only emojis work here.
+        </p>
+      )}
       <div className={styles.grid}>
         {COMMON_EMOJIS.map((emoji) => (
           <button
@@ -46,8 +69,8 @@ export function EmojiField({
           </button>
         ))}
       </div>
-      <button className={styles.none} aria-pressed={value === null} onClick={() => onPick(null)}>
-        No icon
+      <button className={styles.none} aria-pressed={noneActive} onClick={() => onPick(null)}>
+        {noneLabel}
       </button>
     </div>
   )

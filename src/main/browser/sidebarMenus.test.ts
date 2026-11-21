@@ -87,6 +87,8 @@ describe('tabMenu', () => {
 })
 
 describe('folderMenu', () => {
+  const anchor = { x: 10, y: 20, width: 200, height: 28 }
+
   it('moves a folder to the top level or any folder outside its own subtree', () => {
     const { store, host, spaceId } = setup()
     const outer = store.createFolder(spaceId, 'Outer')
@@ -94,8 +96,14 @@ describe('folderMenu', () => {
     store.createFolder(spaceId, 'Deep', inner.id)
     const other = store.createFolder(spaceId, 'Other')
 
-    const items = folderMenu(host, outer.id)
-    expect(labels(items)).toEqual(['Rename', 'Move to Folder', 'separator', 'Delete Folder'])
+    const items = folderMenu(host, outer.id, anchor)
+    expect(labels(items)).toEqual([
+      'Rename',
+      'Change Icon…',
+      'Move to Folder',
+      'separator',
+      'Delete Folder',
+    ])
     const move = find(items, 'Move to Folder').submenu
     // Not into itself, Inner or Deep (its subtree).
     expect(labels(move)).toEqual(['Top level', 'separator', 'Other'])
@@ -105,14 +113,25 @@ describe('folderMenu', () => {
     find(items, 'Other').run?.()
     expect(store.snapshot().folders.find((f) => f.id === outer.id)?.parentId).toBe(other.id)
 
-    find(folderMenu(host, inner.id), 'Top level').run?.()
+    find(folderMenu(host, inner.id, anchor), 'Top level').run?.()
     expect(store.snapshot().folders.find((f) => f.id === inner.id)?.parentId).toBeNull()
+  })
+
+  it('opens the icon card from the folder row', () => {
+    const { store, host, spaceId } = setup()
+    const folder = store.createFolder(spaceId, 'Reading')
+    find(folderMenu(host, folder.id, anchor), 'Change Icon…').run?.()
+    expect(host.openOverlay).toHaveBeenCalledWith({
+      kind: 'folder-icon',
+      anchor,
+      folderId: folder.id,
+    })
   })
 
   it('asks the sidebar to rename the folder', () => {
     const { store, host, spaceId } = setup()
     const folder = store.createFolder(spaceId, 'Reading')
-    find(folderMenu(host, folder.id), 'Rename').run?.()
+    find(folderMenu(host, folder.id, anchor), 'Rename').run?.()
     expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'rename-folder', folderId: folder.id })
   })
 })

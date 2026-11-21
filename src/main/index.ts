@@ -344,6 +344,7 @@ registerCommands(
     'browser.moveFolder': ({ folderId, parentId, index }) =>
       browser.moveFolder(folderId, { parentId, index }),
     'browser.renameFolder': ({ folderId, name }) => browser.renameFolder(folderId, name),
+    'browser.setFolderIcon': ({ folderId, icon }) => browser.setFolderIcon(folderId, icon),
     'browser.setFolderCollapsed': ({ folderId, collapsed }) =>
       browser.setFolderCollapsed(folderId, collapsed),
     'browser.deleteFolder': ({ folderId }) => browser.deleteFolder(folderId),
@@ -351,8 +352,11 @@ registerCommands(
       browser.reopenClosed()
     },
     'browser.showTabMenu': ({ tabId, at }) => showMenu({ at }, tabMenu(sidebarMenuHost, tabId)),
-    'browser.showFolderMenu': ({ folderId, at }) =>
-      showMenu({ at }, folderMenu(sidebarMenuHost, folderId)),
+    'browser.showFolderMenu': ({ folderId, at, anchor }) =>
+      showMenu(
+        { at },
+        folderMenu(sidebarMenuHost, folderId, anchor ?? { x: at.x, y: at.y, width: 1, height: 1 }),
+      ),
     'browser.showSpaceMenu': ({ spaceId, anchor }) =>
       showMenu({ anchor, placement: 'below' }, spaceMenu(sidebarMenuHost, spaceId, anchor)),
     'browser.activateTab': ({ tabId }) => browser.activateTab(tabId),

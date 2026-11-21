@@ -183,6 +183,7 @@ export const overlayKindSchema = z.enum([
   'anchored-menu',
   'space-icon',
   'space-color',
+  'folder-icon',
   'confirm',
 ])
 export type OverlayKind = z.infer<typeof overlayKindSchema>
@@ -203,6 +204,14 @@ export const overlayRequestSchema = z.union([
       kind: z.enum(['space-icon', 'space-color']),
       anchor: pageBoundsSchema,
       spaceId: z.string().min(1),
+    })
+    .strict(),
+  /** A folder's icon (a hue or an emoji), edited from the row its menu opened at. */
+  z
+    .object({
+      kind: z.literal('folder-icon'),
+      anchor: pageBoundsSchema,
+      folderId: z.string().min(1),
     })
     .strict(),
   /** A question with Cancel and `confirmLabel`, which runs `action`. */
@@ -327,6 +336,11 @@ export const commands = {
     input: z.object({ folderId: id, collapsed: z.boolean() }).strict(),
     output: z.void(),
   },
+  /** `hue:<deg>` (a folder hue) or an emoji; null goes back to the hue of the name. */
+  'browser.setFolderIcon': {
+    input: z.object({ folderId: id, icon: z.string().min(1).max(16).nullable() }).strict(),
+    output: z.void(),
+  },
   /** Deletes a folder with its child folders and tabs (reopenable together). */
   'browser.deleteFolder': { input: folderRef, output: z.void() },
   /** Reopens the last closed tab, or the last deleted folder with its subtree. */
@@ -336,9 +350,14 @@ export const commands = {
     input: z.object({ tabId: id, at: pointSchema }).strict(),
     output: z.void(),
   },
-  /** The folder's menu, drawn at the pointer (rename, move to folder, delete). */
+  /**
+   * The folder's menu, drawn at the pointer (rename, icon, move to folder, delete); its icon card
+   * opens from `anchor`, the folder's row (window DIP), or the pointer without one.
+   */
   'browser.showFolderMenu': {
-    input: z.object({ folderId: id, at: pointSchema }).strict(),
+    input: z
+      .object({ folderId: id, at: pointSchema, anchor: pageBoundsSchema.optional() })
+      .strict(),
     output: z.void(),
   },
   /**

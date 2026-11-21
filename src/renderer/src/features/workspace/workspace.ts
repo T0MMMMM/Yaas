@@ -89,6 +89,8 @@ export interface BrowserView {
   activeTab: TabView | null
   /** The active space's sidebar. */
   sections: SidebarSections
+  /** Every stored folder, in any space (the folder icon card finds its folder here). */
+  folders: BrowserFolder[]
   /** Every space's tabs, space by space, each space's in drawn order (the tab finder, ⌘K). */
   allTabs: SpaceTab[]
   /**
@@ -340,6 +342,7 @@ export function browserView(
     tabs,
     activeTab: tabs.find((t) => t.id === activeId) ?? null,
     sections,
+    folders: state.folders,
     allTabs,
     openTabIds: new Set(allTabs.map((t) => t.id)),
   }

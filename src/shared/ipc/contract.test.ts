@@ -204,6 +204,16 @@ describe('IPC contract', () => {
     expect(input.safeParse({ tabId: 'x', section: 'today', index: 1.5 }).success).toBe(false)
   })
 
+  it('validates browser.setFolderIcon', () => {
+    const input = commands['browser.setFolderIcon'].input
+    expect(input.safeParse({ folderId: 'f', icon: '🎧' }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', icon: 'hue:262' }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', icon: null }).success).toBe(true)
+    expect(input.safeParse({ folderId: 'f', icon: '' }).success).toBe(false)
+    expect(input.safeParse({ folderId: 'f', icon: 'x'.repeat(17) }).success).toBe(false)
+    expect(input.safeParse({ folderId: '', icon: null }).success).toBe(false)
+  })
+
   it('accepts a folder name of 1 to 80 characters on browser.createFolder', () => {
     const input = commands['browser.createFolder'].input
     expect(input.safeParse({ name: 'Work' }).success).toBe(true)

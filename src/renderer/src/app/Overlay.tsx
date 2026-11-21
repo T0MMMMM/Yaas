@@ -5,6 +5,7 @@ import { SiteMenu } from '../features/browser/SiteMenu'
 import { CommandField } from '../features/finder/CommandField'
 import { TabFinder } from '../features/finder/TabFinder'
 import { EmojiField } from '../features/sidebar/EmojiField'
+import { FolderIconPicker } from '../features/sidebar/FolderIconPicker'
 import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
@@ -195,6 +196,30 @@ export function Overlay() {
               onPick={(icon) => {
                 if (closing) return
                 void window.bigBrowser.invoke('browser.setSpaceIcon', { spaceId, icon })
+                close()
+              }}
+            />
+          )}
+        </AnchoredCard>
+      )
+    }
+    case 'folder-icon': {
+      const { folderId } = request
+      const folder = workspace?.folders.find((f) => f.id === folderId)
+      return (
+        <AnchoredCard
+          anchor={request.anchor}
+          label="Folder icon"
+          testId="folder-icon"
+          closing={closing}
+          onClose={close}
+        >
+          {folder && (
+            <FolderIconPicker
+              folder={folder}
+              onPick={(icon) => {
+                if (closing) return
+                void window.bigBrowser.invoke('browser.setFolderIcon', { folderId, icon })
                 close()
               }}
             />

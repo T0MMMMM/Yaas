@@ -156,7 +156,11 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
  * Rename (edited in the sidebar), move to the top level or into another folder (never into its own
  * subtree), delete with its contents. Change Icon… comes with the folder icons.
  */
-export function folderMenu(host: SidebarMenuHost, folderId: string): MenuItemDef[] {
+export function folderMenu(
+  host: SidebarMenuHost,
+  folderId: string,
+  anchor: PageBounds,
+): MenuItemDef[] {
   const { store } = host
   const snapshot = store.snapshot()
   const folder = snapshot.folders.find((f) => f.id === folderId)
@@ -177,6 +181,15 @@ export function folderMenu(host: SidebarMenuHost, folderId: string): MenuItemDef
       icon: 'PencilSimple',
       run: () => {
         if (exists()) host.emitShortcut({ kind: 'rename-folder', folderId })
+      },
+    },
+    {
+      kind: 'item',
+      id: 'icon',
+      label: 'Change Icon…',
+      icon: 'Smiley',
+      run: () => {
+        if (exists()) host.openOverlay({ kind: 'folder-icon', anchor, folderId })
       },
     },
     {

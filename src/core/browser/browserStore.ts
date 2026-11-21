@@ -430,6 +430,13 @@ export class BrowserStore {
     this.emit()
   }
 
+  /** `hue:<deg>` or an emoji; null goes back to the glyph in the name's hue. */
+  setFolderIcon(id: string, icon: string | null): void {
+    this.requireFolder(id)
+    this.db.prepare('UPDATE folders SET icon = ? WHERE id = ?').run(icon, id)
+    this.emit()
+  }
+
   setFolderCollapsed(id: string, collapsed: boolean): void {
     this.requireFolder(id)
     this.db.prepare('UPDATE folders SET collapsed = ? WHERE id = ?').run(collapsed ? 1 : 0, id)

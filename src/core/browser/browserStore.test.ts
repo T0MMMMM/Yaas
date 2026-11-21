@@ -505,6 +505,18 @@ describe('BrowserStore space model', () => {
     expect(spaceOf(store, spaceId)).toMatchObject({ icon: null, sectionCollapsed: false })
   })
 
+  it('sets and clears a folder icon, and rejects an unknown folder', () => {
+    const { store, spaceId } = setup()
+    const folder = store.createFolder(spaceId, 'Reading')
+    store.setFolderIcon(folder.id, 'hue:262')
+    expect(store.snapshot().folders.find((f) => f.id === folder.id)?.icon).toBe('hue:262')
+    store.setFolderIcon(folder.id, '🎧')
+    expect(store.snapshot().folders.find((f) => f.id === folder.id)?.icon).toBe('🎧')
+    store.setFolderIcon(folder.id, null)
+    expect(store.snapshot().folders.find((f) => f.id === folder.id)?.icon).toBeNull()
+    expect(() => store.setFolderIcon('nope', '🎧')).toThrow(BrowserError)
+  })
+
   it('rejects an unknown space', () => {
     const { store } = setup()
     expect(() => store.renameSpace('nope', 'x')).toThrow(BrowserError)

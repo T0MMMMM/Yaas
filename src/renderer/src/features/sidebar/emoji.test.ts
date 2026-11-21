@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMMON_EMOJIS, firstGrapheme } from './emoji'
+import { COMMON_EMOJIS, emojiGrapheme, firstGrapheme } from './emoji'
 
 describe('firstGrapheme', () => {
   it('keeps the first character as the user sees it', () => {
@@ -22,5 +22,23 @@ describe('COMMON_EMOJIS', () => {
     expect(COMMON_EMOJIS).toHaveLength(16)
     expect(new Set(COMMON_EMOJIS).size).toBe(16)
     for (const emoji of COMMON_EMOJIS) expect(firstGrapheme(emoji)).toBe(emoji)
+  })
+})
+
+describe('emojiGrapheme', () => {
+  it('takes the first emoji, whatever it is made of', () => {
+    expect(emojiGrapheme('🌱🌵')).toBe('🌱')
+    expect(emojiGrapheme('❤️')).toBe('❤️')
+    expect(emojiGrapheme('👨‍👩‍👧')).toBe('👨‍👩‍👧')
+    expect(emojiGrapheme('🇫🇷')).toBe('🇫🇷')
+    expect(emojiGrapheme(' 🚀')).toBe('🚀')
+  })
+
+  it('refuses letters, digits, punctuation and nothing', () => {
+    expect(emojiGrapheme('a')).toBeNull()
+    expect(emojiGrapheme('1')).toBeNull()
+    expect(emojiGrapheme('!')).toBeNull()
+    expect(emojiGrapheme('a🚀')).toBeNull()
+    expect(emojiGrapheme('')).toBeNull()
   })
 })

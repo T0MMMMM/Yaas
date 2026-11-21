@@ -24,10 +24,12 @@
   composes: title from './TabRow.module.css';
 }
 
-.icon {
+.emoji {
   flex: none;
   width: var(--icon-size);
-  height: var(--icon-size);
+  text-align: center;
+  font-size: var(--text-md);
+  line-height: 1;
 }
 
 /* Tabs in a closed folder: shown where the × of a tab row would be. */

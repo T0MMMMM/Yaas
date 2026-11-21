@@ -1,17 +1,17 @@
 // Illustrated glyphs for the sidebar: colored folders for environments, a tiny chat bubble for
-// sessions. Colors come from the name so each folder keeps its own hue.
+// sessions. A folder's hue is its chosen one, or comes from its name (hash.ts).
 import type { CSSProperties } from 'react'
-import { folderHue } from './hash'
 import styles from './glyphs.module.css'
 
-export function FolderGlyph({ name, open }: { name: string; open: boolean }) {
-  const hue = folderHue(name)
+/** The folder glyph in `hue` (degrees). Opening plays: the flap swings up, the paper rises. */
+export function FolderGlyph({ hue, open }: { hue: number; open: boolean }) {
   return (
     <svg
       className={styles.folder}
       viewBox="0 0 20 16"
       style={{ '--hue': hue } as CSSProperties}
       data-open={open}
+      data-testid="folder-glyph"
       aria-hidden
     >
       {/* back + tab */}
@@ -21,14 +21,10 @@ export function FolderGlyph({ name, open }: { name: string; open: boolean }) {
       />
       {/* paper peeking out when open */}
       <rect className={styles.paper} x="4" y="4.6" width="12" height="7" rx="1" />
-      {/* front flap */}
+      {/* front flap: always the closed shape; opening swings it (CSS) from its bottom edge */}
       <path
         className={styles.front}
-        d={
-          open
-            ? 'M3.6 6.6h14.6c.8 0 1.3.7 1.1 1.4l-1.6 5.4c-.2.7-.8 1.1-1.5 1.1H2.9c-.8 0-1.4-.8-1.2-1.5l1.5-5.3c.1-.7.7-1.1 1.4-1.1Z'
-            : 'M1.5 5.6c0-.9.7-1.6 1.6-1.6h13.8c.9 0 1.6.7 1.6 1.6v7.6c0 .9-.7 1.6-1.6 1.6H3.1c-.9 0-1.6-.7-1.6-1.6Z'
-        }
+        d="M1.5 5.6c0-.9.7-1.6 1.6-1.6h13.8c.9 0 1.6.7 1.6 1.6v7.6c0 .9-.7 1.6-1.6 1.6H3.1c-.9 0-1.6-.7-1.6-1.6Z"
       />
       <path className={styles.shine} d="M3.2 5.4h13.6" />
     </svg>

@@ -17,6 +17,7 @@ export const COMMAND_CHANNELS = [
   'browser.moveFolder',
   'browser.renameFolder',
   'browser.setFolderCollapsed',
+  'browser.setFolderIcon',
   'browser.deleteFolder',
   'browser.reopenClosed',
   'browser.showTabMenu',

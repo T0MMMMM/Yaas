@@ -68,3 +68,13 @@
   min-height: var(--control-size);
   color: var(--text-muted);
 }
+
+.hint {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--danger);
+}

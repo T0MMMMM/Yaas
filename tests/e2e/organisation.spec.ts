@@ -724,6 +724,7 @@ test('the folder menu moves a folder', async () => {
     const menu = overlay.getByTestId('menu')
     await expect(menu.getByRole('menuitem')).toHaveText([
       'Rename',
+      'Change Icon…',
       'Move to Folder',
       'Delete Folder',
     ])
@@ -837,6 +838,85 @@ test('the space icon becomes a chevron', async () => {
     await again.overlay.getByTestId('space-icon').getByRole('button', { name: 'No icon' }).click()
     await expect.poll(async () => (await activeSpace(page)).icon).toBe(null)
     await expect(header).not.toContainText('🌱')
+
+    // Letters are refused with a hint (nothing is saved); the current emoji closes the card.
+    await expect.poll(async () => (await activeSpace(page)).icon).toBe(null)
+    const picky = await openSpaceMenu(app, page)
+    await picky.menu.getByRole('menuitem', { name: 'Change Space Icon…' }).click()
+    const pickyCard = picky.overlay.getByTestId('space-icon')
+    await pickyCard.getByLabel('Emoji').fill('a')
+    await expect(pickyCard.getByRole('alert')).toHaveText('Only emojis work here.')
+    expect((await activeSpace(page)).icon).toBe(null)
+    await pickyCard.getByRole('button', { name: 'Use 🚀' }).click()
+    await expect.poll(async () => (await activeSpace(page)).icon).toBe('🚀')
+    const same = await openSpaceMenu(app, page)
+    await same.menu.getByRole('menuitem', { name: 'Change Space Icon…' }).click()
+    // Typed over the selected current emoji (fill would change nothing).
+    const field = same.overlay.getByTestId('space-icon').getByLabel('Emoji')
+    await field.press('Control+A')
+    await field.pressSequentially('🚀')
+    await expect(same.overlay.getByTestId('space-icon')).toHaveCount(0)
+  })
+})
+
+/** A folder's `icon` as main stores it. */
+const folderIconOf = (page: Page, name: string) =>
+  page.evaluate(async (folderName) => {
+    const state = await window.bigBrowser.invoke('browser.state')
+    const folder = state.folders.find((f) => f.name === folderName)
+    if (!folder) throw new Error('no folder')
+    return folder.icon
+  }, name)
+
+test('a folder takes a hue or an emoji', async () => {
+  await withBrowser(async ({ app, page }) => {
+    await page.evaluate(() => window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }))
+    const pinned = page.getByTestId('pinned')
+    const row = pinned.getByRole('button', { name: 'Reading', exact: true })
+    const openCard = async () => {
+      await row.click({ button: 'right' })
+      const overlay = await overlayPage(app)
+      await overlay.getByTestId('menu').getByRole('menuitem', { name: 'Change Icon…' }).click()
+      const card = overlay.getByTestId('folder-icon')
+      await expect(card).toBeVisible()
+      return { overlay, card }
+    }
+
+    // The 3rd hue (330) recolours the glyph.
+    const first = await openCard()
+    await first.card.getByRole('radio').nth(2).click()
+    await expect(first.card).toHaveCount(0)
+    await expect.poll(() => folderIconOf(page, 'Reading')).toBe('hue:330')
+    await expect(row.getByTestId('folder-glyph')).toHaveCSS('--hue', '330')
+
+    // An emoji replaces the glyph.
+    const second = await openCard()
+    await second.card.getByLabel('Emoji').fill('🎧')
+    await expect.poll(() => folderIconOf(page, 'Reading')).toBe('🎧')
+    await expect(row.getByTestId('folder-emoji')).toHaveText('🎧')
+    await expect(row.getByTestId('folder-glyph')).toHaveCount(0)
+
+    // Default brings the glyph back.
+    const third = await openCard()
+    await third.card.getByRole('button', { name: 'Default' }).click()
+    await expect.poll(() => folderIconOf(page, 'Reading')).toBe(null)
+    await expect(row.getByTestId('folder-glyph')).toBeVisible()
+    await expect(row.getByTestId('folder-emoji')).toHaveCount(0)
+  })
+})
+
+test('opening a folder swings its flap and lifts the paper', async () => {
+  await withBrowser(async ({ page }) => {
+    await page.evaluate(() => window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }))
+    const row = page.getByTestId('pinned').getByRole('button', { name: 'Reading', exact: true })
+    const glyph = row.getByTestId('folder-glyph')
+    const flap = glyph.locator('path').nth(1)
+    await expect(glyph).toHaveAttribute('data-open', 'true')
+    const open = await flap.evaluate((el) => getComputedStyle(el).transform)
+    await row.click()
+    await expect(glyph).toHaveAttribute('data-open', 'false')
+    await expect.poll(() => flap.evaluate((el) => getComputedStyle(el).transform)).not.toBe(open)
+    await expect(glyph.locator('rect')).toHaveCSS('opacity', '0')
   })
 })
 
