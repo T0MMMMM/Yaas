@@ -91,7 +91,7 @@ describe('MenuRegistry', () => {
     ).toThrow(/x/)
   })
 
-  it('swallows a vanished target (not_found), lets any other error through', () => {
+  it('swallows a stale target (not_found, invalid_move), lets any other error through', () => {
     const registry = new MenuRegistry()
     const gone = registry.open([
       item('pin', () => {
@@ -105,7 +105,7 @@ describe('MenuRegistry', () => {
         throw new BrowserError('invalid_move', 'into itself')
       }),
     ])
-    expect(() => registry.choose(invalid.id, 'move')).toThrow('into itself')
+    expect(() => registry.choose(invalid.id, 'move')).not.toThrow()
 
     const broken = registry.open([
       item('boom', () => {

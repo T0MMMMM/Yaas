@@ -206,6 +206,29 @@ test('the tab menu is drawn', async () => {
   })
 })
 
+test('a submenu stays open while the pointer crosses rows into it', async () => {
+  await withPage(async ({ page, overlay }) => {
+    await page.evaluate(() => window.bigBrowser.invoke('browser.createFolder', { name: 'Box' }))
+    await page.getByTestId('tab').getByRole('button', { name: 'Page A' }).click({ button: 'right' })
+    const menu = overlay.getByTestId('menu')
+    const parent = menu.getByRole('menuitem', { name: 'Move to Folder' })
+    await parent.hover()
+    const submenu = overlay.getByTestId('submenu')
+    const target = submenu.getByRole('menuitem', { name: 'New Folder…' })
+    await expect(target).toBeVisible()
+    const from = await parent.boundingBox()
+    const to = await target.boundingBox()
+    if (!from || !to) throw new Error('menu rows not found')
+    // Diagonally down into the submenu: the way crosses Copy Link (and Duplicate) below.
+    await overlay.mouse.move(from.x + 10, from.y + from.height / 2)
+    await overlay.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 })
+    await expect(submenu).toBeVisible()
+    await target.click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('pinned').getByTestId('folder')).toHaveCount(2)
+  })
+})
+
 test('the tab menu works from the keyboard', async () => {
   await withPage(async ({ page, overlay }) => {
     await page.getByTestId('tab').getByRole('button', { name: 'Page A' }).click({ button: 'right' })

@@ -177,8 +177,11 @@ export function Overlay() {
     case 'context-menu':
     case 'anchored-menu': {
       const { menu } = request
+      // A failed choice (main logs it) never surfaces here as an unhandled rejection.
       const onChoose = (itemId: string) =>
-        void window.bigBrowser.invoke('overlay.choose', { menuId: menu.id, itemId })
+        void window.bigBrowser
+          .invoke('overlay.choose', { menuId: menu.id, itemId })
+          .catch((error: unknown) => console.warn('Menu item failed:', error))
       return request.kind === 'context-menu' ? (
         <Menu
           key={menu.id}

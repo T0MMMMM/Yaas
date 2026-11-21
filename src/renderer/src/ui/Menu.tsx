@@ -39,6 +39,12 @@ type MenuProps = MenuWhere & {
 /** Space between a submenu card and the card it opens from. */
 const SUBMENU_GAP = 4
 
+/**
+ * How long an open submenu stays open while the pointer crosses other rows of its card (moving
+ * diagonally into it). Reaching the submenu in that time keeps it; resting on a row switches.
+ */
+export const SUBMENU_GRACE_MS = 250
+
 /** An open submenu: the row it opens from, in window coordinates (layout, not transformed). */
 interface OpenSubmenu {
   id: string
@@ -71,7 +77,8 @@ function rowsOf(card: HTMLElement | null): HTMLElement[] {
  * A yab-shaped popover (spec, "Menus and settings"): a rounded opaque card of rows (icon or check,
  * label, shortcut or a submenu's caret). Joined to its button by the funnel, or opened at the
  * pointer and kept inside the window. A submenu opens beside its row (hover, →, Enter) as a second
- * card and closes with ← or by hovering another row. Escape or a click outside closes everything.
+ * card and closes with ← or by resting on another row (after a short grace, so the pointer can cross
+ * rows on its way into it). Escape or a click outside closes everything.
  */
 export function Menu(props: MenuProps) {
   const { items, closing = false, onChoose, onClose } = props
@@ -80,6 +87,13 @@ export function Menu(props: MenuProps) {
   const [path, setPath] = useState<OpenSubmenu[]>([])
   /** The row to focus once the next render is laid out (`null`: the card's first row). */
   const pendingFocus = useRef<{ level: number; id: string | null } | null>(null)
+  /** A submenu switch waiting out the grace (the pointer may be on its way into the submenu). */
+  const graceTimer = useRef<number | null>(null)
+  const cancelGrace = () => {
+    if (graceTimer.current !== null) window.clearTimeout(graceTimer.current)
+    graceTimer.current = null
+  }
+  useEffect(() => cancelGrace, [])
   const hasFilter = items[0]?.kind === 'filter'
 
   // Each open submenu's items: the chain stops at a row that no longer has one.
@@ -143,6 +157,7 @@ export function Menu(props: MenuProps) {
   }
 
   const onRowClick = (level: number, entry: Entry, e: MouseEvent<HTMLButtonElement>) => {
+    cancelGrace()
     if (!entry.submenu) return choose(entry)
     if (!entry.enabled) return
     openSubmenu(level, entry, e.currentTarget)
@@ -151,6 +166,7 @@ export function Menu(props: MenuProps) {
   }
 
   const onKeyDown = (level: number, e: KeyboardEvent<HTMLDivElement>) => {
+    cancelGrace()
     const active = document.activeElement as HTMLElement | null
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
@@ -178,10 +194,23 @@ export function Menu(props: MenuProps) {
 
   const onRowEnter = (level: number, entry: Entry, e: MouseEvent<HTMLButtonElement>) => {
     if (closing) return
-    if (entry.enabled) e.currentTarget.focus({ preventScroll: true })
-    // Hovering another row closes a deeper submenu; a submenu's row opens its own.
-    if (entry.submenu && entry.enabled) openSubmenu(level, entry, e.currentTarget)
-    else setPath((current) => (current.length > level ? current.slice(0, level) : current))
+    cancelGrace()
+    const row = e.currentTarget
+    if (entry.enabled) row.focus({ preventScroll: true })
+    // Hovering another row closes a deeper submenu; a submenu's row opens its own. While a
+    // submenu of this card is open, that waits out the grace: the pointer may be crossing rows on
+    // its way into it.
+    const opensOwn = entry.submenu !== undefined && entry.enabled
+    const switchSubmenu = () =>
+      opensOwn
+        ? openSubmenu(level, entry, row)
+        : setPath((current) => (current.length > level ? current.slice(0, level) : current))
+    const otherOpen = path[level] !== undefined && path[level].id !== entry.id
+    if (!otherOpen) return switchSubmenu()
+    graceTimer.current = window.setTimeout(() => {
+      graceTimer.current = null
+      switchSubmenu()
+    }, SUBMENU_GRACE_MS)
   }
 
   const at = 'at' in props ? props.at : null
@@ -222,6 +251,7 @@ export function Menu(props: MenuProps) {
             ) : null
           }
           onKeyDown={(e) => onKeyDown(level, e)}
+          onCardEnter={level > 0 ? cancelGrace : undefined}
           onRowEnter={(entry, e) => onRowEnter(level, entry, e)}
           onRowClick={(entry, e) => onRowClick(level, entry, e)}
         />
@@ -243,6 +273,8 @@ interface MenuCardProps {
   closing: boolean
   filter: ReactNode
   onKeyDown(e: KeyboardEvent<HTMLDivElement>): void
+  /** The pointer reached this card (a submenu: it stays open). */
+  onCardEnter: (() => void) | undefined
   onRowEnter(entry: Entry, e: MouseEvent<HTMLButtonElement>): void
   onRowClick(entry: Entry, e: MouseEvent<HTMLButtonElement>): void
 }
@@ -260,6 +292,7 @@ function MenuCard({
   closing,
   filter,
   onKeyDown,
+  onCardEnter,
   onRowEnter,
   onRowClick,
 }: MenuCardProps) {
@@ -318,6 +351,7 @@ function MenuCard({
       role="menu"
       tabIndex={-1}
       onKeyDown={onKeyDown}
+      onPointerEnter={onCardEnter}
       data-testid={level === 0 ? 'menu' : 'submenu'}
     >
       {anchored && (

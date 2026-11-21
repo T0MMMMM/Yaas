@@ -34,6 +34,9 @@ export function menuRequest(where: MenuWhere, menu: MenuSpec): OverlayRequest {
     : { kind: 'anchored-menu', anchor: where.anchor, placement: where.placement, menu }
 }
 
+/** Store errors that only mean the menu's target changed while it was open. */
+const STALE: ReadonlySet<BrowserError['code']> = new Set(['not_found', 'invalid_move'])
+
 interface Action {
   enabled: boolean
   run: (() => void) | undefined
@@ -63,8 +66,9 @@ export class MenuRegistry {
   }
 
   /**
-   * Runs the chosen item, once. Its tab, folder or space may have vanished while the menu was open
-   * (closed by a shortcut, a page, another window): the store's `not_found` is then ignored.
+   * Runs the chosen item, once. Its tab, folder or space may have vanished or moved while the menu
+   * was open (closed by a shortcut, a page, another window): the store's `not_found` and
+   * `invalid_move` (a folder moved under its target meanwhile) are then ignored.
    */
   choose(menuId: string, itemId: string): void {
     if (this.current?.id !== menuId) return
@@ -74,7 +78,7 @@ export class MenuRegistry {
     try {
       action.run()
     } catch (error) {
-      if (!(error instanceof BrowserError && error.code === 'not_found')) throw error
+      if (!(error instanceof BrowserError && STALE.has(error.code))) throw error
     }
   }
 
