@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { startSite } from './fixtures/site'
-import { finishOnboarding, launchApp, overlayPage, uiPage } from './helpers'
+import { finishOnboarding, launchApp, overlayPage, rightClickPage, uiPage } from './helpers'
 
 type Site = Awaited<ReturnType<typeof startSite>>
 
@@ -584,5 +584,50 @@ test('the design button opens the look settings', async () => {
         .getByRole('navigation', { name: 'Settings sections' })
         .getByRole('button', { name: 'Appearance' }),
     ).toHaveAttribute('aria-current', 'page')
+  })
+})
+
+test('the page menu is drawn', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/a'))
+    await go(page, site.url('/b'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page B'])
+    // A mark that a reload wipes.
+    const marked = () =>
+      app.evaluate(({ webContents }) =>
+        webContents
+          .getAllWebContents()
+          .find((w) => w.getURL().endsWith('/b'))
+          ?.executeJavaScript('window.bigBrowserMark === 1'),
+      )
+    await app.evaluate(({ webContents }) =>
+      webContents
+        .getAllWebContents()
+        .find((w) => w.getURL().endsWith('/b'))
+        ?.executeJavaScript('window.bigBrowserMark = 1'),
+    )
+    expect(await marked()).toBe(true)
+
+    const at = { x: 40, y: 60 }
+    await rightClickPage(app, page, at)
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+    await expect(menu.getByRole('menuitem')).toHaveText(['Back', 'Forward', 'Reload', 'Inspect'])
+    await expect(menu.getByRole('menuitem', { name: 'Forward' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+    // At the pointer: the page's point plus the page view's origin in the window.
+    await overlay.waitForFunction(
+      () => document.querySelector('[data-testid="menu"]')?.getAnimations().length === 0,
+    )
+    const bounds = await shownView(app)
+    const card = await menu.boundingBox()
+    expect(Math.abs((card?.x ?? 0) - ((bounds?.x ?? 0) + at.x))).toBeLessThanOrEqual(1)
+    expect(Math.abs((card?.y ?? 0) - ((bounds?.y ?? 0) + at.y))).toBeLessThanOrEqual(1)
+
+    await menu.getByRole('menuitem', { name: 'Reload' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect.poll(marked).toBe(false)
   })
 })

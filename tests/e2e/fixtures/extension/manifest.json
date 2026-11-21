@@ -6,5 +6,9 @@
   "action": {
     "default_title": "Big Browser Test Action",
     "default_popup": "popup.html"
+  },
+  "permissions": ["contextMenus", "storage"],
+  "background": {
+    "service_worker": "background.js"
   }
 }

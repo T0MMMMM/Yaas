@@ -302,7 +302,9 @@ function openMainWindow(): void {
   overlay = overlayView
   win.on('maximize', () => emit(win.webContents, 'window.maximized', true))
   win.on('unmaximize', () => emit(win.webContents, 'window.maximized', false))
-  tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, () => overlayView.raise())
+  tabViews = new TabViews(win, browser, spaceSessions, emitBrowserState, showMenu, () =>
+    overlayView.raise(),
+  )
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
     mainWindow = null

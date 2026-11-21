@@ -62,3 +62,31 @@ export async function overlayPage(app: ElectronApplication): Promise<Page> {
   if (!found) throw new Error('Overlay page not found')
   return found
 }
+
+/**
+ * Right-clicks the active tab's page at (`x`, `y`), relative to the page, through real input
+ * events: the page then raises `context-menu` like a user's click.
+ */
+export async function rightClickPage(
+  app: ElectronApplication,
+  page: Page,
+  at: { x: number; y: number } = { x: 40, y: 40 },
+): Promise<void> {
+  const { runtime, activeSpaceId, activeTabIds } = await page.evaluate(() =>
+    window.bigBrowser.invoke('browser.state'),
+  )
+  const tabId = activeTabIds[activeSpaceId]
+  const id = tabId ? (runtime[tabId]?.webContentsId ?? null) : null
+  if (id === null) throw new Error('No active page')
+  await app.evaluate(
+    ({ webContents }, { id, at }) => {
+      const contents = webContents.fromId(id)
+      if (!contents) throw new Error(`No web contents ${id}`)
+      const base = { x: at.x, y: at.y, button: 'right' as const, clickCount: 1 }
+      contents.sendInputEvent({ type: 'mouseMove', x: at.x, y: at.y })
+      contents.sendInputEvent({ ...base, type: 'mouseDown' })
+      contents.sendInputEvent({ ...base, type: 'mouseUp' })
+    },
+    { id, at },
+  )
+}

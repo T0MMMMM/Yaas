@@ -462,8 +462,20 @@ results come back to the lead as a short summary + branch name, never the full c
   every folder of the space outside its own subtree; where it is now is checked and disabled),
   Delete Folder. Rename (and New Folder…) emit
   `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in place.
+- **Page menu.** A page's `context-menu` event (`TabViews.showPageMenu`) builds the entries of
+  `core/browser/pageMenu.ts` (spelling suggestions first — at most 5, each running
+  `replaceMisspelling`, or a disabled "No Suggestions" —, then link, image, edit or selection
+  entries, Back / Forward / Reload on a blank spot, then Inspect), splices the space's
+  `chrome.contextMenus` items before Inspect (converted by `main/menus/fromElectron.ts`
+  `toMenuItemDefs`: submenus, separators, checks, icons as 16 px PNG data URLs; choosing one calls
+  the item's own `click` like Electron would, so the extension's `onClicked` gets the tab), and
+  draws them with `showMenu` at `params.x/y` plus the page view's origin. No macOS Look Up /
+  Services.
 - **Drawn menus.** Every menu is drawn by the overlay; no `Menu.popup` is left in `src/main`
-  except the macOS share menu and the app menu bar. Wire format (`shared/menuSpec.ts`):
+  except the macOS share menu and the app menu bar (an extension action's own right-click menu,
+  opened by electron-chrome-extensions, is the library's). A choice whose target changed meanwhile
+  (`BrowserError` `not_found` or `invalid_move`) does nothing, and the overlay catches a failed
+  `overlay.choose`. Wire format (`shared/menuSpec.ts`):
   `MenuSpec = { id, items: MenuSpecItem[] }`, an item `{ kind: 'item', id, label, enabled, icon?
   (a Phosphor name or a `data:image/` URL), shortcut?, checked?, submenu? }`, `{ kind:
   'separator' }`, or a leading `{ kind: 'filter' }` (a field narrowing the rows). Main builds

@@ -1,20 +1,14 @@
 // One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
 // mirrors it: creates views lazily, shows the active one, and reports what the pages do.
-import {
-  clipboard,
-  Menu,
-  WebContentsView,
-  type BrowserWindow,
-  type MenuItem,
-  type MenuItemConstructorOptions,
-  type WebContents,
-} from 'electron'
+import { clipboard, WebContentsView, type BrowserWindow, type WebContents } from 'electron'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
 import { DEFAULT_SEARCH, hostOf } from '@shared/url'
+import { clickLikeElectron, toMenuItemDefs } from '../menus/fromElectron'
+import type { MenuItemDef, MenuWhere } from '../menus/menuRegistry'
 import type { SpaceSessions } from './spaceSessions'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
@@ -25,7 +19,10 @@ interface TabView {
   spaceId: string
 }
 
-const PAGE_MENU_LABELS: Record<PageMenuId, string> = {
+type FixedPageMenuId = Exclude<PageMenuId, `suggestion:${number}`>
+
+const PAGE_MENU_LABELS: Record<FixedPageMenuId, string> = {
+  noSuggestions: 'No Suggestions',
   openLinkInNewTab: 'Open Link in New Tab',
   copyLink: 'Copy Link',
   openImageInNewTab: 'Open Image in New Tab',
@@ -120,6 +117,8 @@ export class TabViews {
     private readonly store: BrowserStore,
     private readonly sessions: SpaceSessions,
     private readonly onRuntime: () => void,
+    /** Draws a menu in the overlay (the page's right-click menu). */
+    private readonly showMenu: (where: MenuWhere, items: MenuItemDef[]) => void,
     /** Called after a view joins the window, so the overlay can go back on top. */
     private readonly onViewAdded: () => void = () => undefined,
   ) {
@@ -328,7 +327,10 @@ export class TabViews {
     contents.on('context-menu', (_event, params) => this.showPageMenu(tabId, contents, params))
   }
 
-  /** Right-click on a page: Electron shows nothing by default. */
+  /**
+   * Right-click on a page (Electron shows nothing by default): the menu is drawn in the overlay at
+   * the pointer. No macOS Look Up / Services.
+   */
   private showPageMenu(
     tabId: string,
     contents: WebContents,
@@ -338,22 +340,27 @@ export class TabViews {
       const entry = this.views.get(tabId)
       if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url, { parentId: tabId })
     }
-    const run: Record<PageMenuId, () => void> = {
+    // The page may be gone by the time an item is chosen.
+    const live = (run: () => void) => (): void => {
+      if (!contents.isDestroyed()) run()
+    }
+    const run: Record<FixedPageMenuId, () => void> = {
+      noSuggestions: () => undefined,
       openLinkInNewTab: () => openInTab(params.linkURL),
       copyLink: () => clipboard.writeText(params.linkURL),
       openImageInNewTab: () => openInTab(params.srcURL),
-      copyImage: () => contents.copyImageAt(params.x, params.y),
+      copyImage: live(() => contents.copyImageAt(params.x, params.y)),
       copyImageAddress: () => clipboard.writeText(params.srcURL),
-      cut: () => contents.cut(),
-      copy: () => contents.copy(),
-      paste: () => contents.paste(),
-      selectAll: () => contents.selectAll(),
+      cut: live(() => contents.cut()),
+      copy: live(() => contents.copy()),
+      paste: live(() => contents.paste()),
+      selectAll: live(() => contents.selectAll()),
       searchSelection: () =>
         openInTab(DEFAULT_SEARCH.replace('%s', encodeURIComponent(params.selectionText.trim()))),
       back: () => this.goBack(tabId),
       forward: () => this.goForward(tabId),
       reload: () => this.reload(tabId),
-      inspect: () => contents.inspectElement(params.x, params.y),
+      inspect: live(() => contents.inspectElement(params.x, params.y)),
     }
     const entries = pageMenu({
       linkURL: params.linkURL,
@@ -366,13 +373,25 @@ export class TabViews {
       canPaste: params.editFlags.canPaste,
       canGoBack: contents.navigationHistory.canGoBack(),
       canGoForward: contents.navigationHistory.canGoForward(),
+      misspelledWord: params.misspelledWord,
+      suggestions: params.dictionarySuggestions,
     })
-    const template: (MenuItemConstructorOptions | MenuItem)[] = entries.map(
-      (entry): MenuItemConstructorOptions =>
-        entry === 'separator'
-          ? { type: 'separator' }
-          : { label: PAGE_MENU_LABELS[entry.id], enabled: entry.enabled, click: run[entry.id] },
-    )
+    const items = entries.map((entry): MenuItemDef => {
+      if (entry === 'separator') return { kind: 'separator' }
+      const { id, enabled } = entry
+      if (id.startsWith('suggestion:')) {
+        const word = params.dictionarySuggestions[Number(id.slice('suggestion:'.length))] ?? ''
+        return {
+          kind: 'item',
+          id,
+          label: word,
+          enabled,
+          run: live(() => contents.replaceMisspelling(word)),
+        }
+      }
+      const fixed = id as FixedPageMenuId
+      return { kind: 'item', id, label: PAGE_MENU_LABELS[fixed], enabled, run: run[fixed] }
+    })
     // `chrome.contextMenus` items of the space's extensions, in their own group before Inspect
     // (always the last entry, after a separator).
     const spaceId = this.views.get(tabId)?.spaceId
@@ -380,8 +399,14 @@ export class TabViews {
       ? (this.sessions.extensionsFor(spaceId)?.getContextMenuItems(contents, params) ?? [])
       : []
     if (extensionItems.length > 0) {
-      template.splice(template.length - 1, 0, ...extensionItems, { type: 'separator' })
+      const defs = toMenuItemDefs(
+        extensionItems,
+        clickLikeElectron(this.win, contents),
+        'extension',
+      )
+      items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
     }
-    Menu.buildFromTemplate(template).popup({ window: this.win })
+    // `params` are relative to the page; the overlay draws in window coordinates.
+    this.showMenu({ at: { x: params.x + this.bounds.x, y: params.y + this.bounds.y } }, items)
   }
 }

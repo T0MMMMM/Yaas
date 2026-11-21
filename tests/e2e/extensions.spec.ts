@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test, type ElectronApplication, type Page } from '@playwright/test'
 import { startSite } from './fixtures/site'
-import { finishOnboarding, launchApp, uiPage } from './helpers'
+import { finishOnboarding, launchApp, overlayPage, rightClickPage, uiPage } from './helpers'
 
 type Site = Awaited<ReturnType<typeof startSite>>
 
@@ -143,5 +143,51 @@ test('a second space gets its own extensions', async () => {
       { a: spaceId, b: work.id },
     )
     expect(distinct).toBe(true)
+  })
+})
+
+test("an extension's context menu item is drawn in the page menu", async () => {
+  await withExtension(async ({ app, page, site, spaceId }) => {
+    await expect.poll(() => extensionNames(app, spaceId)).toContain(EXTENSION_NAME)
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+    const item = menu.getByRole('menuitem', { name: 'Fixture Menu' })
+    // The extension's worker registers its item once it has started.
+    await expect(async () => {
+      if (await menu.isVisible()) await overlay.keyboard.press('Escape')
+      await expect(menu).toHaveCount(0)
+      await rightClickPage(app, page)
+      await expect(item).toBeVisible({ timeout: 1_000 })
+    }).toPass()
+    // Its own group, before Inspect.
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Back',
+      'Forward',
+      'Reload',
+      'Fixture Menu',
+      'Inspect',
+    ])
+    await expect(item).toHaveAttribute('aria-haspopup', 'menu')
+    await item.hover()
+    await overlay.getByTestId('submenu').getByRole('menuitem', { name: 'Fixture Child' }).click()
+    await expect(menu).toHaveCount(0)
+
+    // The extension's onClicked fired for the child, on this tab.
+    await openExtensionPage(app, spaceId, '')
+    const clicked = () =>
+      app.evaluate(() =>
+        (
+          globalThis as unknown as {
+            bigBrowserExtensionPage: {
+              webContents: { executeJavaScript: (code: string) => Promise<unknown> }
+            }
+          }
+        ).bigBrowserExtensionPage.webContents.executeJavaScript(
+          'chrome.storage.local.get("clicked").then((r) => r.clicked ?? null)',
+        ),
+      )
+    await expect
+      .poll(clicked)
+      .toEqual({ menuItemId: 'child', pageUrl: site.url('/a'), tabUrl: site.url('/a') })
   })
 })

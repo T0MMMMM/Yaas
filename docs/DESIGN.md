@@ -148,10 +148,16 @@ right-click) has no neck: its top-left corner sits on the pointer and it grows f
 left of / above the pointer where there is no room (`placeCard`, kept `POPOVER_GAP` inside the
 window; taller than the window, it scrolls). A **submenu** is a second card of the same look
 beside its row (4 px from the card, its first row level with the row; flipped to the left side
-when there is no room), opened by hovering the row, → or Enter, closed by ← or by hovering another
-row; its row keeps the hover fill while open. Keyboard: ↓/↑ within a card (↓ from a menu opened at
+when there is no room), opened by hovering the row, → or Enter, closed by ← or by resting on another
+row for 250 ms (`SUBMENU_GRACE_MS`: the pointer can cross rows on its way into the submenu); its
+row keeps the hover fill while open. Keyboard: ↓/↑ within a card (↓ from a menu opened at
 the pointer reaches its first row), Enter or Space chooses, Escape or a click outside closes every
 card.
+
+**Page menu** — right-clicking a page draws its menu at the pointer: spelling suggestions (at most
+5, or a disabled "No Suggestions") for a misspelled word, then the link, image, edit or selection
+entries, Back / Forward / Reload on a blank spot, the extensions' items (their icons, submenus and
+checks) in their own group, then Inspect. No Look Up / Services on macOS.
 
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
 `title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on

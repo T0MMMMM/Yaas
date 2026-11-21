@@ -1,5 +1,5 @@
 // The right-click menu of a web page: which entries to show for what was clicked. Main turns the
-// ids into an Electron menu; this module knows nothing of Electron.
+// ids into the menu the overlay draws; this module knows nothing of Electron.
 
 /** What Electron's `context-menu` event tells about the click, plus the tab's history. */
 export interface PageMenuContext {
@@ -13,9 +13,19 @@ export interface PageMenuContext {
   canPaste: boolean
   canGoBack: boolean
   canGoForward: boolean
+  /** The misspelled word under the pointer, or '' (spellcheck off, or spelled right). */
+  misspelledWord: string
+  /** The spellchecker's replacements for `misspelledWord`. */
+  suggestions: string[]
 }
 
+/** Most spelling suggestions offered, like Chrome. */
+export const MAX_SUGGESTIONS = 5
+
 export type PageMenuId =
+  /** Replaces the misspelled word with `suggestions[n]`. */
+  | `suggestion:${number}`
+  | 'noSuggestions'
   | 'openLinkInNewTab'
   | 'copyLink'
   | 'openImageInNewTab'
@@ -38,6 +48,15 @@ const isWebUrl = (url: string): boolean => /^https?:\/\//i.test(url)
 export function pageMenu(context: PageMenuContext): PageMenuEntry[] {
   const groups: PageMenuEntry[][] = []
   const on = (id: PageMenuId, enabled = true): PageMenuEntry => ({ id, enabled })
+
+  if (context.misspelledWord) {
+    const suggestions = context.suggestions.slice(0, MAX_SUGGESTIONS)
+    groups.push(
+      suggestions.length > 0
+        ? suggestions.map((_, index) => on(`suggestion:${index}`))
+        : [on('noSuggestions', false)],
+    )
+  }
 
   if (context.linkURL) {
     groups.push([...(isWebUrl(context.linkURL) ? [on('openLinkInNewTab')] : []), on('copyLink')])

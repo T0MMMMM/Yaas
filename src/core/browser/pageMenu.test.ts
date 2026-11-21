@@ -12,6 +12,8 @@ const base: PageMenuContext = {
   canPaste: false,
   canGoBack: false,
   canGoForward: false,
+  misspelledWord: '',
+  suggestions: [],
 }
 
 const ids = (context: Partial<PageMenuContext>) =>
@@ -82,5 +84,31 @@ describe('pageMenu', () => {
     const entries = pageMenu({ ...base, isEditable: true, canPaste: true })
     expect(entries[0]).toEqual({ id: 'cut', enabled: false })
     expect(entries[2]).toEqual({ id: 'paste', enabled: true })
+  })
+
+  it('offers spelling suggestions first for a misspelled word', () => {
+    const entries = pageMenu({
+      ...base,
+      isEditable: true,
+      misspelledWord: 'helo',
+      suggestions: ['hello', 'help'],
+    })
+    expect(entries.slice(0, 3)).toEqual([
+      { id: 'suggestion:0', enabled: true },
+      { id: 'suggestion:1', enabled: true },
+      'separator',
+    ])
+    expect(entries[3]).toEqual({ id: 'cut', enabled: false })
+  })
+
+  it('offers at most five suggestions', () => {
+    const suggestions = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    const first = pageMenu({ ...base, isEditable: true, misspelledWord: 'x', suggestions })
+    expect(first.indexOf('separator')).toBe(5)
+  })
+
+  it('says there are no suggestions, disabled, when there are none', () => {
+    const entries = pageMenu({ ...base, isEditable: true, misspelledWord: 'qwzx', suggestions: [] })
+    expect(entries.slice(0, 2)).toEqual([{ id: 'noSuggestions', enabled: false }, 'separator'])
   })
 })
