@@ -434,7 +434,9 @@ results come back to the lead as a short summary + branch name, never the full c
   (`visibleOrder`, list lengths and positions, sidebar rows); the sidebar draws the pair as one
   `split` node and `BrowserView.activeSplit` says which half is active. Commands
   `browser.splitTabs` (same space, neither already split, else `invalid_move`), `browser.separate`
-  (the second goes right after the first) and `browser.setSplitRatio` (clamped). `moveTab` of
+  (the second goes right after the first), `browser.setSplitRatio` (clamped) and
+  `browser.splitActive` (`⌃⌘\` and the + menu: the active tab with the next row of its list, else
+  the previous — `core/browser/splitPartner.ts`; nothing when there is none). `moveTab` of
   either half moves the pair; closing or removing one half first ends the split, the other half
   taking the row's place (and the focus, when the closed one had it). Undo brings a closed half
   back as a normal tab; a deleted folder's splits are separated first, so they come back as two

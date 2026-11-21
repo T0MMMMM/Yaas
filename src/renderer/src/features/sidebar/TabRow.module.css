@@ -183,3 +183,8 @@
   border-radius: var(--folder-bar-w);
   background: hsl(var(--bar-hue) var(--folder-hue-s) var(--folder-hue-l));
 }
+
+/* A tab dropped on the middle of the shown tab's row splits with it (useTabDrag). */
+.item[data-drop-target] .row::before {
+  background: var(--accent-soft);
+}

@@ -64,6 +64,12 @@
   opacity: 1;
 }
 
+/* A favourite split: both favicons side by side on one tile. */
+.pair {
+  display: flex;
+  gap: var(--space-1);
+}
+
 .favicon {
   width: var(--tile-icon-size);
   height: var(--tile-icon-size);

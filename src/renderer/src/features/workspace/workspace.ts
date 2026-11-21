@@ -72,8 +72,10 @@ export type SidebarNode =
   | { kind: 'auto-folder'; host: string; children: SidebarNode[] }
 
 export interface SidebarSections {
-  /** The favourite tiles, by position. */
+  /** The favourite tiles, by position (a split's first tab stands for the pair). */
   favorites: TabView[]
+  /** The second half of each favourite split, by its first tab's id: one tile draws both. */
+  favoriteSeconds: ReadonlyMap<string, TabView>
   /** Pinned tabs and folders, by their shared position. */
   pinned: SidebarNode[]
   /** The rest, depth-first by parent, with automatic folders when on. */
@@ -299,10 +301,14 @@ function sectionsOf(
   const seconds = new Set([...pairs.values()].map((t) => t.id))
   const tabs = allTabs.filter((t) => !seconds.has(t.id))
   const node = (t: BrowserTab, depth: number): SidebarNode => rowOf(t, depth, pairs, view)
-  const favorites = tabs
-    .filter((t) => t.section === 'favorites')
-    .sort(byPosition)
-    .map(view)
+  const favoriteTabs = tabs.filter((t) => t.section === 'favorites').sort(byPosition)
+  const favorites = favoriteTabs.map(view)
+  const favoriteSeconds = new Map(
+    favoriteTabs.flatMap((t) => {
+      const second = pairs.get(t.id)
+      return second ? [[t.id, view(second)] as const] : []
+    }),
+  )
 
   const pinned = tabs.filter((t) => t.section === 'pinned')
   const folderIds = new Set(folders.map((f) => f.id))
@@ -345,6 +351,7 @@ function sectionsOf(
   )
   return {
     favorites,
+    favoriteSeconds,
     pinned: pinnedList(null, 0),
     today: opts.autoFolders ? withAutoFolders(trees) : trees.flat(),
     todayOrder: trees
@@ -412,11 +419,10 @@ export function todayCloseOrder(today: SidebarNode[], activeId: string | null): 
  * Tabs of a space's sections in drawn order (automatic folders keep their tabs together, a split's
  * second half follows its first).
  */
-function drawnTabs(state: BrowserState, spaceId: string, sections: SidebarSections): TabView[] {
-  const pairs = splitPairs(state.tabs.filter((t) => t.spaceId === spaceId))
+function drawnTabs(sections: SidebarSections): TabView[] {
   const favorites = sections.favorites.flatMap((f) => {
-    const second = pairs.get(f.id)
-    return second ? [f, toTab(second, state.runtime[second.id])] : [f]
+    const second = sections.favoriteSeconds.get(f.id)
+    return second ? [f, second] : [f]
   })
   return [...favorites, ...tabsOf(sections.pinned), ...tabsOf(sections.today)]
 }
@@ -456,15 +462,13 @@ export function browserView(
   if (!space) throw new Error('Browser state has no space')
 
   const sections = sidebarSections(state, space.id, opts)
-  const tabs = drawnTabs(state, space.id, sections)
+  const tabs = drawnTabs(sections)
   const activeId = state.activeTabIds[space.id] ?? null
   const allTabs = spaces.flatMap((s) =>
-    (s.id === space.id ? tabs : drawnTabs(state, s.id, sidebarSections(state, s.id, opts))).map(
-      (t) => ({
-        ...t,
-        space: s,
-      }),
-    ),
+    (s.id === space.id ? tabs : drawnTabs(sidebarSections(state, s.id, opts))).map((t) => ({
+      ...t,
+      space: s,
+    })),
   )
   return {
     spaces,

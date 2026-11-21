@@ -1189,3 +1189,75 @@ test('rename in place', async () => {
     expect((await activeSpace(page)).name).toBe('Reading')
   })
 })
+
+test('a split is one row', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
+  const site = await startSite()
+  const clickMenu = (app: ElectronApplication, id: string) =>
+    app.evaluate(
+      ({ Menu }, itemId) => Menu.getApplicationMenu()?.getMenuItemById(itemId)?.click(),
+      id,
+    )
+  try {
+    const first = await launchApp(userData)
+    try {
+      const page = await uiPage(first)
+      await finishOnboarding(page)
+      await openTab(page, site.url('/a'))
+      await openTab(page, site.url('/b'))
+      await openTab(page, site.url('/c'))
+      await expect(page.getByTestId('tab')).toHaveCount(3)
+
+      // ⌃⌘\ pairs the active tab with a neighbour of its list: one row for both.
+      await clickMenu(first, 'splitView')
+      const splitRow = page.getByTestId('split-row')
+      await expect(splitRow).toHaveCount(1)
+      await expect(page.getByTestId('tab')).toHaveCount(1)
+      await expect(splitRow.getByTestId('split-half')).toHaveCount(2)
+      const halves = await splitRow.getByTestId('split-half').allTextContents()
+      expect(halves).toContain('Page C')
+
+      // Dragged into a folder, the row takes both tabs with it.
+      const folder = await page.evaluate(() =>
+        window.bigBrowser.invoke('browser.createFolder', { name: 'Reading' }),
+      )
+      const pinned = page.getByTestId('pinned')
+      await splitRow.dragTo(pinned.getByRole('button', { name: 'Reading' }))
+      await expect(pinned.getByTestId('folder').getByTestId('split-row')).toHaveCount(1)
+      const filed = (await storedTabs(page)).filter((t) => t.folderId === folder.id)
+      expect(filed.map((t) => t.title).sort()).toEqual([...halves].sort())
+
+      // Separate (the row's menu): two rows again, still in the folder.
+      await splitRow.click({ button: 'right' })
+      const overlay = await overlayPage(first)
+      await overlay.getByTestId('menu').getByRole('menuitem', { name: 'Separate' }).click()
+      await expect(overlay.getByTestId('menu')).toHaveCount(0)
+      await expect(page.getByTestId('split-row')).toHaveCount(0)
+      await expect(pinned.getByTestId('folder').getByTestId('tab')).toHaveText(halves)
+
+      // Open in Split View (a tab's menu) pairs it with the active tab; the split survives a
+      // relaunch.
+      await page.getByTestId('today').getByTestId('tab').click({ button: 'right' })
+      await overlay
+        .getByTestId('menu')
+        .getByRole('menuitem', { name: 'Open in Split View' })
+        .click()
+      await expect(page.getByTestId('split-row')).toHaveCount(1)
+      await expect(page.getByTestId('tab')).toHaveCount(1)
+    } finally {
+      await first.close()
+    }
+
+    const second = await launchApp(userData)
+    try {
+      const again = await uiPage(second)
+      await expect(again.getByTestId('split-row')).toHaveCount(1)
+      await expect(again.getByTestId('tab')).toHaveCount(1)
+    } finally {
+      await second.close()
+    }
+  } finally {
+    await site.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})

@@ -50,6 +50,16 @@ describe('endOf', () => {
     expect(endOf(snapshot, spaceId, 'pinned', null)).toBe(1)
     expect(endOf(snapshot, spaceId, 'today', null)).toBe(0)
   })
+
+  it("leaves a split's second half out (the pair is one row)", () => {
+    const { store, spaceId } = setup()
+    const a = store.openTab(spaceId, 'a')
+    const b = store.openTab(spaceId, 'b')
+    store.moveTab(a.id, { section: 'pinned', index: 0 })
+    store.moveTab(b.id, { section: 'pinned', index: 1 })
+    store.splitTabs(a.id, b.id)
+    expect(endOf(store.snapshot(), spaceId, 'pinned', null)).toBe(1)
+  })
 })
 
 describe('tabMenu', () => {
@@ -83,6 +93,38 @@ describe('tabMenu', () => {
     const [folder] = store.snapshot().folders
     expect(store.snapshot().tabs.find((t) => t.id === tab.id)?.folderId).toBe(folder?.id)
     expect(host.emitShortcut).toHaveBeenCalledWith({ kind: 'rename-folder', folderId: folder?.id })
+  })
+})
+
+describe('tabMenu and splits', () => {
+  it('Open in Split View splits the tab with the active tab', () => {
+    const { store, host, spaceId } = setup()
+    const active = store.openTab(spaceId, 'https://a.test/')
+    const other = store.openTab(spaceId, 'https://b.test/', { activate: false })
+    store.activateTab(active.id)
+    const items = tabMenu(host, other.id)
+    expect(labels(items)).toContain('Open in Split View')
+    expect(labels(items)).not.toContain('Separate')
+    find(items, 'Open in Split View').run?.()
+    expect(store.snapshot().tabs.find((t) => t.id === other.id)?.splitOf).toBe(active.id)
+  })
+
+  it('hides Open in Split View on the active tab and on a split; a split has Separate', () => {
+    const { store, host, spaceId } = setup()
+    const a = store.openTab(spaceId, 'https://a.test/')
+    const b = store.openTab(spaceId, 'https://b.test/')
+    const c = store.openTab(spaceId, 'https://c.test/')
+    store.activateTab(a.id)
+    expect(labels(tabMenu(host, a.id))).not.toContain('Open in Split View')
+    store.splitTabs(a.id, b.id)
+    for (const id of [a.id, b.id]) {
+      expect(labels(tabMenu(host, id))).not.toContain('Open in Split View')
+      expect(labels(tabMenu(host, id))).toContain('Separate')
+    }
+    // The active tab is split: nothing to split another tab with.
+    expect(labels(tabMenu(host, c.id))).not.toContain('Open in Split View')
+    find(tabMenu(host, b.id), 'Separate').run?.()
+    expect(store.snapshot().tabs.every((t) => t.splitOf === null)).toBe(true)
   })
 })
 

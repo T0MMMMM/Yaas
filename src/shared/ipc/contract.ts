@@ -346,15 +346,16 @@ export const commands = {
       .strict(),
     output: z.void(),
   },
-  /**
-   * A new folder at the end of its parent's list: the space's pinned section, or the folder
-   * `parentId` (default: the active space's pinned section).
-   */
   /** Pairs two tabs of one space as a split: the second leaves its list and shows beside the first. */
   'browser.splitTabs': {
     input: z.object({ firstId: id, secondId: id }).strict(),
     output: z.void(),
   },
+  /**
+   * Splits the active tab with the next row of its list, else the previous (⌃⌘\, the + menu's
+   * Split View); nothing when there is none or the active tab is already split.
+   */
+  'browser.splitActive': { input: z.void(), output: z.void() },
   /** Ends the split either half belongs to: the second goes right after the first. */
   'browser.separate': { input: tabRef, output: z.void() },
   /** The first page's share of a split's width, either half naming the split. */
@@ -375,6 +376,10 @@ export const commands = {
     ]),
     output: z.void(),
   },
+  /**
+   * A new folder at the end of its parent's list: the space's pinned section, or the folder
+   * `parentId` (default: the active space's pinned section).
+   */
   'browser.createFolder': {
     input: z
       .object({ spaceId: id.optional(), name: folderName, parentId: id.nullable().optional() })

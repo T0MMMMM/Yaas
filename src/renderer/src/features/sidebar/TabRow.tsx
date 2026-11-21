@@ -6,7 +6,7 @@ import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
-import { useDragHandle } from './useTabDrag'
+import { TabDragContext, useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './TabRow.module.css'
 
@@ -27,6 +27,8 @@ export function TabRow({
   exiting?: boolean
 }) {
   const drag = useDragHandle(`tab:${tab.id}`)
+  // The shown tab's row is lit while a tab dropped on it would split with it.
+  const { zone } = useContext(TabDragContext)
   const compact = useCompact()
   const trail = useContext(FolderTrailContext)
   const enterTooltip = useTooltipEnter()
@@ -40,6 +42,7 @@ export function TabRow({
       inert={exiting}
       aria-hidden={exiting || undefined}
       data-drop={exiting ? undefined : `tab:${tab.id}`}
+      data-drop-target={zone === `tab:${tab.id}` || undefined}
       // A row that moves aside while another is dragged (dragLift).
       data-drag-row={exiting ? undefined : true}
       data-dragged={drag.dragged || undefined}

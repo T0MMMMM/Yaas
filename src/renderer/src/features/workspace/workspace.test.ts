@@ -583,6 +583,18 @@ describe('splits', () => {
     expect(browserView({ ...state, activeTabIds: { s1: 'a', s2: 'x' } }).activeSplit).toBeNull()
   })
 
+  it('a favourite split is one tile, its second half kept beside it', () => {
+    const favourites = [
+      at('f', 0, { section: 'favorites' }),
+      at('g', -1, { section: 'favorites', splitOf: 'f' }),
+      at('h', 1, { section: 'favorites' }),
+    ]
+    const sections = sidebarSections(stateOf(favourites), 's1', { autoFolders: false })
+    expect(sections.favorites.map((t) => t.id)).toEqual(['f', 'h'])
+    expect([...sections.favoriteSeconds].map(([id, t]) => [id, t.id])).toEqual([['f', 'g']])
+    expect(browserView(stateOf(favourites)).tabs.map((t) => t.id)).toEqual(['f', 'g', 'h'])
+  })
+
   it('a second whose first is gone is a normal tab', () => {
     const sections = sidebarSections(stateOf([at('a', 0), at('c', 1, { splitOf: 'gone' })]), 's1', {
       autoFolders: false,

@@ -126,8 +126,20 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a
   folder named after the host, where the first of them was; open/closed per host for the session
   (UI store), never stored. Settings → Appearance → Automatic folders turns them off.
+- **Split rows** (`SplitRow`, `data-testid="split-row"`): a split is one row in its first tab's
+  place — both favicons, then "Title A | Title B". A click on a half's title shows the split with
+  that half active (it is bold while the split is shown; elsewhere on the row, the half already
+  active or the first). Its tooltip names both; right-click opens the menu of the half under the
+  pointer (Separate instead of Open in Split View). Its × closes **both** tabs (to keep one, use
+  Separate or close a half with ⌘W). Icon-only: the two favicons stacked. A favourite split is one
+  tile with both favicons. **Creating a split**: `⌃⌘\` (Windows: `Ctrl+Shift+\`) or the + menu's
+  Split View pairs the active tab with the next row of its list, else the previous (rows already
+  split are skipped; nothing with no such row); Open in Split View (a tab's menu, hidden on the
+  active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half
+  of the shown tab's row pairs them (the row gets the `--accent-soft` fill; not onto or from a
+  split, nor onto a tile).
 - Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
-  move to folder ▸, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
+  move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
   (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
 - **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to
   reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before
@@ -161,7 +173,7 @@ is placed so the button's centre lies that far inside its edge, `.alignLeft`/`.a
 grows out of the funnel's tip from a tenth of its size (`--dur-spring`, `--ease-bounce`; the
 centred cards from their top centre); closing plays it backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
 a chosen item's action runs first, never after the animation. The + menu has a
-filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), New folder (its name is edited
+filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), Split View (like `⌃⌘\`), New folder (its name is edited
 at once), New space, Settings.
 
 **Menus** (`ui/Menu`) — every menu is drawn by Big Browser, never a native one (except macOS
@@ -469,12 +481,13 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 | Reload | `Mod+R` |
 | Back / forward | `Mod+[` / `Mod+]` |
 | Next / previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
+| Split view: the active tab with the next row of its list, else the previous | `⌃⌘\` (macOS) / `Ctrl+Shift+\` (Windows) |
 | Settings | `Mod+,` |
 
 Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
 web page swallows renderer key events. `Mod+Z` is the exception: a keydown handler of the UI
-(`app/Shell.tsx`), so in a page or a field it stays the normal undo. Split view and new window
-(`Mod+N`) arrive in plan 4.
+(`app/Shell.tsx`), so in a page or a field it stays the normal undo. New window (`Mod+N`) comes
+later.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.

@@ -70,7 +70,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
   const exits = useMemo(() => exitsWhenGone(openTabIds ?? new Set()), [openTabIds])
   const scroll = useRef<HTMLDivElement>(null)
-  const drag = useTabDrag(sections, scroll, styles.dragClone)
+  const drag = useTabDrag(sections, activeId, scroll, styles.dragClone)
   const dragging = drag.dragging.size > 0
   const dropOn = (key: string): true | undefined => drag.zone === key || undefined
   const nav = useRef<HTMLElement>(null)
@@ -115,7 +115,13 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             </div>
 
             <div className={styles.scroll} ref={scroll}>
-              {sections && <FavoriteTiles tabs={sections.favorites} activeId={activeId} />}
+              {sections && (
+                <FavoriteTiles
+                  tabs={sections.favorites}
+                  seconds={sections.favoriteSeconds}
+                  activeId={activeId}
+                />
+              )}
 
               {/* The space section: its header, then the pinned tabs and folders, which it folds
                   (always mounted so the fold animates; inert while folded). */}

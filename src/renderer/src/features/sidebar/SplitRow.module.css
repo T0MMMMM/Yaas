@@ -1,0 +1,59 @@
+/* A split's row: the tab row's card, layout and × (TabRow.module.css), with both favicons and a
+   clickable title per half. */
+
+.row {
+  cursor: pointer;
+}
+
+.favicons {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.titles {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.half {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+  white-space: nowrap;
+  text-overflow: clip;
+  cursor: pointer;
+}
+
+.half:hover {
+  text-decoration: underline;
+}
+
+/* The half shown in the active page. */
+.half[data-active='true'] {
+  font-weight: 600;
+}
+
+.bar {
+  flex: none;
+  color: var(--text-muted);
+}
+
+/* Icon-only sidebar: the two favicons stacked. */
+:global([data-compact='true']) .favicons {
+  flex-direction: column;
+  gap: var(--space-1);
+}

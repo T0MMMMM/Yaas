@@ -36,6 +36,7 @@ import { HistoryStore } from '@core/browser/historyStore'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { TabViews } from './browser/tabViews'
 import { shownSplit } from '@core/browser/splitBounds'
+import { splitPartner } from '@core/browser/splitPartner'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
 import {
@@ -252,6 +253,15 @@ function cycleTab(step: 1 | -1): void {
   if (tabs.length > 1 && next) browser.activateTab(next)
 }
 
+/** Splits the active tab with the next row of its list, else the previous (splitPartner). */
+function splitActive(): void {
+  const active = activeTabId()
+  if (!active) return
+  const snapshot = browser.snapshot()
+  const partner = splitPartner(snapshot.tabs, browser.visibleOrder(snapshot.activeSpaceId), active)
+  if (partner) browser.splitTabs(active, partner)
+}
+
 /** The macOS share menu with the tab's URL, at the pointer; elsewhere the URL is copied. */
 function shareTab(tabId: string): void {
   const tab = browser.snapshot().tabs.find((t) => t.id === tabId)
@@ -313,6 +323,7 @@ function setupMenu(): void {
       forward: withActive((id) => tabViews?.goForward(id)),
       nextTab: () => cycleTab(1),
       previousTab: () => cycleTab(-1),
+      splitView: splitActive,
       settings: () => emitShortcut({ kind: 'settings' }),
     }),
   )
@@ -396,6 +407,7 @@ registerCommands(
     'browser.moveTab': ({ tabId, section, folderId, index }) =>
       browser.moveTab(tabId, { section, index, ...(folderId === undefined ? {} : { folderId }) }),
     'browser.splitTabs': ({ firstId, secondId }) => browser.splitTabs(firstId, secondId),
+    'browser.splitActive': splitActive,
     'browser.separate': ({ tabId }) => browser.separate(tabId),
     'browser.setSplitRatio': ({ tabId, ratio }) => browser.setSplitRatio(tabId, ratio),
     'browser.splitDrag': (drag) => {

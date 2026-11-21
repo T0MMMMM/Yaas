@@ -112,14 +112,15 @@ export class DragLift {
   shift(hit: DropHit | null): void {
     const offsets = new Map<HTMLElement, string>()
     let grow: { list: HTMLElement; px: number } | null = null
-    const list =
-      hit && hit.zone === null
-        ? this.container.querySelector<HTMLElement>(`[data-drop="list:${hit.target.section}"]`)
-        : null
-    if (hit && list) {
+    // A drop into a folder or a list, or onto a tab to split, opens no gap.
+    const target = hit && hit.zone === null && 'section' in hit.target ? hit.target : null
+    const list = target
+      ? this.container.querySelector<HTMLElement>(`[data-drop="list:${target.section}"]`)
+      : null
+    if (hit && target && list) {
       const leaves = this.leavesOf(list)
-      if (hit.target.section === 'favorites' && list.contains(this.root)) {
-        this.tileShifts(leaves, hit.target.index, offsets)
+      if (target.section === 'favorites' && list.contains(this.root)) {
+        this.tileShifts(leaves, target.index, offsets)
       } else if (hit.line !== null) {
         grow = this.gapShifts(list, leaves, hit.line, offsets)
       }

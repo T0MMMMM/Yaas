@@ -458,3 +458,71 @@ describe('dragging a favourite', () => {
     expect(dropHit(10, rows, 20)).toBeNull()
   })
 })
+
+describe('splits', () => {
+  // Today: a, the split b|c (one row), e, d.
+  const sections = sidebarSections(
+    stateOf([tab('a', 0), tab('b', 1), tab('c', -1, { splitOf: 'b' }), tab('e', 2), tab('d', 3)]),
+    's1',
+    { autoFolders: false },
+  )
+  const measure = stacked(['tab:a', 'tab:b', 'tab:e', 'tab:d'])
+
+  it('gives a split one drop row, none for its second half', () => {
+    const rows = dropRows(sections, 'tab:d', measure)
+    expect(rows.map((r) => r.id)).toEqual(['a', 'b', 'e', 'd'])
+  })
+
+  it('drags a split row as one: the pair moves with browser.moveTab of its first tab', () => {
+    const rows = dropRows(sections, 'tab:b', measure)
+    expect(dropTarget(15, rows)).toBeNull()
+    // The lower half of d: after it, at the end of today without the split.
+    const target = dropTarget(38, rows)
+    expect(target).toEqual(today(3))
+    expect(target && moveOf('tab:b', target)).toEqual({
+      channel: 'browser.moveTab',
+      input: { tabId: 'b', section: 'today', folderId: null, index: 3 },
+    })
+  })
+
+  it("splits a tab dropped on the middle of the shown tab's row with it", () => {
+    const rows = dropRows(sections, 'tab:d', measure, 'a')
+    const hit = dropHit(5, rows)
+    expect(hit).toEqual({ target: { splitWith: 'a' }, line: null, zone: 'tab:a' })
+    expect(hit && moveOf('tab:d', hit.target)).toEqual({
+      channel: 'browser.splitTabs',
+      input: { firstId: 'a', secondId: 'd' },
+    })
+    // Its upper and lower quarters still go before or after it.
+    expect(dropTarget(1, rows)).toEqual(today(0))
+    expect(dropTarget(9, rows)).toEqual(today(1))
+    // Another row's middle is before or after it.
+    expect(dropTarget(24, rows)).toEqual(today(2))
+  })
+
+  it('never splits onto or from a split, nor a folder or onto a favourite tile', () => {
+    // The shown tab is a half of a split: its row's middle is after it, as on any row.
+    expect(dropHit(15, dropRows(sections, 'tab:d', measure, 'b'))?.target).toEqual(today(2))
+    expect(dropHit(15, dropRows(sections, 'tab:d', measure, 'c'))?.target).toEqual(today(2))
+    // The dragged row is a split: the shown tab's middle is after it, as on any row.
+    expect(dropHit(5, dropRows(sections, 'tab:b', measure, 'a'))?.target).toEqual(today(1))
+    // A folder is never split.
+    expect(moveOf('folder:x', { splitWith: 'a' })).toBeNull()
+    const withTile = sidebarSections(
+      stateOf([tab('f', 0, { section: 'favorites' }), tab('t', 0)]),
+      's1',
+      { autoFolders: false },
+    )
+    const tiles = (key: string) =>
+      key === 'list:favorites' || key === 'tab:f'
+        ? { top: 0, height: 20 }
+        : key === 'tab:t'
+          ? { top: 30, height: 10 }
+          : null
+    expect(dropHit(10, dropRows(withTile, 'tab:t', tiles, 'f'))?.target).toEqual({
+      section: 'favorites',
+      folderId: null,
+      index: 1,
+    })
+  })
+})

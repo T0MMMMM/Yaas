@@ -13,6 +13,7 @@ export interface MenuActions {
   forward(): void
   nextTab(): void
   previousTab(): void
+  splitView(): void
   settings(): void
 }
 
@@ -86,6 +87,13 @@ export function buildAppMenu(actions: MenuActions): Menu {
         { type: 'separator' },
         item('nextTab', 'Next Tab', 'Ctrl+Tab'),
         item('previousTab', 'Previous Tab', 'Ctrl+Shift+Tab'),
+        { type: 'separator' },
+        // ⌃⌘\ as in Arc; Windows has no ⌘, and Ctrl+Alt is AltGr on many keyboards.
+        item(
+          'splitView',
+          'Split View',
+          process.platform === 'darwin' ? 'Ctrl+Cmd+\\' : 'Ctrl+Shift+\\',
+        ),
         // DevTools on the UI itself, for development only.
         ...(app.isPackaged
           ? []

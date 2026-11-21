@@ -48,18 +48,26 @@ export interface DropRow {
   width?: number
   /** The dragged row or its subtree: a drop on it is no move. */
   self?: boolean
+  /** The shown tab's row, when the dragged tab may pair with it: its middle half splits them. */
+  splits?: boolean
   snap?: { before: DropEdge; after: DropEdge }
 }
 
 /** What is dragged: a tab (a row or a tile) or a pinned folder, by its `data-drop` key. */
 export type DragKey = `${'tab' | 'folder'}:${string}`
 
-/** Where a drop goes: a list's section, folder and index (see moveOf for the call it makes). */
-export interface DropTarget {
+/** A place in a list: its section, folder and index. */
+export interface ListTarget {
   section: TabSection
   folderId: string | null
   index: number
 }
+
+/**
+ * Where a drop goes: a place in a list, or beside the shown tab as a split (`splitWith`, its id).
+ * See moveOf for the call it makes.
+ */
+export type DropTarget = ListTarget | { splitWith: string }
 
 /** The `data-drop` key of a measured element: a tab, a folder, an automatic folder, a list. */
 export type DropKey = `${'tab' | 'folder' | 'auto' | 'list'}:${string}`
@@ -152,13 +160,19 @@ function nearTile(x: number, y: number, rows: DropRow[]): DropHit {
   return onTile(x, rows, nearest)
 }
 
-/** The upper half of a row is before it, the lower half after; a folder's middle half is into. */
+/**
+ * The upper half of a row is before it, the lower half after; a folder's middle half is into, the
+ * shown tab's middle half (`splits`) pairs the dragged tab with it.
+ */
 function onRow(y: number, rows: DropRow[], row: DropRow, x?: number): DropHit {
   if (row.section === 'favorites') {
     if (x !== undefined && reorderingTiles(rows)) return onTile(x, rows, row)
     return into(rows, 'favorites', null, 'list:favorites')
   }
   const rel = (y - row.top) / row.height
+  if (row.splits && rel >= 0.25 && rel < 0.75) {
+    return { target: { splitWith: row.id }, line: null, zone: `tab:${row.id}` }
+  }
   if (row.kind === 'folder' && rel >= 0.25 && rel < 0.75) {
     return into(rows, 'pinned', row.id, `folder:${row.id}`)
   }
@@ -246,10 +260,16 @@ function todayRows(
   const box = (key: DropKey) => measure(key) ?? { top: 0, height: 0 }
   const rows: DropRow[] = []
   const tabRows: DropRow[] = []
+  /** One row per tab or split of `nodes` (a split's second half has none). */
   const addTabs = (nodes: SidebarNode[]): void => {
-    for (const t of tabsOf(nodes)) {
-      const row: DropRow = { ...base, id: t.id, ...box(`tab:${t.id}`) }
-      if (skip.has(t.id)) row.self = true
+    for (const node of nodes) {
+      if (node.kind === 'folder' || node.kind === 'auto-folder') {
+        addTabs(node.children)
+        continue
+      }
+      const id = node.kind === 'tab' ? node.tab.id : node.first.id
+      const row: DropRow = { ...base, id, ...box(`tab:${id}`) }
+      if (skip.has(id)) row.self = true
       else tabRows.push(row)
       rows.push(row)
     }
@@ -315,14 +335,48 @@ function folderSubtree(nodes: SidebarNode[], folderId: string): Set<string> {
   return ids
 }
 
+/** The row of `id` in a pinned or today list (at any depth), or undefined. */
+function nodeOf(nodes: SidebarNode[], id: string): SidebarNode | undefined {
+  for (const node of nodes) {
+    if (node.kind === 'tab' && node.tab.id === id) return node
+    if (node.kind === 'split' && (node.first.id === id || node.second.id === id)) return node
+    if (node.kind === 'folder' || node.kind === 'auto-folder') {
+      const found = nodeOf(node.children, id)
+      if (found) return found
+    }
+  }
+  return undefined
+}
+
+/**
+ * Whether the tab `draggedId` may be dropped on the shown tab `activeId` to split them: two
+ * tabs, neither a split, the shown one a row of pinned or today (not a favourite tile).
+ */
+function splittable(
+  sections: SidebarSections,
+  draggedId: string,
+  activeId: string | null,
+): boolean {
+  if (activeId === null || activeId === draggedId) return false
+  if (sections.favoriteSeconds.has(draggedId)) return false
+  const lists = [...sections.pinned, ...sections.today]
+  return nodeOf(lists, activeId)?.kind === 'tab' && nodeOf(lists, draggedId)?.kind !== 'split'
+}
+
 /**
  * The drop rows of a space's sidebar while `dragged` is dragged. The dragged row and what moves
  * with it (a today tab's subtree, everything in a folder) are `self`: a drop on them is no move.
  * A folder only goes into pinned: today and the favourites are left out. Today's rows map to the
  * store's order (`todayOrder`) whatever automatic folders regroup on screen, so indices are the
- * store's (see todayRows).
+ * store's (see todayRows). The shown tab `activeId`'s row `splits` when the dragged tab may pair
+ * with it.
  */
-export function dropRows(sections: SidebarSections, dragged: DragKey, measure: Measure): DropRow[] {
+export function dropRows(
+  sections: SidebarSections,
+  dragged: DragKey,
+  measure: Measure,
+  activeId: string | null = null,
+): DropRow[] {
   const folder = dragged.startsWith('folder:')
   const draggedId = dragged.slice(dragged.indexOf(':') + 1)
   const skip = folder
@@ -371,6 +425,10 @@ export function dropRows(sections: SidebarSections, dragged: DragKey, measure: M
   if (folder) return rows
   list('today')
   rows.push(...todayRows(sections, skip, tab ? autoFolderHost(tab.url) : null, measure))
+  if (splittable(sections, draggedId, activeId)) {
+    const shown = rows.find((r) => r.kind === 'tab' && r.id === activeId && !r.self)
+    if (shown) shown.splits = true
+  }
   return rows
 }
 
@@ -384,10 +442,18 @@ export type DropMove =
       channel: 'browser.moveFolder'
       input: { folderId: string; parentId: string | null; index: number }
     }
+  | { channel: 'browser.splitTabs'; input: { firstId: string; secondId: string } }
 
-/** What dropping `dragged` on `target` calls; null when it can't go there (a folder out of pinned). */
+/**
+ * What dropping `dragged` on `target` calls; null when it can't go there (a folder out of pinned,
+ * or onto a tab to split).
+ */
 export function moveOf(dragged: DragKey, target: DropTarget): DropMove | null {
   const id = dragged.slice(dragged.indexOf(':') + 1)
+  if ('splitWith' in target) {
+    if (!dragged.startsWith('tab:')) return null
+    return { channel: 'browser.splitTabs', input: { firstId: target.splitWith, secondId: id } }
+  }
   if (dragged.startsWith('tab:')) {
     return { channel: 'browser.moveTab', input: { tabId: id, ...target } }
   }
@@ -444,20 +510,27 @@ function swallowNextClick(): void {
 
 /** Sends a drop's move. */
 function send(move: DropMove): Promise<void> {
-  return move.channel === 'browser.moveTab'
-    ? window.bigBrowser.invoke('browser.moveTab', move.input)
-    : window.bigBrowser.invoke('browser.moveFolder', move.input)
+  switch (move.channel) {
+    case 'browser.moveTab':
+      return window.bigBrowser.invoke('browser.moveTab', move.input)
+    case 'browser.moveFolder':
+      return window.bigBrowser.invoke('browser.moveFolder', move.input)
+    case 'browser.splitTabs':
+      return window.bigBrowser.invoke('browser.splitTabs', move.input)
+  }
 }
 
 /**
  * Drag tabs, tiles and pinned folders in the sidebar to reorder them, pin, favourite or file them
  * into a folder: on drop it calls `browser.moveTab` or `browser.moveFolder`. Pointer events (not
  * HTML5 drag and drop). The row lifts (a clone with `cloneClass` follows the pointer) and the
- * others move aside where it will land (dragLift.ts); Esc cancels and the clone flies back. Rows
+ * others move aside where it will land (dragLift.ts); a tab dropped on the middle of the shown
+ * tab's row (`activeId`) splits with it (`browser.splitTabs`); Esc cancels and the clone flies back. Rows
  * are found in `container` by their `data-drop` key.
  */
 export function useTabDrag(
   sections: SidebarSections | undefined,
+  activeId: string | null,
   container: RefObject<HTMLElement | null>,
   cloneClass: string | undefined,
 ): TabDrag {
@@ -467,6 +540,10 @@ export function useTabDrag(
   useEffect(() => {
     sectionsRef.current = sections
   }, [sections])
+  const activeRef = useRef(activeId)
+  useEffect(() => {
+    activeRef.current = activeId
+  }, [activeId])
   /** Ends the drag in progress at once (listeners removed, visuals reset). */
   const stop = useRef<(() => void) | null>(null)
   useEffect(() => () => stop.current?.(), [])
@@ -527,7 +604,11 @@ export function useTabDrag(
         e.preventDefault()
         lifted.follow(e.clientX - from.x, e.clientY - from.y)
         // The last hit is the drop: the release lands where the pointer last moved to.
-        const next = dropHit(e.clientY, dropRows(current, key, measure), e.clientX)
+        const next = dropHit(
+          e.clientY,
+          dropRows(current, key, measure, activeRef.current),
+          e.clientX,
+        )
         hit = next && moveOf(key, next.target) ? next : null
         setZone(hit?.zone ?? null)
         lifted.shift(hit)

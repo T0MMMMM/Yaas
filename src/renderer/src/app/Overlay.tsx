@@ -25,6 +25,14 @@ const NEW_FOLDER_NAME = 'New Folder'
 const NEW_MENU: MenuSpecItem[] = [
   { kind: 'filter' },
   { kind: 'item', id: 'new-tab', label: 'New tab', icon: 'Plus', shortcut: '⌘T', enabled: true },
+  {
+    kind: 'item',
+    id: 'split-view',
+    label: 'Split View',
+    icon: 'SquareSplitHorizontal',
+    shortcut: '⌃⌘\\',
+    enabled: true,
+  },
   { kind: 'item', id: 'new-folder', label: 'New folder', icon: 'FolderSimplePlus', enabled: true },
   { kind: 'item', id: 'new-space', label: 'New space', icon: 'SquaresFour', enabled: true },
   { kind: 'separator' },
@@ -160,6 +168,8 @@ export function Overlay() {
       const actions: Record<string, () => void> = {
         // Swaps this menu for the command field (⌘T), which creates the tab on submit.
         'new-tab': () => void window.bigBrowser.invoke('overlay.open', { kind: 'command' }),
+        // Main pairs the active tab with the next row of its list, else the previous.
+        'split-view': () => void window.bigBrowser.invoke('browser.splitActive'),
         'new-folder': () => {
           void window.bigBrowser
             .invoke('browser.createFolder', { name: NEW_FOLDER_NAME })

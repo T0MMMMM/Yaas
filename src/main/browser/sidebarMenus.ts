@@ -3,7 +3,7 @@
 import { clipboard } from 'electron'
 import { BrowserError, type BrowserStore } from '@core/browser/browserStore'
 import type { OverlayRequest, PageBounds, Shortcut } from '@shared/ipc/contract'
-import type { BrowserSnapshot, TabSection } from '@shared/model'
+import type { BrowserSnapshot, BrowserTab, TabSection } from '@shared/model'
 import type { MenuItemDef } from '../menus/menuRegistry'
 
 /** Name of a folder made from a tab's menu; the sidebar then edits it. */
@@ -18,7 +18,10 @@ export interface SidebarMenuHost {
   openOverlay: (request: OverlayRequest) => void
 }
 
-/** Index just past the last entry of a list (a pinned list counts its child folders). */
+/**
+ * Index just past the last entry of a list (a pinned list counts its child folders; a split's
+ * second half is out of every list).
+ */
 export function endOf(
   snapshot: BrowserSnapshot,
   spaceId: string,
@@ -26,7 +29,11 @@ export function endOf(
   folderId: string | null,
 ): number {
   const tabs = snapshot.tabs.filter(
-    (t) => t.spaceId === spaceId && t.section === section && t.folderId === folderId,
+    (t) =>
+      t.spaceId === spaceId &&
+      t.section === section &&
+      t.folderId === folderId &&
+      t.splitOf === null,
   ).length
   const folders =
     section === 'pinned'
@@ -51,7 +58,53 @@ function subtreeOf(snapshot: BrowserSnapshot, folderId: string): Set<string> {
   return ids
 }
 
-/** Pin, favourites, folder, copy, duplicate, then remove or close. */
+/** Whether `tabId` is a half of a split (either one). */
+const inSplit = (snapshot: BrowserSnapshot, tabId: string): boolean =>
+  snapshot.tabs.some((t) => (t.id === tabId && t.splitOf !== null) || t.splitOf === tabId)
+
+/**
+ * Open in Split View (with the active tab) for a tab neither active nor split while the active tab
+ * isn't either; Separate for a half of a split.
+ */
+function splitItems(
+  store: BrowserStore,
+  snapshot: BrowserSnapshot,
+  tab: BrowserTab,
+): MenuItemDef[] {
+  if (inSplit(snapshot, tab.id)) {
+    return [
+      {
+        kind: 'item',
+        id: 'separate',
+        label: 'Separate',
+        icon: 'ArrowsSplit',
+        run: () => {
+          if (inSplit(store.snapshot(), tab.id)) store.separate(tab.id)
+        },
+      },
+    ]
+  }
+  const activeId = snapshot.activeTabIds[tab.spaceId] ?? null
+  if (activeId === null || activeId === tab.id || inSplit(snapshot, activeId)) return []
+  return [
+    {
+      kind: 'item',
+      id: 'open-in-split',
+      label: 'Open in Split View',
+      icon: 'SquareSplitHorizontal',
+      run: () => {
+        // The sidebar may have changed while the menu was open.
+        const now = store.snapshot()
+        const both = [activeId, tab.id].every((id) => now.tabs.some((t) => t.id === id))
+        if (both && !inSplit(now, activeId) && !inSplit(now, tab.id)) {
+          store.splitTabs(activeId, tab.id)
+        }
+      },
+    },
+  ]
+}
+
+/** Pin, favourites, folder, split, copy, duplicate, then remove or close. */
 export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
   const { store } = host
   const snapshot = store.snapshot()
@@ -123,6 +176,7 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
         },
       ],
     },
+    ...splitItems(store, snapshot, tab),
     {
       kind: 'item',
       id: 'copy-link',

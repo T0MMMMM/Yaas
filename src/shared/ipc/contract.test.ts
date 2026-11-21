@@ -261,10 +261,14 @@ describe('IPC contract', () => {
     expect(input.safeParse({}).success).toBe(false)
   })
 
-  it('takes no input on browser.reopenClosed', () => {
-    const input = commands['browser.reopenClosed'].input
-    expect(input.safeParse(undefined).success).toBe(true)
-    expect(input.safeParse({ tabId: 'x' }).success).toBe(false)
+  it('takes no input on browser.reopenClosed and browser.splitActive', () => {
+    for (const input of [
+      commands['browser.reopenClosed'].input,
+      commands['browser.splitActive'].input,
+    ]) {
+      expect(input.safeParse(undefined).success).toBe(true)
+      expect(input.safeParse({ tabId: 'x' }).success).toBe(false)
+    }
   })
 
   it('sends shortcuts as kinds, a folder rename with its folder id', () => {

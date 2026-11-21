@@ -2,6 +2,7 @@
 // when a menu starts using it; an unknown name draws no icon.
 import {
   ArrowLineUp,
+  ArrowsSplit,
   CopySimple,
   FolderSimple,
   FolderSimplePlus,
@@ -13,6 +14,7 @@ import {
   PushPin,
   PushPinSlash,
   Smiley,
+  SquareSplitHorizontal,
   SquaresFour,
   Star,
   Trash,
@@ -22,6 +24,7 @@ import {
 
 const ICONS: Readonly<Record<string, Icon>> = {
   ArrowLineUp,
+  ArrowsSplit,
   CopySimple,
   FolderSimple,
   FolderSimplePlus,
@@ -33,6 +36,7 @@ const ICONS: Readonly<Record<string, Icon>> = {
   PushPin,
   PushPinSlash,
   Smiley,
+  SquareSplitHorizontal,
   SquaresFour,
   Star,
   Trash,
