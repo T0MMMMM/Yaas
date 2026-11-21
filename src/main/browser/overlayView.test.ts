@@ -10,6 +10,7 @@ const fake = vi.hoisted(() => ({
     webContents: {
       send: ReturnType<typeof vi.fn>
       focus: ReturnType<typeof vi.fn>
+      isFocused: ReturnType<typeof vi.fn>
     }
   },
 }))
@@ -22,7 +23,7 @@ vi.mock('electron', () => {
     webContents = {
       send: vi.fn(),
       focus: vi.fn(),
-      isFocused: () => false,
+      isFocused: vi.fn(() => false),
       isDestroyed: () => false,
       isLoading: () => false,
       on: vi.fn(),
@@ -55,7 +56,7 @@ function setup() {
   if (!view) throw new Error('no view')
   view.setVisible.mockClear()
   view.setBounds.mockClear()
-  return { overlay, view }
+  return { overlay, view, win }
 }
 
 const tip: Tooltip = {
@@ -149,5 +150,44 @@ describe('OverlayView.tooltip', () => {
     vi.advanceTimersByTime(TOOLTIP_FADE_MS)
     expect(lastVisible(view)).toBe(true)
     expect(sent(view, 'overlay.tooltip')).toEqual([tip])
+  })
+})
+
+describe('OverlayView.close', () => {
+  const page = (destroyed = false) => ({ focus: vi.fn(), isDestroyed: () => destroyed })
+
+  it('gives the keyboard back to the page a page menu was opened on', () => {
+    const { overlay, view, win } = setup()
+    const contents = page()
+    overlay.open({ kind: 'command' }, contents as never)
+    view.webContents.isFocused.mockReturnValue(true)
+    overlay.close()
+    expect(contents.focus).toHaveBeenCalled()
+    expect(win.webContents.focus).not.toHaveBeenCalled()
+  })
+
+  it('gives it to the UI otherwise, or when that page is gone', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    overlay.open({ kind: 'command' })
+    overlay.close()
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
+    const gone = page(true)
+    overlay.open({ kind: 'command' }, gone as never)
+    overlay.close()
+    expect(gone.focus).not.toHaveBeenCalled()
+    expect(win.webContents.focus).toHaveBeenCalledTimes(2)
+  })
+
+  it('forgets the page once closed: the next popover gives focus to the UI', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    const contents = page()
+    overlay.open({ kind: 'command' }, contents as never)
+    overlay.close()
+    overlay.open({ kind: 'command' })
+    overlay.close()
+    expect(contents.focus).toHaveBeenCalledTimes(1)
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
   })
 })

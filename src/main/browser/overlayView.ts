@@ -33,6 +33,8 @@ export class OverlayView {
   /** The tooltip strip: hidden, showing a tooltip, or fading one out before it hides. */
   private tooltipState: 'hidden' | 'shown' | 'fading' = 'hidden'
   private fade: ReturnType<typeof setTimeout> | null = null
+  /** Where the keyboard goes back on close: the page a page menu was opened on, else the UI. */
+  private returnFocusTo: WebContents | null = null
 
   constructor(
     private readonly win: BrowserWindow,
@@ -77,11 +79,16 @@ export class OverlayView {
     this.win.contentView.addChildView(this.view)
   }
 
-  open(request: OverlayRequest): void {
+  /**
+   * Shows a popover or menu and focuses the overlay. `returnFocusTo` is the page a page menu was
+   * opened on: it gets the keyboard back on close (the UI does otherwise).
+   */
+  open(request: OverlayRequest, returnFocusTo: WebContents | null = null): void {
     // A popover replaces any tooltip (the overlay drops it on `overlay.opened`).
     this.clearFade()
     this.tooltipState = 'hidden'
     this.isOpen = true
+    this.returnFocusTo = returnFocusTo
     this.fit()
     this.raise()
     this.view.setVisible(true)
@@ -106,8 +113,13 @@ export class OverlayView {
     this.isOpen = false
     const hadFocus = this.view.webContents.isFocused()
     this.view.setVisible(false)
-    // Hand the keyboard back to the UI the popover was opened from.
-    if (hadFocus) this.win.webContents.focus()
+    // Hand the keyboard back to where the popover was opened from: the page or the UI.
+    const target = this.returnFocusTo
+    this.returnFocusTo = null
+    if (hadFocus) {
+      if (target && !target.isDestroyed()) target.focus()
+      else this.win.webContents.focus()
+    }
     this.onClosed()
   }
 

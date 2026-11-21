@@ -249,9 +249,12 @@ const sidebarMenuHost: SidebarMenuHost = {
 /** The menu drawn in the overlay and what its items run. */
 const menus = new MenuRegistry()
 
-/** Draws a menu in the overlay, at a point or from a button; the chosen item runs here. */
-function showMenu(where: MenuWhere, items: MenuItemDef[]): void {
-  overlayView().open(menuRequest(where, menus.open(items)))
+/**
+ * Draws a menu in the overlay, at a point or from a button; the chosen item runs here. A page's
+ * menu passes the page, which gets the keyboard back when the menu closes.
+ */
+function showMenu(where: MenuWhere, items: MenuItemDef[], returnFocusTo?: WebContents): void {
+  overlayView().open(menuRequest(where, menus.open(items)), returnFocusTo)
 }
 
 function emitShortcut(shortcut: Shortcut): void {

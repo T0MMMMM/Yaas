@@ -632,6 +632,49 @@ test('the page menu is drawn', async () => {
   })
 })
 
+test('the page keeps the keyboard after its menu', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/form'))
+    await expect(page.getByTestId('tab')).toHaveText(['Form'])
+
+    // Right-click in the field (which focuses it), then Select All from the drawn menu.
+    await rightClickPage(app, page, { x: 40, y: 20 })
+    const menu = (await overlayPage(app)).getByTestId('menu')
+    await menu.getByRole('menuitem', { name: 'Select All' }).click()
+    await expect(menu).toHaveCount(0)
+
+    // The keyboard is back in the page: a key goes to whichever web contents has focus, as
+    // a real key press would (asserted through web contents state, not OS focus).
+    await expect
+      .poll(() =>
+        app.evaluate(({ webContents }) =>
+          webContents
+            .getAllWebContents()
+            .find((w) => w.getURL().endsWith('/form'))
+            ?.isFocused(),
+        ),
+      )
+      .toBe(true)
+    await app.evaluate(({ webContents }) => {
+      const focused = webContents.getFocusedWebContents()
+      if (!focused) throw new Error('No focused web contents')
+      focused.sendInputEvent({ type: 'keyDown', keyCode: 'X' })
+      focused.sendInputEvent({ type: 'char', keyCode: 'x' })
+      focused.sendInputEvent({ type: 'keyUp', keyCode: 'X' })
+    })
+    await expect
+      .poll(() =>
+        app.evaluate(({ webContents }) =>
+          webContents
+            .getAllWebContents()
+            .find((w) => w.getURL().endsWith('/form'))
+            ?.executeJavaScript('document.getElementById("field").value'),
+        ),
+      )
+      .toBe('x')
+  })
+})
+
 test('visits are recorded in history, searched and forgotten', async () => {
   await withBrowser(async ({ page, site }) => {
     const frequent = () => page.evaluate(() => window.bigBrowser.invoke('history.frequent', {}))

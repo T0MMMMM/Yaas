@@ -118,8 +118,12 @@ export class TabViews {
     private readonly store: BrowserStore,
     private readonly sessions: SpaceSessions,
     private readonly onRuntime: () => void,
-    /** Draws a menu in the overlay (the page's right-click menu). */
-    private readonly showMenu: (where: MenuWhere, items: MenuItemDef[]) => void,
+    /** Draws a menu in the overlay (the page's right-click menu); the page gets focus back. */
+    private readonly showMenu: (
+      where: MenuWhere,
+      items: MenuItemDef[],
+      returnFocusTo: WebContents,
+    ) => void,
     /** Called after a view joins the window, so the overlay can go back on top. */
     private readonly onViewAdded: () => void = () => undefined,
     private readonly history?: HistoryStore,
@@ -430,6 +434,10 @@ export class TabViews {
       items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
     }
     // `params` are relative to the page; the overlay draws in window coordinates.
-    this.showMenu({ at: { x: params.x + this.bounds.x, y: params.y + this.bounds.y } }, items)
+    this.showMenu(
+      { at: { x: params.x + this.bounds.x, y: params.y + this.bounds.y } },
+      items,
+      contents,
+    )
   }
 }

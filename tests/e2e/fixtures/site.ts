@@ -14,6 +14,8 @@ const pages: Record<string, string> = {
 <body><a id="file" href="/report.txt" download>Report</a></body></html>`,
   '/with-ad': `<!doctype html><html><head><title>With Ad</title></head>
 <body><img id="ad" src="/ads/banner.png" alt=""></body></html>`,
+  '/form': `<!doctype html><html><head><title>Form</title></head>
+<body><input id="field" value="hello" style="position:absolute;left:10px;top:10px;width:200px"></body></html>`,
   '/with-icon': `<!doctype html><html><head><title>With Icon</title>
 <link rel="icon" href="/favicon.png"></head><body>Icon</body></html>`,
 }
