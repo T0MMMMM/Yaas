@@ -22,6 +22,30 @@ const asItem = (def: MenuItemDef | undefined): Item => {
 }
 
 describe('toMenuItemDefs', () => {
+  it('collapses leading, trailing and repeated separators, hidden items aside', () => {
+    const kinds = (items: MenuItemConstructorOptions[]) =>
+      toMenuItemDefs(items, () => undefined).map((d) => (d.kind === 'item' ? d.label : '-'))
+    expect(
+      kinds([
+        { type: 'separator' },
+        { label: 'A' },
+        { type: 'separator' },
+        { label: 'Hidden', visible: false },
+        { type: 'separator' },
+        { label: 'B' },
+        { type: 'separator' },
+      ]),
+    ).toEqual(['A', '-', 'B'])
+    expect(kinds([{ label: 'Hidden', visible: false }, { type: 'separator' }])).toEqual([])
+    const nested = asItem(
+      toMenuItemDefs(
+        [{ label: 'P', submenu: [{ type: 'separator' }, { label: 'C' }, { type: 'separator' }] }],
+        () => undefined,
+      )[0],
+    )
+    expect(nested.submenu?.map((d) => d.kind)).toEqual(['item'])
+  })
+
   it('keeps a submenu, its order and nesting', () => {
     const defs = toMenuItemDefs(
       [

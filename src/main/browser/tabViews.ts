@@ -425,14 +425,9 @@ export class TabViews {
     const extensionItems = spaceId
       ? (this.sessions.extensionsFor(spaceId)?.getContextMenuItems(contents, params) ?? [])
       : []
-    if (extensionItems.length > 0) {
-      const defs = toMenuItemDefs(
-        extensionItems,
-        clickLikeElectron(this.win, contents),
-        'extension',
-      )
-      items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
-    }
+    const defs = toMenuItemDefs(extensionItems, clickLikeElectron(this.win, contents), 'extension')
+    // Only when one of them is visible: else two separators would meet before Inspect.
+    if (defs.length > 0) items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
     // `params` are relative to the page; the overlay draws in window coordinates.
     this.showMenu(
       { at: { x: params.x + this.bounds.x, y: params.y + this.bounds.y } },

@@ -61,7 +61,7 @@ function convert(
   invoke: InvokeElectronItem,
   idPrefix: string,
 ): MenuItemDef[] {
-  return items.flatMap((item, index): MenuItemDef[] => {
+  const defs = items.flatMap((item, index): MenuItemDef[] => {
     if (item.visible === false) return []
     if (item.type === 'separator') return [{ kind: 'separator' }]
     const id = `${idPrefix}${index}`
@@ -82,6 +82,16 @@ function convert(
       },
     ]
   })
+  return tidySeparators(defs)
+}
+
+/** Drops leading, trailing and repeated separators (left over from hidden items). */
+function tidySeparators(defs: MenuItemDef[]): MenuItemDef[] {
+  const tidy = defs.filter(
+    (def, i) => def.kind !== 'separator' || (i > 0 && defs[i - 1]?.kind !== 'separator'),
+  )
+  while (tidy.at(-1)?.kind === 'separator') tidy.pop()
+  return tidy
 }
 
 /**
