@@ -21,7 +21,7 @@ class FakeItem extends EventEmitter {
   }
 }
 
-function setup() {
+function setup(caseInsensitive = false) {
   let time = 0
   const changes = vi.fn()
   const downloads = new Downloads({
@@ -30,6 +30,7 @@ function setup() {
     exists: () => false,
     onChange: changes,
     now: () => time,
+    caseInsensitive,
   })
   const ses = new EventEmitter()
   downloads.attach(ses as unknown as Session)
@@ -62,6 +63,18 @@ describe('Downloads', () => {
     const { start } = setup()
     expect(start('a.pdf').savePath).toBe(join('dl', 'a.pdf'))
     expect(start('a.pdf').savePath).toBe(join('dl', 'a (1).pdf'))
+  })
+
+  it('on a case-insensitive disk, never gives A.pdf and a.pdf the same file', () => {
+    const { start } = setup(true)
+    expect(start('A.pdf').savePath).toBe(join('dl', 'A.pdf'))
+    expect(start('a.pdf').savePath).toBe(join('dl', 'a (1).pdf'))
+  })
+
+  it('frees a name once its download is done, whatever its case', () => {
+    const { start } = setup(true)
+    start('A.pdf').emit('done', {}, 'completed')
+    expect(start('a.pdf').savePath).toBe(join('dl', 'a.pdf'))
   })
 
   it('throttles progress to one event per 250 ms', () => {

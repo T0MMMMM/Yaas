@@ -17,16 +17,26 @@ export interface DownloadsOptions {
   /** The list changed: pushed to the UI. */
   onChange: (list: Download[]) => void
   now?: () => number
+  /**
+   * Whether file names differ only by case on this disk (`A.pdf` is `a.pdf`). Defaults to true on
+   * Windows and macOS.
+   */
+  caseInsensitive?: boolean
 }
 
 export class Downloads {
   private readonly attached = new WeakSet<Session>()
-  /** Paths promised to downloads still running: their files may not exist yet. */
+  /** Paths promised to downloads still running (see `key`): their files may not exist yet. */
   private readonly reserved = new Set<string>()
   private readonly now: () => number
+  /** A path as the disk compares it. */
+  private readonly key: (path: string) => string
 
   constructor(private readonly opts: DownloadsOptions) {
     this.now = opts.now ?? Date.now
+    const caseInsensitive =
+      opts.caseInsensitive ?? (process.platform === 'win32' || process.platform === 'darwin')
+    this.key = caseInsensitive ? (path) => path.toLowerCase() : (path) => path
   }
 
   /** Takes over the downloads of `ses`; a session is hooked once, however often it is passed. */
@@ -59,9 +69,9 @@ export class Downloads {
     const path = uniqueDownloadPath(
       this.opts.directory(),
       item.getFilename(),
-      (candidate) => this.reserved.has(candidate) || exists(candidate),
+      (candidate) => this.reserved.has(this.key(candidate)) || exists(candidate),
     )
-    this.reserved.add(path)
+    this.reserved.add(this.key(path))
     item.setSavePath(path)
     const download = store.start({
       url: item.getURL(),
@@ -83,7 +93,7 @@ export class Downloads {
     // The session may be wiped (its space deleted) while this runs: the item outlives it and the
     // row stays, so the download finishes and is recorded like any other.
     item.once('done', (_event, state) => {
-      this.reserved.delete(path)
+      this.reserved.delete(this.key(path))
       store.progress(download.id, item.getReceivedBytes(), item.getTotalBytes())
       store.finish(download.id, state === 'completed' ? 'completed' : 'interrupted')
       this.changed()
