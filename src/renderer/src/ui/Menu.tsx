@@ -196,7 +196,12 @@ export function Menu(props: MenuProps) {
     if (closing) return
     cancelGrace()
     const row = e.currentTarget
-    if (entry.enabled) row.focus({ preventScroll: true })
+    // Hover follows the keyboard's row, except while the filter field has it: what is typed next
+    // must still reach the field (the row shows its hover fill anyway).
+    const focused = document.activeElement
+    // The filter field is the menu's only input.
+    const filtering = focused instanceof HTMLInputElement && layer.current?.contains(focused)
+    if (entry.enabled && !filtering) row.focus({ preventScroll: true })
     // Hovering another row closes a deeper submenu; a submenu's row opens its own. While a
     // submenu of this card is open, that waits out the grace: the pointer may be crossing rows on
     // its way into it.
