@@ -281,6 +281,15 @@ describe('IPC contract', () => {
     expect(shortcut.safeParse('settings').success).toBe(false)
   })
 
+  it('takes no input on app.defaultBrowser and app.makeDefaultBrowser', () => {
+    for (const channel of ['app.defaultBrowser', 'app.makeDefaultBrowser'] as const) {
+      expect(commands[channel].input.safeParse(undefined).success).toBe(true)
+      expect(commands[channel].input.safeParse({ extra: true }).success).toBe(false)
+      expect(commands[channel].output.safeParse({ isDefault: true }).success).toBe(true)
+      expect(commands[channel].output.safeParse({}).success).toBe(false)
+    }
+  })
+
   it('reports whether each tab has a loaded view', () => {
     const runtime = events['browser.changed'].shape.runtime
     const idle = { loading: false, canGoBack: false, canGoForward: false, themeColor: null }

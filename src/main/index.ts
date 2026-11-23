@@ -37,6 +37,13 @@ import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { PAGE_RADIUS, TabViews } from './browser/tabViews'
 import { shownSplit } from '@core/browser/splitBounds'
 import { splitPartner } from '@core/browser/splitPartner'
+import {
+  ExternalUrlQueue,
+  isDefaultBrowser,
+  makeDefaultBrowser,
+  urlFromArgv,
+  type DefaultBrowserApi,
+} from './defaultBrowser'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
 import {
@@ -64,7 +71,18 @@ else {
   }
 }
 
-if (!app.requestSingleInstanceLock()) app.quit()
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) app.quit()
+
+const externalUrls = new ExternalUrlQueue()
+if (gotLock) externalUrls.enqueue(urlFromArgv(process.argv))
+
+const defaultBrowserApi: DefaultBrowserApi = {
+  platform: process.platform,
+  isDefaultProtocolClient: (protocol) => app.isDefaultProtocolClient(protocol),
+  setAsDefaultProtocolClient: (protocol) => app.setAsDefaultProtocolClient(protocol),
+  openExternal: (url) => shell.openExternal(url),
+}
 
 const db = openDatabase(join(app.getPath('userData'), DB_FILE))
 const settings = new SettingsStore(db)
@@ -357,6 +375,12 @@ function watchTopBand(win: BrowserWindow, visible: boolean): void {
 const pageRadiusFor = (style: Settings['contextBarStyle']): number =>
   style === 'attached' ? 0 : PAGE_RADIUS
 
+function focusMainWindow(): void {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.focus()
+}
+
 function openMainWindow(): void {
   const win = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow = win
@@ -384,7 +408,14 @@ function openMainWindow(): void {
   )
   tabViews.setBorderRadius(pageRadiusFor(settings.get().contextBarStyle))
   tabViews.sync(browser.snapshot())
+  externalUrls.attach({
+    openTab: (url) => {
+      browser.openTab(browser.snapshot().activeSpaceId, url)
+    },
+    focusWindow: focusMainWindow,
+  })
   win.on('closed', () => {
+    externalUrls.detach()
     mainWindow = null
     tabViews = null
     overlay = null
@@ -394,6 +425,8 @@ function openMainWindow(): void {
 registerCommands(
   {
     'app.info': () => ({ version: app.getVersion(), platform, glassSupported: glassSupported() }),
+    'app.defaultBrowser': () => ({ isDefault: isDefaultBrowser(defaultBrowserApi) }),
+    'app.makeDefaultBrowser': () => makeDefaultBrowser(defaultBrowserApi),
     'settings.get': () => settings.get(),
     'settings.update': (patch) => settings.update(patch),
     'claude.detect': async () => {
@@ -561,10 +594,19 @@ accounts.subscribe((list) => {
   if (mainWindow) emit(mainWindow.webContents, 'accounts.changed', list)
 })
 
-app.on('second-instance', () => {
-  if (!mainWindow) return
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.focus()
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  if (!externalUrls.enqueue(url)) return
+  if (app.isReady() && !mainWindow) openMainWindow()
+})
+
+app.on('second-instance', (_event, argv) => {
+  const url = urlFromArgv(argv)
+  if (url) {
+    externalUrls.enqueue(url)
+    return
+  }
+  focusMainWindow()
 })
 
 app.on('will-quit', () => db.close())
@@ -574,6 +616,7 @@ app.on('window-all-closed', () => {
 })
 
 void app.whenReady().then(() => {
+  if (!gotLock) return
   // The UI and the overlay (default session) show extension icons from `crx://` (site menu).
   ElectronChromeExtensions.handleCRXProtocol(session.defaultSession)
   setupMenu()
