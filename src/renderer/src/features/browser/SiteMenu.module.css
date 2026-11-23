@@ -3,8 +3,8 @@
    right-aligned under the address bar button. */
 .card {
   composes: card from '../../ui/Popover.module.css';
-  /* Narrower funnel base so it stays centred on the right-edge button with a 16 px radius. */
-  --connector-w: 14px;
+  /* Narrower funnel base so it stays centred on the right-edge button with an 18 px radius. */
+  --connector-w: 10px;
   width: calc(var(--control-size) * 10);
   display: flex;
   flex-direction: column;

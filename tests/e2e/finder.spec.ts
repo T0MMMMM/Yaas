@@ -95,7 +95,7 @@ test('⌘T switches to an open tab it matches', async () => {
     await field.fill('page a')
     await expect(overlay.getByRole('option', { name: /Page A/ }).first()).toBeVisible()
     await field.press('ArrowDown')
-    await expect(overlay.getByTestId('command-field-footer')).toHaveText('Switch to Tab ↵')
+    await expect(overlay.getByTestId('command-field-footer')).toHaveText('Switch to Tab↵')
     await field.press('Enter')
 
     await expect.poll(() => activeUrl(page)).toBe(site.url('/a'))
@@ -103,53 +103,45 @@ test('⌘T switches to an open tab it matches', async () => {
   })
 })
 
-test('the dock shows recent, frequent and quick actions', async () => {
-  await withTabs(async ({ app, page, overlay }) => {
-    // Both visits are in the history before the dock reads it.
-    await expect
-      .poll(async () =>
-        (await page.evaluate(() => window.bigBrowser.invoke('history.frequent', {})))
-          .map((e) => e.title)
-          .sort(),
+test('the dock shows up to 3 recent tabs, quick action pills in the footer, and centres on the web window', async () => {
+  await withTabs(async ({ app, page, overlay, site }) => {
+    // Open two more tabs so 4 exist in the space; the dock caps Recent Tabs at 3.
+    for (const path of ['/c', '/d']) {
+      await page.evaluate(
+        (input) => window.bigBrowser.invoke('browser.openTab', { input }),
+        site.url(path),
       )
-      .toEqual(['Page A', 'Page B'])
+    }
+    await expect(page.getByTestId('tab')).toHaveCount(4)
 
     await clickMenu(app, 'newTab')
     const field = overlay.getByLabel('Search or enter address')
     await expect(field).toBeFocused()
     const dock = overlay.getByTestId('command-field')
     const recent = dock.getByRole('group', { name: 'Recent Tabs' })
-    const frequent = dock.getByRole('group', { name: 'Frequent' })
-    const actions = dock.getByRole('group', { name: 'Quick Actions' })
-    await expect(dock.getByRole('group')).toHaveCount(3)
-    // The active tab was activated last.
-    await expect(recent.getByRole('option')).toHaveText(['Page B', 'Page A'])
-    await expect(frequent.getByRole('option')).toHaveCount(2)
-    await expect(actions.getByRole('option')).toHaveText([
-      'docs.new',
-      'meet.new',
-      'sheets.new',
-      'github.com/new',
-    ])
+    await expect(dock.getByRole('group')).toHaveCount(1)
+    await expect(recent.getByRole('option')).toHaveCount(3)
 
-    // The footer names what Enter does with the selected row.
+    // Quick actions sit in the bottom bar as pill buttons, not in the list.
+    const quickActions = dock.getByTestId('quick-action')
+    await expect(quickActions).toHaveCount(4)
+    await expect(quickActions).toHaveText(['Docs', 'Meet', 'Sheets', 'GitHub'])
+
+    // The footer pill names what Enter does with the selected row.
     const footer = overlay.getByTestId('command-field-footer')
     await expect(recent.getByRole('option').first()).toHaveAttribute('aria-selected', 'true')
-    await expect(footer).toHaveText('Switch to Tab ↵')
-    await actions.getByRole('option', { name: 'docs.new' }).hover()
-    await expect(footer).toHaveText('Open in New Tab ↵')
+    await expect(footer).toHaveText('Switch to Tab↵')
 
-    // "−" forgets a page, for good.
-    const pageA = frequent.getByRole('option', { name: /Page A/ })
-    await pageA.hover()
-    await pageA.getByRole('button', { name: 'Forget Page A' }).click()
-    await expect(frequent.getByRole('option')).toHaveText([/Page B/])
-    await expect(field).toBeFocused()
+    // Centred horizontally over the web window (page slot), not the whole app.
+    const dockBox = await dock.boundingBox()
+    const slotBox = await page.getByTestId('page-slot').boundingBox()
+    if (!dockBox || !slotBox) throw new Error('dock or page-slot not found')
+    const dockCenter = dockBox.x + dockBox.width / 2
+    const slotCenter = slotBox.x + slotBox.width / 2
+    expect(Math.abs(dockCenter - slotCenter)).toBeLessThanOrEqual(4)
+
     await field.press('Escape')
     await expect(dock).toHaveCount(0)
-    await clickMenu(app, 'newTab')
-    await expect(frequent.getByRole('option')).toHaveText([/Page B/])
-    await expect(page.getByTestId('tab')).toHaveCount(2)
   })
 })
 

@@ -30,12 +30,12 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-toolbar: 7px;
-  --radius-row: 8px;
+  --radius-row: 10px;
   --radius-lg: 9px;
   --radius-control: 10px;
-  --radius-menu: 12px;
-  --radius-popover: 16px;
-  --radius-command: 18px;
+  --radius-menu: 18px;
+  --radius-popover: 18px;
+  --radius-command: 24px;
   --radius-pill: 999px;
 
   /* type */
@@ -78,13 +78,14 @@
   --folder-bar-w: 2px; /* icon-only: a filed tab's bar per folder it sits in */
   --folder-hue-s: 70%; /* a folder's colour from its hue: saturation (icon back, filed-tab bars) */
   --folder-hue-l: 48%; /* the same: lightness */
-  --finder-w: 760px; /* the tab finder (⌘K) and the command field (⌘T) */
+  --finder-w: 560px; /* the tab finder (⌘K) and the command field (⌘T) */
   --finder-top: 20vh; /* how far down the window they open */
+  --finder-field-h: 44px; /* height of the search field row inside the picker */
   --menu-row-h: 28px; /* yab menu item height */
   --menu-row-h-tall: 42px; /* site-menu row with status line */
   --menu-row-pad: 10px; /* horizontal padding of menu/popover rows */
   --menu-inset: 6px; /* outer padding of menus and quick-action gap */
-  --popover-pad: 10px; /* inner padding of popovers and command field */
+  --popover-pad: 12px; /* inner padding of popovers and command field */
   --status-icon-size: 28px; /* site-menu row status circle */
   --quick-action-h: 32px; /* site-menu quick actions and extension tiles */
   --ext-tile-w: 52px; /* site-menu extension tile width */
@@ -127,38 +128,41 @@
   --neutral-window: #f6f6f8;
   --neutral-sidebar: #ececf0;
   --neutral-surface: #ffffff;
-  --bg-raised: #ffffff;
+  --bg-raised: #e3e4e6;
   --border: rgb(0 0 0 / 0.08);
   --border-strong: rgb(0 0 0 / 0.16);
   --text: #1c1c1e;
   --text-muted: #5b5b66;
   --text-faint: #9a9aa6;
-  --text-secondary: #8a8a8e;
-  --text-placeholder: #b0b0b5;
+  --text-secondary: #6e6e73;
+  --text-placeholder: #98989f;
   --ok: #1f9d5c;
   --warn: #c77a12;
   --danger: #d33a3a;
-  --control-active: #ffffff;
+  --control-active: #f1f2f4;
   --status-running: #9a9aa6;
   --status-waiting: #f08c1a;
   --status-done: #2f7cf6;
   --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.12);
-  --bg-popover: #ffffff;
-  --bg-menu: #f7f7f8;
-  --bg-menu-hover: rgb(0 0 0 / 0.06);
-  --fill-neutral: #f2f2f4;
-  --fill-neutral-hover: #e9e9ec;
-  --fill-pressed: #e6e6e9;
+  --bg-popover: #e3e4e6;
+  --bg-menu: #e3e4e6;
+  --bg-pill: #f1f2f4;
+  --bg-pill-hover: #f8f9fa;
+  --bg-menu-hover: rgb(0 0 0 / 0.07);
+  --fill-neutral: rgb(0 0 0 / 0.06);
+  --fill-neutral-hover: rgb(0 0 0 / 0.09);
+  --fill-pressed: rgb(0 0 0 / 0.12);
   --status-on-bg: #1c1c1e;
   --status-on-fg: #ffffff;
-  --status-off-bg: #ececef;
+  --status-off-bg: rgb(0 0 0 / 0.07);
   --status-off-fg: #1c1c1e;
-  --switch-off: #e5e5ea;
+  --switch-off: rgb(0 0 0 / 0.12);
   --caret: #0a84ff;
   --border-menu: rgb(0 0 0 / 0.08);
   --shadow-menu: 0 10px 30px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.08);
   --shadow-command: 0 24px 60px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
   --shadow-lift: 0 10px 24px rgb(0 0 0 / 0.16), 0 2px 6px rgb(0 0 0 / 0.1);
+  --shadow-pill: 0 1px 4px rgb(0 0 0 / 0.07), 0 0 0 1px rgb(0 0 0 / 0.06);
   --bg-tile: rgb(0 0 0 / 0.11);
   --bg-tile-hover: rgb(0 0 0 / 0.17);
 
@@ -176,7 +180,7 @@
   --neutral-window: #0f0f11;
   --neutral-sidebar: #141416;
   --neutral-surface: #18181b;
-  --bg-raised: #1f1f23;
+  --bg-raised: #242428;
   --border: rgb(255 255 255 / 0.07);
   --border-strong: rgb(255 255 255 / 0.13);
   --text: #e6e6ea;
@@ -187,17 +191,19 @@
   --ok: #3ccf86;
   --warn: #f0a63a;
   --danger: #ff6b6b;
-  --control-active: #2c2c32;
+  --control-active: #323238;
   --status-running: #8b8b96;
   --status-waiting: #ff9f2e;
   --status-done: #4b93ff;
   --shadow-raised: 0 10px 32px rgb(0 0 0 / 0.45);
-  --bg-popover: #2b2b30;
-  --bg-menu: #2b2b30;
+  --bg-popover: #242428;
+  --bg-menu: #242428;
+  --bg-pill: #323238;
+  --bg-pill-hover: #3b3b42;
   --bg-menu-hover: rgb(255 255 255 / 0.08);
-  --fill-neutral: rgb(255 255 255 / 0.06);
-  --fill-neutral-hover: rgb(255 255 255 / 0.1);
-  --fill-pressed: rgb(255 255 255 / 0.12);
+  --fill-neutral: rgb(255 255 255 / 0.07);
+  --fill-neutral-hover: rgb(255 255 255 / 0.11);
+  --fill-pressed: rgb(255 255 255 / 0.14);
   --status-on-bg: #ececef;
   --status-on-fg: #1c1c1e;
   --status-off-bg: rgb(255 255 255 / 0.1);
@@ -208,6 +214,7 @@
   --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.5);
   --shadow-command: 0 24px 60px rgb(0 0 0 / 0.55);
   --shadow-lift: 0 12px 28px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35);
+  --shadow-pill: 0 1px 4px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.08);
   --bg-tile: rgb(255 255 255 / 0.1);
   --bg-tile-hover: rgb(255 255 255 / 0.16);
 

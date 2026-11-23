@@ -214,20 +214,20 @@ drops the tooltip, and none shows while a menu is open. Folder rows and buttons 
 `title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
 
 **Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w`
-760 wide, radius `--radius-command` (18 px), `--shadow-command`, centred `--finder-top` (20 % of
-the window) from the top, in the overlay, opening with a 100 ms fade (`--dur-command`, no scale): a field over a list,
-↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`)
-ranks the tabs of every space — every word must be in the title or the host and path; a title
-that starts with the query first, then title matches, then URL matches — and activates the one
-picked, switching space; an empty query lists the space's tabs. The command field (`Mod+T`) is
-the **new-tab dock** (`dock.ts`): titled sections (small, faint) — **Recent Tabs** (this space's
-open tabs, most recently active first, up to six, "In <folder>" on the right when filed),
-**Frequent** (the space's six most visited pages, each with a "−" on the selected row that forgets
-it) and **Quick Actions** (docs.new, meet.new, sheets.new, github.com/new). Typing puts "Go to
-<url>" (or "Search Google for "…"") first and filters every section; open tabs and history then
-match across **all spaces** (picking another space's tab switches space). A footer names what
-Enter does with the selected row: "Switch to Tab ↵" or "Open in New Tab ↵". The list scrolls
-inside the window; no tab is created until Enter.
+560 wide, radius `--radius-command` (24 px), `--shadow-command`, centred horizontally over the web
+window (offset by the sidebar width) and `--finder-top` (20 % of the window) from the top, in the
+overlay, opening with a 100 ms fade (`--dur-command`, no scale), with no internal dividers: a search
+row (`--finder-field-h` 44 px, symmetrical top/bottom margin) over a list, ↑/↓ move, Enter runs,
+Escape or a click outside closes. The finder (`Mod+K`) ranks the tabs of every space — every word
+must be in the title or the host and path; a title that starts with the query first, then title
+matches, then URL matches — and activates the one picked, switching space; an empty query lists the
+space's tabs. The command field (`Mod+T`) is the **new-tab dock** (`dock.ts`): **Recent Tabs** (this
+space's open tabs, most recently active first, up to three, with "In <folder>" or the address beside
+the title) and a floating pill footer holding **Quick Actions** (`Docs`, `Meet`, `Sheets`, `GitHub`
+→ `docs.new`, `meet.new`, `sheets.new`, `github.com/new`) on the left and the Enter pill ("Switch to
+Tab ↵" or "Open in New Tab ↵") on the right. Typing puts "Go to <url>" (or "Search Google for "…"")
+first and matches open tabs across **all spaces** (picking another space's tab switches space). The
+list scrolls inside the window; no tab is created until Enter.
 
 **Address bar buttons** — left: Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a
 check mark for 1.2 s) and the site menu (below; it holds the extensions). Both groups are three
@@ -294,9 +294,10 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-window` | Window background (`transparent` when glass is on) |
 | `--bg-sidebar` | Sidebar fill: accent-tinted neutral; translucent when glass is on |
 | `--bg-surface` | Main pane |
-| `--bg-raised` | Cards, approval sheet, palette, menus |
-| `--bg-popover` | Solid popover card (`#ffffff` light / `#2b2b30` dark) |
-| `--bg-menu` / `--bg-menu-hover` | Opaque menu card (`#f7f7f8` light / `#2b2b30` dark) and its hovered row |
+| `--bg-raised` | Cards, settings panel, palette, menus (`#e3e4e6` light / `#242428` dark) |
+| `--bg-popover` | Solid popover card (`#e3e4e6` light / `#242428` dark) |
+| `--bg-menu` / `--bg-menu-hover` | Opaque menu card (`#e3e4e6` light / `#242428` dark) and its hovered row |
+| `--bg-pill` / `--bg-pill-hover` / `--shadow-pill` | Floating pill buttons inside popovers and the command dock (`#f1f2f4` light / `#323238` dark) |
 | `--fill-neutral` / `--fill-neutral-hover` / `--fill-pressed` | Neutral fills for quick actions, extension tiles, pills, selected rows, and pressed toolbar openers |
 | `--border-menu` / `--shadow-menu` / `--shadow-command` | Menu/popover card hairline, popover shadow, and command-field shadow |
 | `--shadow-lift` | A sidebar row lifted while it is dragged (light and dark) |
@@ -364,10 +365,10 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Group | Tokens |
 |---|---|
 | Spacing (4 px scale) | `--space-hair` 2 (tight icon rows) · `--space-1` 4 · `--space-2` 8 · `--space-3` 12 · `--space-4` 16 · `--space-6` 24 · `--space-8` 32 |
-| Radius | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 7 · `--radius-row` 8 · `--radius-lg` 9 · `--radius-control` 10 · `--radius-menu` 12 · `--radius-popover` 16 · `--radius-command` 18 · `--radius-pill` 999 |
+| Radius | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 7 · `--radius-lg` 9 · `--radius-row` 10 · `--radius-control` 10 · `--radius-menu` 18 · `--radius-popover` 18 · `--radius-command` 24 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Size | `--text-xs` 11 · `--text-status` 11.5 · `--text-sm` 12 · `--text-menu` 13 · `--text-md` 13.5 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--split-gap` 5 (between a split's two pages, = `SPLIT_GAP` in main; the divider sits in it) · `--split-handle-w` 3 / `--split-handle-h` 32 / `--split-handle` (`--border-strong`; `--accent` on hover and focus): the divider's grip · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 760 and `--finder-top` 20vh (the tab finder and the command field) · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 6 · `--popover-pad` 10 |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--split-gap` 5 (between a split's two pages, = `SPLIT_GAP` in main; the divider sits in it) · `--split-handle-w` 3 / `--split-handle-h` 32 / `--split-handle` (`--border-strong`; `--accent` on hover and focus): the divider's grip · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560, `--finder-top` 20vh, and `--finder-field-h` 44 (the tab finder and the command field) · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 6 · `--popover-pad` 12 |
 | Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
 | Motion | `--dur-press` 75 ms · `--dur-popover-out` 100 ms · `--dur-command` 100 ms · `--dur-fast` 120 ms · `--dur-knob` 160 ms · `--dur-popover-in` 180 ms · `--dur-swatch` 180 ms · `--dur-base` 200 ms · `--dur-fade-slow` 300 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-intro-content` 500 ms · `--dur-intro` 600 ms · `--dur-intro-move` 700 ms · `--delay-intro` 250 ms · `--delay-intro-content` 350 ms · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` · `--ease-out` `cubic-bezier(0.16, 1, 0.3, 1)` · `--ease-in` `cubic-bezier(0.7, 0, 0.84, 0)` (popover/command/fade durations stay non-zero under `prefers-reduced-motion` to run opacity-only fades) |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { OverlayRequest, Tooltip } from '@shared/ipc/contract'
+import { SIDEBAR_DEFAULT, type OverlayRequest, type Tooltip } from '@shared/ipc/contract'
 import type { MenuSpecItem } from '@shared/menuSpec'
 import { DownloadsMenu } from '../features/downloads/DownloadsMenu'
 import { SiteMenu } from '../features/browser/SiteMenu'
@@ -17,6 +17,7 @@ import { ColorPicker } from '../ui/ColorPicker'
 import { ConfirmCard } from '../ui/ConfirmCard'
 import { Menu } from '../ui/Menu'
 import { OverlayTooltip } from './OverlayTooltip'
+import { snapWidth } from './useSidebarResize'
 
 /** Name of a folder made from the + menu; the sidebar then edits it. */
 const NEW_FOLDER_NAME = 'New Folder'
@@ -72,6 +73,8 @@ export function Overlay() {
   const initDownloads = useDownloads((s) => s.init)
   const workspace = useWorkspace()
   const accent = useSettings((s) => s.settings?.accent)
+  const sidebarWidth = useSettings((s) => s.settings?.sidebarWidth)
+  const contentLeft = snapWidth(sidebarWidth ?? SIDEBAR_DEFAULT)
 
   useEffect(() => initBrowser(), [initBrowser])
   useEffect(() => initDownloads(), [initDownloads])
@@ -159,11 +162,13 @@ export function Overlay() {
   }
 
   switch (request.kind) {
-    // The centred cards (⌘K, ⌘T) have no anchor.
+    // The centred cards (⌘K, ⌘T) have no anchor and centre over the web window.
     case 'tab-finder':
-      return <TabFinder key={openId} closing={closing} onClose={close} />
+      return <TabFinder key={openId} contentLeft={contentLeft} closing={closing} onClose={close} />
     case 'command':
-      return <CommandField key={openId} closing={closing} onClose={close} />
+      return (
+        <CommandField key={openId} contentLeft={contentLeft} closing={closing} onClose={close} />
+      )
     case 'split-drag':
       return <SplitDragLayer />
     case 'site-menu':
