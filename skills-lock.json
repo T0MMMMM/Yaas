@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "skills": {
+    "better-unit-tests": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/better-unit-tests/SKILL.md",
+      "computedHash": "318447cd2ffb1d1de4ace9516a5e597f04d114d098fbda371bc55c4e34340fac",
+      "installMode": "copy"
+    },
+    "clean-code": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/clean-code/SKILL.md",
+      "computedHash": "5856f9aed3b3002e67073cfd83f263d0fece2f1940af08bd0456302ecab6bf47",
+      "installMode": "copy"
+    },
+    "comment-code": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/comment-code/SKILL.md",
+      "computedHash": "64f2632263f970fc5b3fbf182ea384d10b455d2ba23f26dd7949285bacf4642e",
+      "installMode": "copy"
+    },
+    "deploy-to-vercel": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/deploy-to-vercel/SKILL.md",
+      "computedHash": "66b99dfa063b1c405155e9bffd99c04ca3e312e81b168d540b757bb194b7400a",
+      "installMode": "copy"
+    },
+    "gemini-workers": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/gemini-workers/SKILL.md",
+      "computedHash": "8adb619f45925026d16a4a6cfef3b9a2dfebc232a40aeb599fc293d3e276ab87",
+      "installMode": "copy"
+    },
+    "improve-ux-motion": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/improve-ux-motion/SKILL.md",
+      "computedHash": "e7a7cbab4899c2fac06ac267fd95faddf45e6bae087adc69b357dd1e60c04442",
+      "installMode": "copy"
+    },
+    "minimal-diff": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/minimal-diff/SKILL.md",
+      "computedHash": "f317180d8d01efa6d618fe7bef24a4a234fcc6be73f0b0aaebc9260fb72d8834",
+      "installMode": "copy"
+    },
+    "naming": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/naming/SKILL.md",
+      "computedHash": "2acf5f63a9d7af1ba1aad82d9a937f0185ee7bbcf2af0f56eb0d5670729ad84b",
+      "installMode": "copy"
+    },
+    "vercel-cli-with-tokens": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/vercel-cli-with-tokens/SKILL.md",
+      "computedHash": "a294080c5464284c5ed06bde9e5bf0fb16981958600f4ae829eaab5d7f17d29a",
+      "installMode": "copy"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "f711ed8b16162eaa712abbcdbbae6c926f86c57e60127735fecc3ad0dd85b3fa",
+      "installMode": "copy"
+    },
+    "vercel-optimize": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/vercel-optimize/SKILL.md",
+      "computedHash": "f69b2d70e9928eb4ae0b0acdaabb2ba2f42ba694aa33df52b4ee41e8fb9ced60",
+      "installMode": "copy"
+    },
+    "vercel-react-best-practices": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/react-best-practices/SKILL.md",
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299",
+      "installMode": "copy"
+    },
+    "vercel-react-native-skills": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/react-native-skills/SKILL.md",
+      "computedHash": "4c160f1f4e623b989cadb71f42a0813be574d172acf5e32a6411c87f3e28c05a",
+      "installMode": "copy"
+    },
+    "vercel-react-view-transitions": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/react-view-transitions/SKILL.md",
+      "computedHash": "d5bdffc1f132ae0d6d9260c260ae206d48cd83cb148e3e3b75fc1a3b94b249fa",
+      "installMode": "copy"
+    },
+    "web-design-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/web-design-guidelines/SKILL.md",
+      "computedHash": "5994e4cfd86144903d2ba750f862b9e36af15e3297aac983679e347b99f6cb71",
+      "installMode": "copy"
+    },
+    "web-design-references": {
+      "source": "yo-l-an/agents",
+      "commit": "0ec1eb1f59bac9200214a42e2a27887b551bc562",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/web-design-references/SKILL.md",
+      "computedHash": "b41ad4b483e7e965701e9077345098e0ea30d11d8563ce4d2d5bf96af7776bf3",
+      "installMode": "copy"
+    },
+    "writing-guidelines": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb",
+      "sourceType": "github",
+      "skillPath": "skills/writing-guidelines/SKILL.md",
+      "computedHash": "fe1390adbe2f7ba68d5fb85d3b14a1d55e71ce04cff5c175245c550d1c3a6f7e",
+      "installMode": "copy"
+    }
+  }
+}

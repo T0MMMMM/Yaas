@@ -15,6 +15,8 @@ export default tseslint.config(
       'playwright-report/**',
       // throwaway spike code, not part of the app
       'scripts/spikes/**',
+      // vendored project skills
+      '.claude/**',
     ],
   },
   js.configs.recommended,
