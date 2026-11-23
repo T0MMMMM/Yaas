@@ -439,7 +439,8 @@ results come back to the lead as a short summary + branch name, never the full c
   the previous — `core/browser/splitPartner.ts`; nothing when there is none). `moveTab` of
   either half moves the pair; removing one half (or closing a today half) first ends the split,
   the other half taking the row's place (and the focus, when the closed one had it). Closing a
-  half of a pinned or favourite split only unloads it and keeps the pair; `browser.closeSplit`
+  half of a pinned or favourite split only unloads it and keeps the pair (a half of the split on
+  screen closes the whole split, as `closeSplit` does, so no blank half stays shown); `browser.closeSplit`
   (a split row's ×) unloads both halves of such a split, or deletes both of a today split, and
   moves the focus off the pair. Undo brings a closed half
   back as a normal tab; a deleted folder's splits are separated first, so they come back as two
@@ -600,7 +601,8 @@ results come back to the lead as a short summary + branch name, never the full c
   enters a page the UI gets no more events, so `start` opens the overlay as a full-window capture
   layer (`split-drag`), `move` lays the views out live at `splitRatioAt(x)` without storing,
   `end` stores the ratio once, Escape (or the overlay closing) restores it. Arrow keys on the
-  divider store at once. A mouse press or focus in a half activates its tab; the pair stays shown.
+  divider store at once. A mouse press or a key in a half on screen activates its tab (`activatesHalf`); the pair stays
+  shown. Focus alone never does: a hidden view keeps its focus events.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
   the window's top margin is open. While the margin is open (macOS and Windows), main polls the

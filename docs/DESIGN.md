@@ -131,8 +131,9 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   that half active (it is bold while the split is shown; elsewhere on the row, the half already
   active or the first). Its tooltip names both; right-click opens the menu of the half under the
   pointer (Separate instead of Open in Split View). Its × closes **both** tabs
-  (`browser.closeSplit`; to keep one, use Separate or close a half with ⌘W). A pinned or favourite
-  split is only unloaded — by its × or ⌘W on a half — and stays a split; a today split's tabs are
+  (`browser.closeSplit`; to keep one, use Separate first). A pinned or favourite split is only
+  unloaded and stays a split: its ×, or closing either half while it is shown (⌘W, Close), unloads
+  both; closing a half of one not shown unloads that half. A today split's tabs are
   deleted, and ⌘⇧T reopens them one by one as two plain tabs. Icon-only: the two favicons stacked. A favourite split is one
   tile with both favicons. **Creating a split**: `⌃⌘\` (Windows: `Ctrl+Shift+\`) or the + menu's
   Split View pairs the active tab with the next row of its list, else the previous (rows already

@@ -5,7 +5,7 @@ import type { HistoryStore } from '@core/browser/historyStore'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
 import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
-import { shownSplit, splitBounds, splitRatioAt } from '@core/browser/splitBounds'
+import { activatesHalf, shownSplit, splitBounds, splitRatioAt } from '@core/browser/splitBounds'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
 import type { BrowserSnapshot } from '@shared/model'
 import { DEFAULT_SEARCH, hostOf } from '@shared/url'
@@ -377,14 +377,19 @@ export class TabViews {
     contents.on('did-start-loading', () => setRuntime({ loading: true }))
     contents.on('did-stop-loading', () => setRuntime({ loading: false }))
     contents.on('did-change-theme-color', (_event, color) => setRuntime({ themeColor: color }))
-    // Clicking (or tabbing) into one half of a split makes it the active tab (the pair stays on
-    // screen). A press is seen directly: the half may already have the keyboard focus.
+    // A press or a key in the other half of the split on screen makes it the active tab (the pair
+    // stays on screen). Only user input counts: a hidden view's focus (left there before a switch,
+    // handed back by the overlay, a page script, a new view) never changes the active tab.
     const activateHalf = (): void => {
-      if (isCurrent() && this.split && this.shownTabId !== tabId) this.store.activateTab(tabId)
+      if (isCurrent() && activatesHalf(this.split, this.shownTabId, tabId)) {
+        this.store.activateTab(tabId)
+      }
     }
-    contents.on('focus', activateHalf)
     contents.on('before-mouse-event', (_event, mouse) => {
       if (mouse.type === 'mouseDown') activateHalf()
+    })
+    contents.on('before-input-event', (_event, input) => {
+      if (input.type === 'keyDown') activateHalf()
     })
 
     // Popups and target=_blank become tabs in the same space, nested under this one, never windows.

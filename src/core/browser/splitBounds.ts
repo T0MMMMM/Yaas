@@ -47,6 +47,20 @@ export function shownSplit(
   return { firstId: first.id, secondId: second.id, ratio: first.splitRatio ?? DEFAULT_SPLIT_RATIO }
 }
 
+/**
+ * Whether user input (a press or a key) in `tabId`'s page makes it the active tab: only when it is
+ * the half of the split on screen that is not already the shown tab. A hidden view, whatever its
+ * focus, never does.
+ */
+export function activatesHalf(
+  split: { firstId: string; secondId: string } | null,
+  shownTabId: string | null,
+  tabId: string,
+): boolean {
+  if (!split || tabId === shownTabId) return false
+  return tabId === split.firstId || tabId === split.secondId
+}
+
 /** Narrowest and widest share of a split's first page. */
 export const MIN_SPLIT_RATIO = 0.25
 export const MAX_SPLIT_RATIO = 0.75

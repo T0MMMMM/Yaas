@@ -314,21 +314,26 @@ export class BrowserStore {
 
   /**
    * Closes a tab as the user's close does: a favourite or pinned tab is only unloaded (its entry
-   * stays, and its split too; main destroys its view), a today tab is deleted and can be reopened
-   * (a today split ends first, see removeTab).
+   * stays, and its split too), a today tab is deleted and can be reopened (a today split ends
+   * first, see removeTab). A pinned or favourite half of the split on screen closes the whole
+   * split (closeSplit), so no blank half is left shown. `unloaded`: the tabs whose views main
+   * destroys (none for a deleted tab).
    */
-  closeTab(id: string): 'deleted' | 'unloaded' {
+  closeTab(id: string): { unloaded: string[] } {
     const tab = this.requireTab(id)
     if (tab.section === 'today') {
       this.removeTab(id)
-      return 'deleted'
+      return { unloaded: [] }
     }
     const space = this.requireSpace(tab.space_id)
-    if (space.active_tab_id === id) {
+    const pair = this.pairOf(tab)
+    const shown = space.active_tab_id
+    if (pair && (shown === pair.first.id || shown === pair.second.id)) return this.closeSplit(id)
+    if (shown === id) {
       this.setActiveTab(tab.space_id, this.nextActive(tab.space_id, id, new Set([id])))
     }
     this.emit()
-    return 'unloaded'
+    return { unloaded: [id] }
   }
 
   /**

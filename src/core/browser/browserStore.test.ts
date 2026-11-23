@@ -190,7 +190,7 @@ describe('BrowserStore organisation', () => {
     const { store, spaceId } = setup()
     const a = store.openTab(spaceId, 'a')
     store.moveTab(a.id, { section: 'pinned', index: 0 })
-    expect(store.closeTab(a.id)).toBe('unloaded')
+    expect(store.closeTab(a.id)).toEqual({ unloaded: [a.id] })
     expect(store.snapshot().tabs).toMatchObject([{ id: a.id, section: 'pinned' }])
   })
 
@@ -199,7 +199,7 @@ describe('BrowserStore organisation', () => {
     const a = store.openTab(spaceId, 'a')
     const b = store.openTab(spaceId, 'b', { parentId: a.id })
     const c = store.openTab(spaceId, 'c', { parentId: b.id })
-    expect(store.closeTab(b.id)).toBe('deleted')
+    expect(store.closeTab(b.id)).toEqual({ unloaded: [] })
     const tabs = store.snapshot().tabs
     expect(tabs.map((t) => t.id)).toEqual([a.id, c.id])
     expect(tabs.find((t) => t.id === c.id)?.parentId).toBe(a.id)
@@ -638,18 +638,21 @@ describe('BrowserStore splits', () => {
     expect(store.visibleOrder(spaceId)).toEqual([c.id, a.id])
   })
 
-  it('closing a half of a pinned or favourite split only unloads it: the pair stays', () => {
+  it('closing a half of a pinned or favourite split only unloads: the pair stays', () => {
     const { store, spaceId, a, b, c } = three()
     store.splitTabs(a.id, b.id)
     store.moveTab(a.id, { section: 'pinned', index: 0 })
+    // A half of the shown split, active or not: both halves go (no blank pane is left on screen)
+    // and the focus leaves the split for the next row.
     store.activateTab(b.id)
-    expect(store.closeTab(b.id)).toBe('unloaded')
+    expect(store.closeTab(a.id)).toEqual({ unloaded: [a.id, b.id] })
     expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'pinned' })
-    // The focus leaves the split for the next row.
     expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
+    // A half of a split that is not shown: only that half.
     store.moveTab(a.id, { section: 'favorites', index: 0 })
-    expect(store.closeTab(a.id)).toBe('unloaded')
+    expect(store.closeTab(a.id)).toEqual({ unloaded: [a.id] })
     expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'favorites' })
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
   })
 
   it('closeSplit unloads both halves of a pinned split, deletes both of a today split', () => {

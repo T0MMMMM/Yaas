@@ -151,7 +151,7 @@ function views(): TabViews {
  * unchanged snapshot, so `TabViews.sync` can't tell: its view is destroyed here.
  */
 function closeTab(tabId: string): void {
-  if (browser.closeTab(tabId) === 'unloaded') tabViews?.unload(tabId)
+  for (const id of browser.closeTab(tabId).unloaded) tabViews?.unload(id)
 }
 
 /** URLs an extension may open as a tab: web pages and extension pages, nothing local. */

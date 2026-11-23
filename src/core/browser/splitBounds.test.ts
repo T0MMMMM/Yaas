@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { BrowserTab } from '@shared/model'
-import { shownSplit, splitBounds, splitRatioAt } from './splitBounds'
+import { activatesHalf, shownSplit, splitBounds, splitRatioAt } from './splitBounds'
 
 describe('splitBounds', () => {
   const box = { x: 100, y: 40, width: 1000, height: 600 }
@@ -56,5 +56,22 @@ describe('splitRatioAt', () => {
     expect(splitRatioAt(box, 0, 5)).toBe(0.25)
     expect(splitRatioAt(box, 5000, 5)).toBe(0.75)
     expect(splitRatioAt({ ...box, width: 0 }, 300, 5)).toBe(0.5)
+  })
+})
+
+describe('activatesHalf', () => {
+  const split = { firstId: 'a', secondId: 'b' }
+
+  it('activates the other half of the split on screen', () => {
+    expect(activatesHalf(split, 'a', 'b')).toBe(true)
+    expect(activatesHalf(split, 'b', 'a')).toBe(true)
+  })
+
+  it('never activates the shown half, a hidden view or anything without a split on screen', () => {
+    expect(activatesHalf(split, 'a', 'a')).toBe(false)
+    // A view kept alive but hidden (another tab, or a half of another split).
+    expect(activatesHalf(split, 'a', 'c')).toBe(false)
+    expect(activatesHalf(null, 'a', 'b')).toBe(false)
+    expect(activatesHalf(null, null, 'b')).toBe(false)
   })
 })
