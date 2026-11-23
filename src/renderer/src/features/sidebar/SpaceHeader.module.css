@@ -1,42 +1,65 @@
-/* The head of the space section (SpaceHeader): the emoji or colour dot (a chevron on hover), the
-   name, and the "…" button shown on hover. Lined up with the rows' icons below it. */
+/* The head of the space section (SpaceHeader): a full tab-height row with card hover and tilt.
+   Clicking anywhere on the row folds the section; hovering swaps the space icon into a chevron
+   and reveals the "…" button on the right. */
 
 .header {
+  position: relative;
+  min-width: 0;
+  margin-bottom: var(--row-gap);
+}
+
+.row {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  min-height: var(--control-size);
-  margin-bottom: var(--row-gap);
-  padding: 0 0 0 var(--space-hair);
-}
-
-.toggle,
-.more {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: var(--control-size-xs);
-  height: var(--control-size-xs);
-  padding: 0;
+  gap: var(--space-2);
+  min-height: var(--row-h);
+  padding: 7px var(--space-2);
+  padding-right: var(--control-size);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--text-muted);
+  text-align: left;
   cursor: pointer;
-  transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease),
-    opacity var(--dur-fast) var(--ease);
+  transition: color var(--dur-fast) var(--ease);
 }
 
-.toggle:hover,
-.more:hover,
-.more[aria-expanded='true'] {
-  background: var(--hover-fill);
+.row::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  transition:
+    background var(--dur-fast) var(--ease),
+    transform var(--dur-base) var(--ease-bounce);
+}
+
+.header:hover .row,
+.header[data-menu-open] .row {
   color: var(--text);
 }
 
-/* The emoji (or dot) and the chevron share the toggle's cell: one fades out as the other fades in. */
+.header:hover .row::before,
+.header[data-menu-open] .row::before {
+  background: var(--hover-fill);
+  transform: rotate(var(--tilt-hover));
+}
+
+/* The emoji (or dot) and the chevron share the leading icon cell: one fades out as the other fades in. */
+.iconSlot {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--favicon-size);
+  height: var(--favicon-size);
+}
+
 .glyph,
 .chevron {
   grid-area: 1 / 1;
@@ -60,8 +83,8 @@
   background: currentColor;
 }
 
-/* Hidden at rest (visibility, so it is out of the way once faded), shown while the header is
-   hovered or the toggle has keyboard focus. */
+/* Hidden at rest (visibility, so it is out of the way once faded), shown while the row is hovered
+   or has keyboard focus. */
 .chevron {
   width: var(--text-sm);
   height: var(--text-sm);
@@ -75,14 +98,14 @@
 }
 
 .header:hover .chevron,
-.toggle:focus-visible .chevron {
+.row:focus-visible .chevron {
   opacity: 1;
   visibility: visible;
   transition-delay: 0s;
 }
 
 .header:hover .glyph,
-.toggle:focus-visible .glyph {
+.row:focus-visible .glyph {
   opacity: 0;
 }
 
@@ -90,9 +113,9 @@
 .field {
   flex: 1;
   min-width: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
   font-weight: 600;
-  color: var(--text-muted);
+  color: inherit;
 }
 
 .name {
@@ -110,9 +133,26 @@
   font-family: inherit;
 }
 
-/* Shown while the header is hovered, the menu is open from it, or it has keyboard focus. */
+/* Shown while the row is hovered, the menu is open from it, or it has keyboard focus. */
 .more {
+  position: absolute;
+  top: calc((var(--row-h) - var(--control-size-xs)) / 2);
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--control-size-xs);
+  height: var(--control-size-xs);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
   opacity: 0;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    opacity var(--dur-fast) var(--ease);
 }
 
 .header:hover .more,
@@ -121,10 +161,17 @@
   opacity: 1;
 }
 
-/* Icon-only sidebar: only the emoji (or dot), centred over the favicons. */
-:global([data-compact='true']) .header {
+.more:hover,
+.more[aria-expanded='true'] {
+  background: var(--hover-fill);
+  color: var(--text);
+}
+
+/* Icon-only sidebar: the space icon stays visible centred over the favicons and swaps into the
+   chevron on hover; only the name and "…" button hide. */
+:global([data-compact='true']) .row {
   justify-content: center;
-  padding: 0;
+  padding: 7px 0;
 }
 
 :global([data-compact='true']) .name,

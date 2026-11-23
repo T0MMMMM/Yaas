@@ -41,7 +41,7 @@
 }
 
 .tile:hover::before {
-  background: var(--selected-fill);
+  background: var(--bg-tile-hover);
   transform: rotate(var(--tilt-hover));
 }
 

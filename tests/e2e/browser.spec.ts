@@ -575,15 +575,10 @@ test('copy link puts the page address on the clipboard', async () => {
   })
 })
 
-test('the design button opens the look settings', async () => {
+test('the settings button opens settings', async () => {
   await withBrowser(async ({ page }) => {
-    await page.getByRole('button', { name: 'Design' }).click()
+    await page.getByRole('button', { name: 'Settings', exact: true }).click()
     await expect(page.getByTestId('settings')).toBeVisible()
-    await expect(
-      page
-        .getByRole('navigation', { name: 'Settings sections' })
-        .getByRole('button', { name: 'Appearance' }),
-    ).toHaveAttribute('aria-current', 'page')
   })
 })
 

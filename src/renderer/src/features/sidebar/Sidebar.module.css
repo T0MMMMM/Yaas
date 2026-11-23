@@ -24,18 +24,19 @@
 
 /* No tilt in the title row: these are tools, not playful buttons. */
 .titleButton:hover {
+  background: var(--hover-fill);
   transform: none;
 }
 
 /* Neutral hover/selected fills: a light lift on the frame, never the accent. */
 .sidebar {
-  --hover-fill: color-mix(in srgb, var(--neutral-surface) 62%, transparent);
+  --hover-fill: color-mix(in srgb, var(--neutral-surface) 45%, transparent);
   --selected-fill: var(--neutral-surface);
 }
 
 :root[data-scheme='dark'] .sidebar {
-  --hover-fill: rgb(255 255 255 / 0.05);
-  --selected-fill: rgb(255 255 255 / 0.09);
+  --hover-fill: rgb(255 255 255 / 0.08);
+  --selected-fill: rgb(255 255 255 / 0.12);
 }
 
 .iconButton {
@@ -44,7 +45,7 @@
   width: var(--control-size);
   height: var(--control-size);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
@@ -61,8 +62,8 @@
   transform: rotate(30deg) scale(1.08);
 }
 
-/* Open menu: the button rests on the menu's fill, where the menu's connector meets it, and its +
-   turns into a ×. `!important` overrides the magnetic lean (inline styles, ui/useMagnetic). */
+/* Open menu: rounded card resting on the menu's fill, where the connector meets it.
+   `!important` overrides the magnetic lean (inline styles, ui/useMagnetic). */
 .iconButton[aria-expanded='true'] {
   background: var(--bg-menu);
   color: var(--text);
@@ -153,6 +154,7 @@ kbd {
 }
 
 .list {
+  min-width: 0;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -164,9 +166,10 @@ kbd {
 /* ---------- the space section (SpaceHeader over the pinned list) ---------- */
 
 /* Folds like a folder (FolderRow.module.css): a grid row animating 1fr to 0fr, its rows kept
-   mounted, hidden once the fold has played. */
+   mounted, hidden once the fold has played. minmax(0, 1fr) keeps long titles inside the sidebar. */
 .fold {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 1fr;
   transition:
     grid-template-rows var(--dur-base) var(--ease),
@@ -182,6 +185,7 @@ kbd {
 }
 
 .foldInner {
+  min-width: 0;
   min-height: 0;
   /* Clips the fold only vertically, so the rows' shadows keep spilling sideways. */
   overflow-y: clip;
@@ -265,6 +269,12 @@ kbd {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .status[data-status='running'] {
+    animation: none;
+  }
+}
+
 /* ---------- bottom row: downloads (left), spaces as dots (middle), + (right) ---------- */
 
 .bottom {
@@ -293,6 +303,7 @@ kbd {
   height: var(--control-size);
   padding: 0;
   border: none;
+  border-radius: var(--radius-md);
   background: transparent;
   cursor: pointer;
   opacity: 0.42;

@@ -3,6 +3,7 @@
 
 .item {
   position: relative;
+  min-width: 0;
   /* Nested under its parent tab (depth 0…3, from the workspace). */
   margin-left: calc(var(--depth, 0) * var(--space-3));
 }
@@ -10,13 +11,13 @@
 /* A new row fades and slides in; a closed one (Rows, Sidebar.tsx) shrinks and fades out before
    it leaves the DOM. */
 .item {
-  animation: row-in var(--dur-base) var(--ease);
+  animation: row-in var(--dur-base) var(--ease-out);
 }
 
 .item[data-exiting] {
   overflow: hidden;
   pointer-events: none;
-  animation: row-out var(--dur-base) var(--ease) forwards;
+  animation: row-out var(--dur-fast) var(--ease-in) forwards;
 }
 
 @keyframes row-in {
@@ -41,6 +42,7 @@
   position: relative;
   isolation: isolate;
   width: 100%;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--space-2);

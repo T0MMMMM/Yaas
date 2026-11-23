@@ -4,12 +4,13 @@ import type { SpaceSummary } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useCompact } from './CompactContext'
+import { tilt } from './tilt'
 import styles from './SpaceHeader.module.css'
 
 /** Same bounds as the contract's space names. */
 const NAME_MAX = 40
 
-/** Opens the space's menu from `button` (below it, joined by the funnel); its cards open there too. */
+/** Opens the space's menu from `button` (below it, joined by the connector); its cards open there too. */
 function openSpaceMenu(spaceId: string, button: HTMLElement): Promise<void> {
   return window.bigBrowser.invoke('browser.showSpaceMenu', { spaceId, anchor: anchorOf(button) })
 }
@@ -50,11 +51,10 @@ function NameField({ space }: { space: SpaceSummary }) {
 }
 
 /**
- * The head of the space section (spec goals 4, 7, 8): the space's emoji (or its colour dot), its
- * name and a "…" button that opens the space menu. On hover the emoji turns into a chevron that
- * folds the section (kept in main). Rename Space… turns the name into a field. Icon-only, only
- * the emoji (or dot) remains; a right-click still opens the menu, but Rename Space… does nothing
- * there (the name field is hidden).
+ * The head of the space section: a full tab-height row showing the space's emoji (or its colour
+ * dot), its name and a "…" button on hover. Hovering anywhere on the row highlights it like a tab
+ * card and swaps the icon into a chevron; clicking anywhere on the row folds or expands the pinned
+ * section. In icon-only mode the icon stays visible and still swaps into the chevron on hover.
  */
 export function SpaceHeader({ space }: { space: SpaceSummary }) {
   const compact = useCompact()
@@ -78,9 +78,31 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
     openSpaceMenu(space.id, button).catch(() => setMenuOpen(false))
   }
 
+  const toggle = (): void => {
+    void window.bigBrowser.invoke('browser.setSpaceSectionCollapsed', {
+      spaceId: space.id,
+      collapsed: !collapsed,
+    })
+  }
+
+  const iconSlot = (
+    <span className={styles.iconSlot} aria-hidden="true">
+      <span className={styles.glyph} style={{ color: space.color }}>
+        {space.icon ?? <span className={styles.dot} />}
+      </span>
+      <CaretDown
+        className={styles.chevron}
+        data-collapsed={collapsed}
+        weight="bold"
+        data-testid="space-chevron"
+      />
+    </span>
+  )
+
   return (
     <div
       className={styles.header}
+      style={tilt(space.id)}
       data-testid="space-header"
       data-menu-open={menuOpen || undefined}
       onContextMenu={(e) => {
@@ -89,30 +111,23 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
         open(more.current?.offsetParent ? more.current : e.currentTarget)
       }}
     >
-      <button
-        className={styles.toggle}
-        aria-label={collapsed ? 'Expand space section' : 'Collapse space section'}
-        aria-expanded={!collapsed}
-        title={space.label}
-        onClick={() =>
-          void window.bigBrowser.invoke('browser.setSpaceSectionCollapsed', {
-            spaceId: space.id,
-            collapsed: !collapsed,
-          })
-        }
-      >
-        <span className={styles.glyph} style={{ color: space.color }} aria-hidden="true">
-          {space.icon ?? <span className={styles.dot} />}
-        </span>
-        <CaretDown
-          className={styles.chevron}
-          data-collapsed={collapsed}
-          weight="bold"
-          aria-hidden="true"
-          data-testid="space-chevron"
-        />
-      </button>
-      {renaming ? <NameField space={space} /> : <span className={styles.name}>{space.label}</span>}
+      {renaming ? (
+        <div className={styles.row}>
+          {iconSlot}
+          <NameField space={space} />
+        </div>
+      ) : (
+        <button
+          className={styles.row}
+          aria-label={collapsed ? 'Expand space section' : 'Collapse space section'}
+          aria-expanded={!collapsed}
+          title={space.label}
+          onClick={toggle}
+        >
+          {iconSlot}
+          <span className={styles.name}>{space.label}</span>
+        </button>
+      )}
       <button
         ref={more}
         className={styles.more}

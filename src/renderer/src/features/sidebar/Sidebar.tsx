@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { DownloadSimple, PaintBrush, Plus, SidebarSimple } from '@phosphor-icons/react'
+import { DownloadSimple, GearSix, Plus, SidebarSimple } from '@phosphor-icons/react'
 import { useSidebarToggle } from '../../app/useSidebarResize'
 import { useUi } from '../../stores/ui'
 import { useWorkspace } from '../workspace/useWorkspace'
@@ -92,7 +92,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             onPointerLeave={tooltip.leave}
             onPointerDownCapture={tooltip.press}
           >
-            {/* The sidebar's own controls: icons only (left), the browser's look (right). */}
+            {/* The sidebar's own controls: icons only (left), settings (right). */}
             <div className={`${styles.titlebar} drag`}>
               <button
                 className={`${styles.iconButton} ${styles.titleButton} no-drag`}
@@ -105,11 +105,11 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
               {!compact && (
                 <button
                   className={`${styles.iconButton} ${styles.titleButton} no-drag`}
-                  aria-label="Design"
-                  title="Edit the browser's look"
-                  onClick={() => openSettings('appearance')}
+                  aria-label="Settings"
+                  title="Settings (⌘,)"
+                  onClick={() => openSettings()}
                 >
-                  <PaintBrush size={16} weight="regular" />
+                  <GearSix size={16} weight="regular" />
                 </button>
               )}
             </div>
