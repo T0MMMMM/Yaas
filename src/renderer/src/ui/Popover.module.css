@@ -5,36 +5,35 @@
   position: fixed;
   z-index: 20;
   --card-border: 1px;
+  --card-radius: var(--radius-popover);
+  --card-bg: var(--bg-popover);
+  --neck-half: calc(var(--connector-w) / 2);
   border: var(--card-border) solid var(--border-menu);
-  border-radius: var(--radius-lg);
-  background: var(--bg-menu);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
   box-shadow: var(--shadow-menu);
   transform-origin: top center;
-  /* The shape grows out of where it opens from (the funnel's tip for an anchored card). */
-  animation: open var(--dur-spring) var(--ease-bounce);
+  /* Grows out of the funnel tip (yab §4.5: 180 ms ease-out from scale 0.96). */
+  animation: open var(--dur-popover-in) var(--ease-out);
 }
 
-/* The exit: the shape shrinks back into where it came from, while the overlay waits to hide. */
+/* The exit: opacity-only ease-in, faster than open, while the overlay waits to hide. */
 .card[data-state='closing'] {
   pointer-events: none;
-  animation: close var(--dur-fast) var(--ease) forwards;
+  animation: close var(--dur-popover-out) var(--ease-in) forwards;
 }
 
 /* Where a card sits so the neck can be centred on the button: `--anchor-mid` (the button's centre
    along the window's width, set inline) lies radius + half a neck (its flares included) + border
    inside the card's edge, so the neck clears the rounded corner (ui/connector.ts). Bounded to the
    window's edge. */
-.card {
-  --neck-half: calc(var(--connector-w) / 2);
-}
-
 .alignLeft {
   left: max(
     0px,
-    calc(var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
+    calc(var(--anchor-mid) - var(--card-radius) - var(--neck-half) - var(--card-border))
   );
   /* Grows from the funnel, which sits that far inside the card's left edge. */
-  --grow-x: calc(var(--radius-lg) + var(--neck-half) + var(--card-border));
+  --grow-x: calc(var(--card-radius) + var(--neck-half) + var(--card-border));
   transform-origin: var(--grow-x) bottom;
 }
 
@@ -45,9 +44,9 @@
 .alignRight {
   right: max(
     0px,
-    calc(100vw - var(--anchor-mid) - var(--radius-lg) - var(--neck-half) - var(--card-border))
+    calc(100vw - var(--anchor-mid) - var(--card-radius) - var(--neck-half) - var(--card-border))
   );
-  --grow-x: calc(100% - var(--radius-lg) - var(--neck-half) - var(--card-border));
+  --grow-x: calc(100% - var(--card-radius) - var(--neck-half) - var(--card-border));
   transform-origin: var(--grow-x) top;
 }
 
@@ -58,17 +57,25 @@
 @keyframes open {
   from {
     opacity: 0;
-    transform: scale(0.1);
-  }
-  40% {
-    opacity: 1;
+    transform: scale(0.96);
   }
 }
 
 @keyframes close {
   to {
     opacity: 0;
-    transform: scale(0.1);
+  }
+}
+
+@keyframes open-reduced {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation-name: open-reduced;
   }
 }
 
@@ -102,7 +109,7 @@
 }
 
 .neckFill {
-  fill: var(--bg-menu);
+  fill: var(--card-bg);
 }
 
 .neckEdge {

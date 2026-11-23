@@ -1,5 +1,5 @@
 /* A sidebar row's tooltip: the popovers' opaque card beside the sidebar, vertically centred on its
-   row. `top` is set inline; moving it springs the card to the next row. */
+   row. `top` is set inline; moving it glides the card to the next row. */
 .tooltip {
   position: fixed;
   left: var(--space-3);
@@ -10,7 +10,7 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
   border: 1px solid var(--border-menu);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-menu);
   background: var(--bg-menu);
   box-shadow: var(--shadow-menu);
   color: var(--text);
@@ -19,16 +19,14 @@
   pointer-events: none;
   transform-origin: left center;
   transition:
-    top var(--dur-base) var(--ease-bounce),
-    opacity var(--dur-fast) var(--ease),
-    scale var(--dur-fast) var(--ease);
-  /* The shape grows out of the sidebar's edge, by its row. */
-  animation: pop-in var(--dur-spring) var(--ease-bounce);
+    top var(--dur-base) var(--ease-out),
+    opacity var(--dur-popover-out) var(--ease-in);
+  /* Grows subtly from the sidebar's edge, by its row (yab §4.5, improve-ux-motion Frequent). */
+  animation: pop-in var(--dur-popover-in) var(--ease-out);
 }
 
 .tooltip[data-state='closing'] {
   opacity: 0;
-  scale: 0.2;
 }
 
 /* The favicon sits in a small tile, like the sidebar's favourite tiles. */
@@ -76,16 +74,25 @@
 .detail {
   -webkit-line-clamp: 1;
   line-clamp: 1;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-size: var(--text-status);
 }
 
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: scale(0.15);
+    transform: scale(0.96);
   }
-  40% {
-    opacity: 1;
+}
+
+@keyframes pop-in-reduced {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation-name: pop-in-reduced;
   }
 }

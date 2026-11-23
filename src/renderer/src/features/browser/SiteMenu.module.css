@@ -3,28 +3,30 @@
    right-aligned under the address bar button. */
 .card {
   composes: card from '../../ui/Popover.module.css';
+  /* Narrower funnel base so it stays centred on the right-edge button with a 16 px radius. */
+  --connector-w: 14px;
   width: calc(var(--control-size) * 10);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-2);
+  padding: var(--popover-pad);
 }
 
 .quickActions {
   display: flex;
-  gap: var(--space-1);
+  gap: var(--menu-inset);
 }
 
 .quickAction {
   display: grid;
   place-items: center;
   /* Room for the quick actions to come (capture, hide an element, translate): four per row. */
-  width: calc((100% - 3 * var(--space-1)) / 4);
-  height: calc(var(--control-size) * 1.4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-muted);
+  width: calc((100% - 3 * var(--menu-inset)) / 4);
+  height: var(--quick-action-h);
+  border: none;
+  border-radius: var(--radius-control);
+  background: var(--fill-neutral);
+  color: var(--text);
   cursor: pointer;
   transition:
     background var(--dur-fast) var(--ease),
@@ -35,12 +37,13 @@
 .quickAction:hover,
 .quickAction:focus-visible {
   outline: none;
-  background: var(--bg-menu-hover);
-  color: var(--text);
+  background: var(--fill-neutral-hover);
 }
 
 .quickAction:active {
   transform: scale(0.94);
+  transition-duration: var(--dur-press);
+  transition-timing-function: ease;
 }
 
 .section {
@@ -59,9 +62,9 @@
 .sectionTitle {
   flex: 1;
   margin: 0;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-muted);
+  font-size: var(--text-menu);
+  font-weight: 700;
+  color: var(--text);
 }
 
 .textButton,
@@ -94,7 +97,7 @@
 .iconButton:hover,
 .iconButton:focus-visible {
   outline: none;
-  background: var(--bg-menu-hover);
+  background: var(--fill-neutral-hover);
   color: var(--text);
 }
 
@@ -113,42 +116,36 @@
   font-weight: 600;
 }
 
-.group,
-.extensions {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-}
-
 .group {
   display: flex;
   flex-direction: column;
-  padding: var(--space-1);
+  gap: var(--space-hair);
 }
 
 .extensions {
   display: flex;
   align-items: center;
-  min-height: calc(var(--control-size) + 2 * var(--space-1));
-  padding: var(--space-1);
+  min-height: var(--quick-action-h);
 }
 
 .actionList {
   flex-wrap: wrap;
-  gap: var(--space-hair);
+  gap: var(--menu-inset);
 }
 
 /* The library's action buttons (shadow DOM), restyled through their parts. */
 .actionList::part(action) {
-  width: var(--control-size);
-  height: var(--control-size);
-  border-radius: var(--radius-md);
+  width: var(--ext-tile-w);
+  height: var(--quick-action-h);
+  border-radius: var(--radius-control);
+  background-color: var(--fill-neutral);
   background-size: var(--icon-size);
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease);
 }
 
 .actionList::part(action):hover {
-  background-color: var(--bg-menu-hover);
+  background-color: var(--fill-neutral-hover);
 }
 
 .actionList::part(badge) {
@@ -168,10 +165,10 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: calc(var(--control-size) * 1.4);
-  padding: 0 var(--space-2);
+  min-height: var(--menu-row-h-tall);
+  padding: 0 var(--menu-row-pad);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-row);
   background: transparent;
   font: inherit;
   color: var(--text);
@@ -186,12 +183,23 @@ button.row {
 button.row:hover,
 button.row:focus-visible {
   outline: none;
-  background: var(--bg-menu-hover);
+  background: var(--fill-neutral-hover);
 }
 
 .rowIcon {
   flex: none;
-  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  width: var(--status-icon-size);
+  height: var(--status-icon-size);
+  border-radius: var(--radius-pill);
+  background: var(--status-off-bg);
+  color: var(--status-off-fg);
+}
+
+.rowIcon[data-state='on'] {
+  background: var(--status-on-bg);
+  color: var(--status-on-fg);
 }
 
 .rowText {
@@ -202,21 +210,37 @@ button.row:focus-visible {
 }
 
 .rowTitle {
-  font-size: var(--text-md);
+  font-size: var(--text-menu);
+  font-weight: 500;
 }
 
 .rowStatus {
-  font-size: var(--text-xs);
-  color: var(--text-faint);
+  font-size: var(--text-status);
+  color: var(--text-secondary);
 }
 
 .footer {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  padding: 0 var(--space-1);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1) 0;
+  border-top: 1px solid var(--border-menu);
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-secondary);
+}
+
+.statusPill {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--pill-h);
+  padding: 0 var(--menu-row-pad);
+  border-radius: var(--radius-control);
+  background: var(--fill-neutral);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 500;
 }
 
 .host {
@@ -226,5 +250,5 @@ button.row:focus-visible {
   text-align: right;
   white-space: nowrap;
   text-overflow: ellipsis;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }

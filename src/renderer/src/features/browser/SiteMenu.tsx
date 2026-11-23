@@ -134,7 +134,12 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
           </header>
           <div className={styles.group}>
             <div className={styles.row}>
-              <ShieldCheck size={18} className={styles.rowIcon} />
+              <span
+                className={styles.rowIcon}
+                data-state={adBlock.enabled && blocksAdsOn(adBlock, site) ? 'on' : 'off'}
+              >
+                <ShieldCheck size={16} />
+              </span>
               <div className={styles.rowText}>
                 <span className={styles.rowTitle}>Block ads and trackers</span>
                 <span className={styles.rowStatus}>
@@ -155,7 +160,9 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
               />
             </div>
             <button className={styles.row} onClick={act('browser.toggleDevTools')}>
-              <Code size={18} className={styles.rowIcon} />
+              <span className={styles.rowIcon} data-state="off">
+                <Code size={16} />
+              </span>
               <span className={styles.rowText}>
                 <span className={styles.rowTitle}>Developer tools</span>
                 <span className={styles.rowStatus}>Inspect this page</span>
@@ -167,8 +174,10 @@ export function SiteMenu({ anchor, closing = false, onClose }: SiteMenuProps) {
 
       {tab?.connection && (
         <footer className={styles.footer}>
-          {tab.connection === 'secure' ? <LockSimple size={14} /> : <LockSimpleOpen size={14} />}
-          <span>{tab.connection === 'secure' ? 'Secure' : 'Not secure'}</span>
+          <span className={styles.statusPill}>
+            {tab.connection === 'secure' ? <LockSimple size={13} /> : <LockSimpleOpen size={13} />}
+            <span>{tab.connection === 'secure' ? 'Secure' : 'Not secure'}</span>
+          </span>
           <span className={styles.host}>{tab.host}</span>
         </footer>
       )}

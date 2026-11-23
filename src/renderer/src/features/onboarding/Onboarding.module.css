@@ -26,11 +26,11 @@
   cursor: default;
   transform: translate(-50%, -50%);
   transition:
-    top 700ms var(--ease),
-    left 700ms var(--ease),
-    font-size 700ms var(--ease),
-    transform 700ms var(--ease);
-  animation: logo-in 600ms var(--ease) both;
+    top var(--dur-intro-move) var(--ease),
+    left var(--dur-intro-move) var(--ease),
+    font-size var(--dur-intro-move) var(--ease),
+    transform var(--dur-intro-move) var(--ease);
+  animation: logo-in var(--dur-intro) var(--ease) both;
 }
 
 .page[data-stage='intro'] .logo {
@@ -57,8 +57,8 @@
   text-align: center;
   color: var(--text-muted);
   font-size: var(--text-lg);
-  animation: fade-in 600ms 250ms var(--ease) both;
-  transition: opacity 300ms var(--ease);
+  animation: fade-in var(--dur-intro) var(--delay-intro) var(--ease) both;
+  transition: opacity var(--dur-fade-slow) var(--ease);
 }
 
 .page:not([data-stage='intro']) .tagline {
@@ -75,7 +75,7 @@
 }
 
 .content > * {
-  animation: content-in 500ms 350ms var(--ease) both;
+  animation: content-in var(--dur-intro-content) var(--delay-intro-content) var(--ease) both;
 }
 
 @keyframes logo-in {
@@ -95,6 +95,17 @@
   from {
     opacity: 0;
     transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    transition: none;
+    animation-name: fade-in;
+  }
+
+  .content > * {
+    animation-name: fade-in;
   }
 }
 

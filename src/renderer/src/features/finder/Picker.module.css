@@ -2,6 +2,7 @@
    overlay view (over the page). */
 .card {
   composes: card from '../../ui/Popover.module.css';
+  --card-radius: var(--radius-command);
   top: var(--finder-top);
   left: 0;
   right: 0;
@@ -11,22 +12,33 @@
   flex-direction: column;
   /* Below its top, within the window: the list scrolls. */
   max-height: calc(100vh - var(--finder-top) - var(--space-4));
-  padding: var(--space-2);
+  padding: var(--popover-pad);
+  box-shadow: var(--shadow-command);
   transform-origin: top center;
+  /* Opened dozens of times a day: near-instant fade, no scale (yab §4.5, ux-motion #20). */
+  animation: command-in var(--dur-command) var(--ease-out);
+}
+
+@keyframes command-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .field {
   min-height: calc(var(--control-size) * 1.4);
-  padding: 0 var(--space-2);
+  padding: 0 var(--menu-row-pad);
   border: none;
   background: transparent;
   color: var(--text);
+  caret-color: var(--caret);
   font: inherit;
-  font-size: var(--text-lg);
+  font-size: var(--text-xl);
+  font-weight: 400;
 }
 
 .field::placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
 }
 
 .field:focus-visible {
@@ -41,7 +53,7 @@
   overflow-y: auto;
   margin: var(--space-1) 0 0;
   padding: var(--space-1) 0 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-menu);
 }
 
 .section {
@@ -52,10 +64,10 @@
 
 /* A section's name (Recent Tabs, Frequent, Quick Actions), small and dimmed above its rows. */
 .title {
-  padding: var(--space-1) var(--space-2) var(--space-hair);
-  font-size: var(--text-xs);
+  padding: var(--space-1) var(--menu-row-pad) var(--space-hair);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .row {
@@ -64,15 +76,17 @@
   gap: var(--space-2);
   min-height: var(--control-size);
   min-width: 0;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-md);
+  padding: 0 var(--menu-row-pad);
+  border-radius: var(--radius-row);
   color: var(--text);
+  font-size: var(--text-menu);
+  font-weight: 500;
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease);
 }
 
 .row[aria-selected='true'] {
-  background: var(--bg-menu-hover);
+  background: var(--fill-neutral);
 }
 
 .icon {
@@ -104,7 +118,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   font-size: var(--text-sm);
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 /* Forgets a history row: shown on the selected row only. */
@@ -118,7 +132,7 @@
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font: inherit;
   font-size: var(--text-lg);
   cursor: pointer;
@@ -131,7 +145,7 @@
 }
 
 .remove:hover {
-  background: var(--bg-menu-hover);
+  background: var(--fill-neutral-hover);
   color: var(--text);
 }
 
@@ -143,9 +157,10 @@
   gap: var(--space-1);
   margin: var(--space-1) 0 0;
   padding: var(--space-2) var(--space-2) 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-menu);
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .key {

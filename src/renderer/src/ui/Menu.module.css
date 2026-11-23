@@ -8,12 +8,14 @@
 
 .menu {
   composes: card from './Popover.module.css';
+  --card-radius: var(--radius-menu);
+  --card-bg: var(--bg-menu);
   min-width: 0;
   width: max-content;
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: var(--space-1);
+  padding: var(--menu-inset);
 }
 
 /* A menu opened at the pointer takes the keyboard on its card (↓ reaches the first row): no ring. */
@@ -25,13 +27,15 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--control-size);
+  min-height: var(--menu-row-h);
   min-width: 0;
-  padding: 0 var(--space-2);
+  padding: 0 var(--menu-row-pad);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-row);
   background: transparent;
   color: var(--text);
+  font-size: var(--text-menu);
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease);
@@ -44,7 +48,7 @@
 .item:hover,
 .item:focus-visible,
 .item[data-open] {
-  background: var(--bg-menu-hover);
+  background: var(--fill-neutral-hover);
 }
 
 /* Disabled (e.g. the folder a tab already sits in): drawn faint, takes no hover. */
@@ -83,7 +87,7 @@
 .caret {
   flex: none;
   margin-left: var(--space-4);
-  color: var(--text-faint);
+  color: var(--text-secondary);
 }
 
 .label {
@@ -97,32 +101,42 @@
 .shortcut {
   flex: none;
   margin-left: var(--space-4);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-faint);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 
 .separator {
-  margin: var(--space-1) var(--space-2);
+  margin: var(--space-1) var(--menu-inset);
   border: none;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--border-menu);
 }
 
-/* The + menu's filter field: a borderless row above the items. */
+/* The filter field: a borderless row at the top or bottom of the menu (yab §4.6). */
 .filter {
-  min-height: var(--control-size);
+  min-height: var(--menu-row-h);
   margin-bottom: var(--space-1);
-  padding: 0 var(--space-2);
+  padding: 0 var(--menu-row-pad);
   border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-bottom: 1px solid var(--border-menu);
+  border-radius: var(--radius-row) var(--radius-row) 0 0;
   background: transparent;
   color: var(--text);
+  caret-color: var(--caret);
   font: inherit;
+  font-size: var(--text-menu);
+}
+
+.filter[data-position='bottom'] {
+  margin-top: var(--space-1);
+  margin-bottom: 0;
+  border-top: 1px solid var(--border-menu);
+  border-bottom: none;
+  border-radius: 0 0 var(--radius-row) var(--radius-row);
 }
 
 .filter::placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
 }
 
 .filter:focus-visible {

@@ -238,6 +238,7 @@ export function Menu(props: MenuProps) {
             level === 0 && hasFilter ? (
               <input
                 className={styles.filter}
+                data-position={anchored?.placement === 'above' ? 'bottom' : 'top'}
                 aria-label="Filter"
                 placeholder="Filter…"
                 value={query}
@@ -362,7 +363,7 @@ function MenuCard({
       {anchored && (
         <PopoverNeck ref={connector} side={anchored.placement === 'above' ? 'bottom' : 'top'} />
       )}
-      {filter}
+      {anchored?.placement !== 'above' && filter}
       {rows.map((row, i) => {
         if (row.kind !== 'item') return <hr key={`separator-${i}`} className={styles.separator} />
         const Icon = row.icon ? menuIcon(row.icon) : null
@@ -399,6 +400,7 @@ function MenuCard({
           </button>
         )
       })}
+      {anchored?.placement === 'above' && filter}
     </div>
   )
 }

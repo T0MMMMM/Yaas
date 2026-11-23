@@ -21,10 +21,12 @@ import { OverlayTooltip } from './OverlayTooltip'
 /** Name of a folder made from the + menu; the sidebar then edits it. */
 const NEW_FOLDER_NAME = 'New Folder'
 
-/** The + menu: its actions run here, in the overlay. */
+/** The + menu: its actions run here, in the overlay (yab §5 order; filter sits at the bottom). */
 const NEW_MENU: MenuSpecItem[] = [
   { kind: 'filter' },
-  { kind: 'item', id: 'new-tab', label: 'New tab', icon: 'Plus', shortcut: '⌘T', enabled: true },
+  { kind: 'item', id: 'new-space', label: 'New space', icon: 'SquaresFour', enabled: true },
+  { kind: 'item', id: 'new-folder', label: 'New folder', icon: 'FolderSimplePlus', enabled: true },
+  { kind: 'separator' },
   {
     kind: 'item',
     id: 'split-view',
@@ -33,8 +35,7 @@ const NEW_MENU: MenuSpecItem[] = [
     shortcut: '⌃⌘\\',
     enabled: true,
   },
-  { kind: 'item', id: 'new-folder', label: 'New folder', icon: 'FolderSimplePlus', enabled: true },
-  { kind: 'item', id: 'new-space', label: 'New space', icon: 'SquaresFour', enabled: true },
+  { kind: 'item', id: 'new-tab', label: 'New tab', icon: 'Plus', shortcut: '⌘T', enabled: true },
   { kind: 'separator' },
   {
     kind: 'item',
@@ -46,10 +47,10 @@ const NEW_MENU: MenuSpecItem[] = [
   },
 ]
 
-/** Length of a card's exit animation (`--dur-fast`): the view is hidden once it has played. */
-const EXIT_MS = 120
+/** Length of a card's exit animation (`--dur-popover-out`): the view is hidden once it has played. */
+const EXIT_MS = 100
 /** How long a hidden tooltip stays mounted to fade out: main hides the strip after as long. */
-const TOOLTIP_FADE_MS = 150
+const TOOLTIP_FADE_MS = 100
 
 /**
  * What the overlay view renders (`#overlay`): one popover or card at a time, floating over the page.
@@ -59,6 +60,8 @@ const TOOLTIP_FADE_MS = 150
  */
 export function Overlay() {
   const [request, setRequest] = useState<OverlayRequest | null>(null)
+  /** Bumped on every `overlay.opened` so reopening mid-close mounts a fresh card with focus. */
+  const [openId, setOpenId] = useState(0)
   const [closing, setClosing] = useState(false)
   const [tooltip, setTooltip] = useState<{ tooltip: Tooltip; closing: boolean } | null>(null)
   /** The pending unmount of a tooltip fading out. */
@@ -92,6 +95,7 @@ export function Overlay() {
         // The menu wins: a tooltip never stays drawn under or over it.
         clearTooltipFade()
         setTooltip(null)
+        setOpenId((id) => id + 1)
         setRequest(next)
       }),
     [cancelExit, clearTooltipFade],
@@ -157,9 +161,9 @@ export function Overlay() {
   switch (request.kind) {
     // The centred cards (⌘K, ⌘T) have no anchor.
     case 'tab-finder':
-      return <TabFinder closing={closing} onClose={close} />
+      return <TabFinder key={openId} closing={closing} onClose={close} />
     case 'command':
-      return <CommandField closing={closing} onClose={close} />
+      return <CommandField key={openId} closing={closing} onClose={close} />
     case 'split-drag':
       return <SplitDragLayer />
     case 'site-menu':

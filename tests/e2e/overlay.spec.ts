@@ -122,7 +122,10 @@ test('the + menu is joined to its button', async () => {
     const button = await plusButton(page).boundingBox()
     if (!neck || !button) throw new Error('connector or + button not found')
     expect(Math.abs(neck.x + neck.width / 2 - (button.x + button.width / 2))).toBeLessThanOrEqual(1)
-    expect(Math.abs(neck.y + neck.height - button.y)).toBeLessThanOrEqual(1)
+    // Smooth bump leaves a small breathing gap before the button (never touches it).
+    const gap = button.y - (neck.y + neck.height)
+    expect(gap).toBeGreaterThanOrEqual(1)
+    expect(gap).toBeLessThanOrEqual(6)
   })
 })
 
@@ -158,8 +161,10 @@ test('the site menu is joined to its button', async () => {
     const box = await button.boundingBox()
     if (!neck || !box) throw new Error('connector or site menu button not found')
     expect(Math.abs(neck.x + neck.width / 2 - (box.x + box.width / 2))).toBeLessThanOrEqual(1)
-    // The neck hangs from the button's bottom edge down to the card.
-    expect(Math.abs(neck.y - (box.y + box.height))).toBeLessThanOrEqual(1)
+    // Smooth bump leaves a small breathing gap below the button (never touches it).
+    const gap = neck.y - (box.y + box.height)
+    expect(gap).toBeGreaterThanOrEqual(1)
+    expect(gap).toBeLessThanOrEqual(6)
   })
 })
 

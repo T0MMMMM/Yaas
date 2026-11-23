@@ -53,7 +53,7 @@
   height: 6px;
   border-radius: 50%;
   transform: translate(-50%, -50%) scale(var(--scale));
-  transition: transform 180ms var(--ease-bounce);
+  transition: transform var(--dur-swatch) var(--ease-bounce);
   pointer-events: none;
 }
 
@@ -70,8 +70,8 @@
   transform: translate(-50%, -50%);
   pointer-events: none;
   transition:
-    left 160ms var(--ease-bounce),
-    top 160ms var(--ease-bounce);
+    left var(--dur-knob) var(--ease-bounce),
+    top var(--dur-knob) var(--ease-bounce);
 }
 
 .footer {

@@ -6,7 +6,7 @@
   padding: 0;
   border: none;
   border-radius: var(--radius-pill);
-  background: var(--border-strong);
+  background: var(--switch-off);
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease);
 }
