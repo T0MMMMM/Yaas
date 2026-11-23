@@ -163,21 +163,20 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   nothing else animates.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
-opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-menu`,
-`--border-menu`, `--shadow-menu`, rows hovered with `--bg-menu-hover`). A connector joins the card
-to its button: a funnel in the card's fill and border, the gap (`POPOVER_GAP` 10) tall — a
-triangle pointing at the button with every corner very round: its `--connector-w` wide side
-leaves the card's border tangent to it, its sides run straight in and meet in a broad round tip
-resting on the button (`ui/PopoverNeck`, an SVG; it runs 1 px onto the button). It
-is centred on the button but kept clear of the card's rounded corners (`ui/connector.ts`; the card
-is placed so the button's centre lies that far inside its edge, `.alignLeft`/`.alignRight` in
-`Popover.module.css`); the button takes the
-`--bg-menu` fill while open, at rest (no hover tilt or magnetic lean). Opening, the card's shape
-grows out of the funnel's tip from a tenth of its size (`--dur-spring`, `--ease-bounce`; the
-centred cards from their top centre); closing plays it backwards (`--dur-fast`, the card gets `data-state="closing"`) before the overlay hides;
-a chosen item's action runs first, never after the animation. The + menu has a
-filter field at the top (Enter picks the first match) and New tab (the command field, like ⌘T and the sidebar's New tab row), Split View (like `⌃⌘\`), New folder (its name is edited
-at once), New space, Settings.
+opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-popover`
+`#ffffff` or `--bg-menu` `#f7f7f8`, `--border-menu`, `--shadow-menu`, rows hovered with
+`--fill-neutral-hover`). A smooth bell-curve bump (`ui/PopoverNeck`, an SVG) leaves the card's
+border tangentially in the card's fill (`--card-bg`) and border and crests 4 px short of the
+opener button (never touching it). It is centred on the button and kept clear of the card's
+rounded corners (`ui/connector.ts`; `.alignLeft`/`.alignRight` in `Popover.module.css` use
+`--card-radius`). The opener stays visibly pressed as a rounded card while open (`--fill-pressed`
+on the toolbar button; `--bg-menu` with `×` on the + button). Opening runs in 180 ms
+(`--dur-popover-in`, `--ease-out`) from scale 0.96 and opacity 0; closing fades out in 100 ms
+(`--dur-popover-out`, `--ease-in`, opacity only; the card gets `data-state="closing"`) before the
+overlay hides; a chosen item's action runs first, never after the animation. Under
+`prefers-reduced-motion`, opening becomes a fade too. The + menu puts its filter field at the
+bottom (Enter picks the first match) and orders its items as New space, New folder | Split View
+(`⌃⌘\`), New tab (`⌘T`) | Settings (`⌘,`).
 
 **Menus** (`ui/Menu`) — every menu is drawn by Big Browser, never a native one (except macOS
 Share and the menu bar). Rows: a leading `--icon-size` slot (the item's icon, a check for the
@@ -203,18 +202,20 @@ checks) in their own group, then Inspect. No Look Up / Services on macOS.
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
 `title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on
 the row, on the popovers' opaque card (`--bg-menu`, `--border-menu`, `--shadow-menu`,
-`--radius-lg`, at most `--tooltip-max-w` wide; no blur): the row's favicon in a small `--bg-tile`
+`--radius-menu`, at most `--tooltip-max-w` wide; no blur): the row's favicon in a small `--bg-tile`
 tile (a globe without an inline one), then the title (semibold, two lines at most) over the host
-in `--text-muted`. Once shown, hovering another row springs the same card there (`top`,
-`--dur-base`, `--ease-bounce`) with no new delay. Its shape grows out of the sidebar's edge by
-its row (from 15 % of its size, `--dur-spring`, `--ease-bounce`) and shrinks back as it fades out
-(`--dur-fast`); leaving the sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a button, a gap), fades it out (the overlay's strip hides 150 ms later), moving
-onto it hides it at once so the page gets the click, and a press or a drag start clears it. A menu
-always wins: opening one drops the tooltip, and none shows while a menu is open. Folder rows and
-buttons keep their native `title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
+in `--text-secondary`. Once shown, hovering another row glides the same card there (`top`,
+`--dur-base`, `--ease-out`) with no new delay. It opens from scale 0.96 (`--dur-popover-in`,
+`--ease-out`) and fades out in 100 ms (`--dur-popover-out`, `--ease-in`, opacity only); leaving the
+sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a button,
+a gap), fades it out (the overlay's strip hides 100 ms later), moving onto it hides it at once so
+the page gets the click, and a press or a drag start clears it. A menu always wins: opening one
+drops the tooltip, and none shows while a menu is open. Folder rows and buttons keep their native
+`title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
 
-**Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w` 560 wide,
-centred `--finder-top` (20 % of the window) from the top, in the overlay: a field over a list,
+**Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w`
+760 wide, radius `--radius-command` (18 px), `--shadow-command`, centred `--finder-top` (20 % of
+the window) from the top, in the overlay, opening with a 100 ms fade (`--dur-command`, no scale): a field over a list,
 ↑/↓ move, Enter runs, Escape or a click outside closes. The finder (`Mod+K`)
 ranks the tabs of every space — every word must be in the title or the host and path; a title
 that starts with the query first, then title matches, then URL matches — and activates the one
@@ -233,19 +234,20 @@ check mark for 1.2 s) and the site menu (below; it holds the extensions). Both g
 buttons wide so the URL stays centred.
 
 **Sidebar title row** — the drag row at the top of the sidebar holds its own buttons: the icons-only
-switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Design on the right,
-which opens Settings at Appearance for now (the browser's style editor comes later). Icon-only
-mode keeps only the switch, centred.
+switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Settings on the
+right (`GearSix`, opens Settings). Icon-only mode keeps only the switch, centred. Window
+minimize / maximize / close buttons appear at the top right on both macOS and Windows when the top
+margin expands (`WindowControls`).
 
 **Site menu** — the sliders button at the right of the address bar opens it, right-aligned under
 the button (`features/browser/SiteMenu`). yab's shape, top to bottom:
 
 | Part | Content | Live now |
 |---|---|---|
-| Quick actions | Icon buttons, four per row. **Share** (macOS share menu at the pointer; elsewhere copies the URL) | Share. Capture, hide an element and translate are not shown until their modules exist |
-| Extensions | Title with **Manage** (disabled, "Soon" tag — plan 5) and **+** (opens the Chrome Web Store in a tab); the tab's extension actions (`<browser-action-list>` of the space's partition, restyled through `::part(action)` / `::part(badge)`); "No extensions yet" when empty | Actions, + |
-| This site | Rows with an icon, a title and a status line: **Block ads and trackers** (switch; off = the host is in `adBlock.allowedHosts`, disabled when blocking is off everywhere), **Developer tools** (opens the page's DevTools, detached) | Both |
-| Footer | Lock + "Secure" (https) or open lock + "Not secure" (http), nothing for other schemes; the host on the right | Yes |
+| Quick actions | Icon buttons (`--quick-action-h` 32, `--fill-neutral`, radius `--radius-control` 10), four per row. **Share** (macOS share menu at the pointer; elsewhere copies the URL) | Share. Capture, hide an element and translate are not shown until their modules exist |
+| Extensions | Title with **Manage** (disabled, "Soon" tag — plan 5) and **+** (opens the Chrome Web Store in a tab); the tab's extension actions (`<browser-action-list>` of the space's partition, 52×32 tiles via `::part(action)` / `::part(badge)`); "No extensions yet" when empty | Actions, + |
+| This site | Rows with a `--status-icon-size` (28 px) status circle (`--status-on-*` / `--status-off-*`), a title and a status line: **Block ads and trackers** (switch; off = the host is in `adBlock.allowedHosts`, disabled when blocking is off everywhere), **Developer tools** (opens the page's DevTools, detached) | Both |
+| Footer | "Secure" (https) or "Not secure" (http) pill (`--pill-h` 28, `--fill-neutral`) with a lock, nothing for other schemes; the host on the right in `--text-secondary` | Yes |
 
 Pages that are not web pages (about:blank) show only the extensions. Actions that open something
 else (share, DevTools, the Web Store) close the menu; the ad-block switch keeps it open.
@@ -293,12 +295,18 @@ with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
 | `--bg-sidebar` | Sidebar fill: accent-tinted neutral; translucent when glass is on |
 | `--bg-surface` | Main pane |
 | `--bg-raised` | Cards, approval sheet, palette, menus |
-| `--bg-menu` / `--bg-menu-hover` | Opaque menu and popover card (light grey; dark grey in the dark scheme) and its hovered row |
-| `--border-menu` / `--shadow-menu` | Menu card hairline and shadow |
+| `--bg-popover` | Solid popover card (`#ffffff` light / `#2b2b30` dark) |
+| `--bg-menu` / `--bg-menu-hover` | Opaque menu card (`#f7f7f8` light / `#2b2b30` dark) and its hovered row |
+| `--fill-neutral` / `--fill-neutral-hover` / `--fill-pressed` | Neutral fills for quick actions, extension tiles, pills, selected rows, and pressed toolbar openers |
+| `--border-menu` / `--shadow-menu` / `--shadow-command` | Menu/popover card hairline, popover shadow, and command-field shadow |
 | `--shadow-lift` | A sidebar row lifted while it is dragged (light and dark) |
-| `--bg-tile` | Favourite tile card |
+| `--bg-tile` / `--bg-tile-hover` | Favourite tile card (darker neutral grey at rest and on hover) |
 | `--border` / `--border-strong` | Hairlines |
-| `--text` / `--text-muted` / `--text-faint` | Text hierarchy |
+| `--text` / `--text-muted` / `--text-faint` | Text hierarchy (`--text` light `#1c1c1e`) |
+| `--text-secondary` / `--text-placeholder` | Status lines, hints, shortcuts, and input placeholders |
+| `--status-on-bg` / `--status-on-fg` / `--status-off-bg` / `--status-off-fg` | Site-menu row status circle fills and glyphs |
+| `--switch-off` / `--caret` | Switch off-track and text selection / focus caret (`#0a84ff`) |
+| `--tint-sage` … `--tint-teal` | Six muted pastel tints (light and dark) for the Settings offset-ink icons |
 | `--ok` / `--warn` / `--danger` | Generic success / warning / error |
 | `--status-running` / `--status-waiting` / `--status-done` | Session dots: gray / orange / blue |
 | `--control-active` | Selected segment / active control fill |
@@ -315,8 +323,10 @@ thousand times.
 
 - **Type**: the platform's UI font (`system-ui`) for the whole UI; mono only for numbers, paths
   and keys. A font setting comes in plan 5.
-- **Icons**: **Phosphor**, **duotone** by default (`IconContext` in `App.tsx`), 15–18 px. Folders
-  are **illustrated glyphs** (two-tone folder, paper peeking out when open), colored per folder name;
+- **Icons**: **Phosphor**, **duotone** by default (`IconContext` in `App.tsx`), 15–18 px for the
+  browser UI. The **Settings** navigation uses the **"offset ink"** set
+  (`src/renderer/src/ui/icons/`, `InkIcon` / `inkIcon()`, `--tint-*` tokens). Folders are
+  **illustrated glyphs** (two-tone folder, paper peeking out when open), colored per folder name;
   sessions get a small chat-bubble glyph.
 - **Askew cards**: hovered and selected items tilt slightly; every item has **its own angle**
   (stable hash of its id, ±0.3–1.1° hover, ±0.6–1.5° selected) so a list never moves in lockstep.
@@ -354,12 +364,12 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Group | Tokens |
 |---|---|
 | Spacing (4 px scale) | `--space-hair` 2 (tight icon rows) · `--space-1` 4 · `--space-2` 8 · `--space-3` 12 · `--space-4` 16 · `--space-6` 24 · `--space-8` 32 |
-| Radius | `--radius-sm` 6 · `--radius-md` 10 · `--radius-lg` 14 · `--radius-pill` 999 |
+| Radius | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 7 · `--radius-row` 8 · `--radius-lg` 9 · `--radius-control` 10 · `--radius-menu` 12 · `--radius-popover` 16 · `--radius-command` 18 · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
-| Size | `--text-xs` 11 · `--text-sm` 12 · `--text-md` 13 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--split-gap` 5 (between a split's two pages, = `SPLIT_GAP` in main; the divider sits in it) · `--split-handle-w` 3 / `--split-handle-h` 32 / `--split-handle` (`--border-strong`; `--accent` on hover and focus): the divider's grip · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560 and `--finder-top` 20vh (the tab finder and the command field) |
-| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) |
-| Motion | `--dur-fast` 120 ms · `--dur-base` 200 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` |
+| Size | `--text-xs` 11 · `--text-status` 11.5 · `--text-sm` 12 · `--text-menu` 13 · `--text-md` 13.5 (base) · `--text-lg` 15 · `--text-xl` 20 |
+| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--split-gap` 5 (between a split's two pages, = `SPLIT_GAP` in main; the divider sits in it) · `--split-handle-w` 3 / `--split-handle-h` 32 / `--split-handle` (`--border-strong`; `--accent` on hover and focus): the divider's grip · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 760 and `--finder-top` 20vh (the tab finder and the command field) · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 6 · `--popover-pad` 10 |
+| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
+| Motion | `--dur-press` 75 ms · `--dur-popover-out` 100 ms · `--dur-command` 100 ms · `--dur-fast` 120 ms · `--dur-knob` 160 ms · `--dur-popover-in` 180 ms · `--dur-swatch` 180 ms · `--dur-base` 200 ms · `--dur-fade-slow` 300 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-intro-content` 500 ms · `--dur-intro` 600 ms · `--dur-intro-move` 700 ms · `--delay-intro` 250 ms · `--delay-intro-content` 350 ms · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` · `--ease-out` `cubic-bezier(0.16, 1, 0.3, 1)` · `--ease-in` `cubic-bezier(0.7, 0, 0.84, 0)` (popover/command/fade durations stay non-zero under `prefers-reduced-motion` to run opacity-only fades) |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform

@@ -55,7 +55,7 @@
   width: var(--window-control-w);
   height: 100%;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-muted);
   transition:

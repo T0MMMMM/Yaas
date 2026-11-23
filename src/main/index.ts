@@ -47,7 +47,6 @@ import {
   PRELOAD_PATH,
   rendererUrl,
   inTopBand,
-  setWindowControlsVisible,
   toggleMaximize,
 } from './windows/mainWindow'
 
@@ -493,7 +492,6 @@ registerCommands(
     },
     'window.setControlsVisible': ({ visible }) => {
       if (!mainWindow) return
-      setWindowControlsVisible(mainWindow, visible)
       watchTopBand(mainWindow, visible)
     },
     'window.minimize': () => mainWindow?.minimize(),

@@ -48,7 +48,7 @@ const appRegion = (page: Page, testId: string) =>
     .evaluate((el) => getComputedStyle(el).getPropertyValue('-webkit-app-region'))
 
 test('the window buttons hide until the pointer rests on the top edge', async () => {
-  test.skip(!windows, 'Windows draws its own window buttons')
+  test.skip(!windows && !mac, 'Linux keeps its native title bar')
   await withWindow(async ({ app, page }) => {
     const pointerInBand = await stubPointer(app)
 
@@ -65,13 +65,14 @@ test('the window buttons hide until the pointer rests on the top edge', async ()
     const width = await page.evaluate(() => window.innerWidth)
     expect(Math.round((await strip.boundingBox())?.width ?? 0)).toBe(width)
     const maximize = page.getByRole('button', { name: 'Maximize' })
+    const close = page.getByRole('button', { name: 'Close' })
     await expect(strip).toHaveAttribute('data-open', 'false')
     await expect(maximize).toBeHidden()
     // Closed it is not a drag region: the hover has to reach the page.
     expect(await appRegion(page, 'window-controls')).not.toBe('drag')
     const closed = (await strip.boundingBox())?.height ?? 0
 
-    // Resting on the margin opens it: it grows, the buttons come and it drags the window.
+    // Resting on the margin opens it: it grows, the buttons come on the top-right and it drags the window.
     const box = await strip.boundingBox()
     if (!box) throw new Error('no strip')
     await pointerInBand(true)
@@ -83,6 +84,10 @@ test('the window buttons hide until the pointer rests on the top edge', async ()
     expect(
       await maximize.evaluate((el) => getComputedStyle(el).getPropertyValue('-webkit-app-region')),
     ).toBe('no-drag')
+    // Drawn on the top-right of the strip on both macOS and Windows.
+    const closeBox = await close.boundingBox()
+    if (!closeBox) throw new Error('no close button')
+    expect(closeBox.x + closeBox.width).toBeGreaterThan(width - 4)
 
     // The page gets no pointer events over a drag region: leaving it in the DOM closes nothing
     // while main still sees the pointer in the top band.
@@ -114,33 +119,5 @@ test('passing over the top edge opens nothing', async () => {
     await page.mouse.move(box.x + box.width / 2, 400)
     await page.waitForTimeout(600)
     await expect(strip).toHaveAttribute('data-open', 'false')
-  })
-})
-
-test('macOS shows its traffic lights while the pointer rests on the top edge', async () => {
-  test.skip(!mac, 'macOS only')
-  await withWindow(async ({ app, page }) => {
-    const pointerInBand = await stubPointer(app)
-    // Record what main does to the traffic lights (they are not observable otherwise).
-    await app.evaluate(({ BrowserWindow }) => {
-      const win = BrowserWindow.getAllWindows().find((w) => !w.isDestroyed())
-      const calls: boolean[] = []
-      ;(globalThis as { controlCalls?: boolean[] }).controlCalls = calls
-      if (win) win.setWindowButtonVisibility = (visible: boolean) => void calls.push(visible)
-    })
-    const lastCall = () =>
-      app.evaluate(() => (globalThis as { controlCalls?: boolean[] }).controlCalls?.at(-1))
-
-    const strip = page.getByTestId('window-controls')
-    const box = await strip.boundingBox()
-    if (!box) throw new Error('no strip')
-    await pointerInBand(true)
-    await page.mouse.move(box.x + 40, box.y + box.height / 2)
-    await expect(strip).toHaveAttribute('data-open', 'true')
-    await expect.poll(lastCall).toBe(true)
-
-    await pointerInBand(false)
-    await expect(strip).toHaveAttribute('data-open', 'false')
-    await expect.poll(lastCall).toBe(false)
   })
 })
