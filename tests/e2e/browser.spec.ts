@@ -283,7 +283,7 @@ test('settings hide the page', async () => {
   })
 })
 
-test('the sidebar uses the system font and 38 px rows', async () => {
+test('the sidebar uses the system font and 34 px rows', async () => {
   await withBrowser(async ({ app, page, site }) => {
     await openTab(app, page, site.url('/a'))
     const fontFamily = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
@@ -292,12 +292,38 @@ test('the sidebar uses the system font and 38 px rows', async () => {
     const rowHeight = await page
       .getByTestId('tab')
       .evaluate((el) => (el as HTMLElement).offsetHeight)
-    expect(rowHeight).toBe(38)
+    expect(rowHeight).toBe(34)
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
     const menu = (await overlayPage(app)).getByTestId('menu')
     await expect(menu).toBeVisible()
     await expect(menu).toHaveCSS('backdrop-filter', 'none')
+  })
+})
+
+test('switching spaces recolours the frame gradient', async () => {
+  await withBrowser(async ({ page }) => {
+    const backdrop = page.getByTestId('frame-backdrop')
+    await expect(backdrop).toBeVisible()
+    const firstTop = await backdrop.getAttribute('data-frame-top')
+    const firstBottom = await backdrop.getAttribute('data-frame-bottom')
+    expect(firstTop).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(firstBottom).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(firstTop).not.toBe(firstBottom)
+
+    await page.evaluate(async () => {
+      const space = await window.bigBrowser.invoke('browser.createSpace', {
+        name: 'Work',
+        color: '#2BB673',
+      })
+      await window.bigBrowser.invoke('browser.activateSpace', { spaceId: space.id })
+    })
+
+    await expect.poll(() => backdrop.getAttribute('data-frame-top')).not.toBe(firstTop)
+    const secondTop = await backdrop.getAttribute('data-frame-top')
+    const secondBottom = await backdrop.getAttribute('data-frame-bottom')
+    expect(secondTop).toMatch(/^#[0-9a-f]{6}$/i)
+    expect(secondTop).not.toBe(secondBottom)
   })
 })
 
