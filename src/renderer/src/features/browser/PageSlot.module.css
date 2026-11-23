@@ -3,7 +3,32 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  position: relative; /* the split divider is placed in it */
+  position: relative; /* the split panes and divider are placed in it */
+}
+
+/* Backing surfaces behind the two native split views, leaving the 8 px frame trough open. */
+.splitPane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+}
+
+:root[data-contextbar='attached'] .splitPane {
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+}
+
+.splitFirst {
+  left: 0;
+  width: calc((100% - var(--split-gap)) * var(--split-ratio));
+}
+
+.splitSecond {
+  right: 0;
+  width: calc((100% - var(--split-gap)) * (1 - var(--split-ratio)));
 }
 
 .empty {
@@ -17,18 +42,19 @@
 .emptyTitle {
   margin: 0;
   font-size: var(--text-lg);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
 }
 
 .emptyHint {
   margin: 0;
+  font-size: var(--text-md);
   color: var(--text-muted);
 }
 
 .emptyHint kbd {
   font-family: var(--font-sans);
   font-size: var(--text-sm);
-  padding: 1px var(--space-1);
+  padding: var(--space-hair) var(--space-1);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
 }

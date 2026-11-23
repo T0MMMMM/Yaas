@@ -1,4 +1,5 @@
-/* Sits in the gap main leaves between the two pages (same maths as core splitBounds). */
+/* Sits in the 8 px frame trough main leaves between the two split cards (same maths as splitBounds).
+   Invisible at rest; reveals a centred 3×28 px pill on hover, keyboard focus or drag. */
 .divider {
   position: absolute;
   top: 0;
@@ -18,12 +19,25 @@
   height: var(--split-handle-h);
   border-radius: var(--radius-pill);
   background: var(--split-handle);
-  transition: background var(--dur-fast) var(--ease);
+  opacity: 0;
+  transition:
+    opacity var(--dur-hover) var(--ease),
+    background-color var(--dur-hover) var(--ease);
 }
 
-.divider:hover::after,
+@media (hover: hover) {
+  .divider:hover::after {
+    opacity: 1;
+  }
+}
+
 .divider:focus-visible::after {
-  background: var(--accent);
+  opacity: 1;
+}
+
+.divider[data-dragging='true']::after {
+  opacity: 1;
+  background: var(--split-handle-active);
 }
 
 .divider:focus-visible {

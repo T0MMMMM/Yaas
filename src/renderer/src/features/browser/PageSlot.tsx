@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { useUi } from '../../stores/ui'
 import { useWorkspace } from '../workspace/useWorkspace'
 import styles from './PageSlot.module.css'
@@ -7,7 +7,8 @@ import { SplitDivider } from './SplitDivider'
 /**
  * Where the active tab's page goes. The page is a native view drawn above the UI by main: this
  * box only reports its bounds, and hides the page while settings are open (they would sit under
- * it). With no tab it shows the empty state; in a split, the divider between the two pages.
+ * it). With no tab it shows the empty state; in a split, two card backings flank the 8 px frame
+ * trough and the divider between the two pages.
  */
 export function PageSlot() {
   const ref = useRef<HTMLDivElement>(null)
@@ -52,7 +53,21 @@ export function PageSlot() {
           </p>
         </section>
       )}
-      {split && <SplitDivider tabId={split.first.id} ratio={split.ratio} />}
+      {split && (
+        <>
+          <div
+            className={`${styles.splitPane} ${styles.splitFirst}`}
+            style={{ '--split-ratio': split.ratio } as CSSProperties}
+            aria-hidden="true"
+          />
+          <div
+            className={`${styles.splitPane} ${styles.splitSecond}`}
+            style={{ '--split-ratio': split.ratio } as CSSProperties}
+            aria-hidden="true"
+          />
+          <SplitDivider tabId={split.first.id} ratio={split.ratio} />
+        </>
+      )}
     </div>
   )
 }
