@@ -1,20 +1,28 @@
 import type { AppInfo, Settings } from '@shared/ipc/contract'
 import { onAccentColor } from './color'
+import { frameGradient, type ColorScheme } from './windowTint'
 
 /** Transparency from which the UI switches to the liquid glass look. */
 export const LIQUID_FROM = 0.9
 
-const darkQuery = window.matchMedia('(prefers-color-scheme: dark)')
+const darkQuery =
+  typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-color-scheme: dark)')
+    : null
+
+/** Resolves `settings.colorScheme` ('system' | 'light' | 'dark') against the OS media query. */
+export function resolveScheme(
+  colorScheme: Settings['colorScheme'],
+  prefersDark: boolean = darkQuery?.matches ?? false,
+): ColorScheme {
+  if (colorScheme === 'system') return prefersDark ? 'dark' : 'light'
+  return colorScheme
+}
 
 /** Maps settings to <html> data attributes and CSS variables (DESIGN.md §3). */
 export function applyTheme(settings: Settings, info: AppInfo | null): void {
   const root = document.documentElement
-  const scheme =
-    settings.colorScheme === 'system'
-      ? darkQuery.matches
-        ? 'dark'
-        : 'light'
-      : settings.colorScheme
+  const scheme = resolveScheme(settings.colorScheme)
 
   root.dataset['scheme'] = scheme
   const transparency = info?.glassSupported ? settings.transparency : 0
@@ -29,9 +37,14 @@ export function applyTheme(settings: Settings, info: AppInfo | null): void {
 
   root.style.setProperty('--accent', settings.accent)
   root.style.setProperty('--on-accent', onAccentColor(settings.accent))
+
+  const { top, bottom } = frameGradient(settings.accent, scheme)
+  root.style.setProperty('--frame-top', top)
+  root.style.setProperty('--frame-bottom', bottom)
 }
 
 export function onSystemSchemeChange(listener: () => void): () => void {
+  if (!darkQuery) return () => undefined
   darkQuery.addEventListener('change', listener)
   return () => darkQuery.removeEventListener('change', listener)
 }

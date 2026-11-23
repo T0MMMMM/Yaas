@@ -1,18 +1,22 @@
 /* Design tokens — docs/DESIGN.md §3. Components reference these, never raw values.
-   Toggled by <html data-scheme data-glass data-platform>; --accent, --transparency and --grain
-   are set from JS. */
+   Toggled by <html data-scheme data-glass data-platform>; --accent, --transparency, --grain,
+   --frame-top and --frame-bottom are set from JS. */
 
 :root {
-  /* accent (overridden at runtime) */
+  /* accent (overridden at runtime; --space-accent follows the active space in Shell) */
   --accent: #7c5cff;
+  --space-accent: var(--accent);
   --on-accent: #ffffff;
+  --on-danger: #ffffff;
   --accent-soft: color-mix(in oklch, var(--accent) 16%, transparent);
-  --accent-strong: color-mix(in oklch, var(--accent) 85%, var(--text));
+  --space-accent-soft: color-mix(in srgb, var(--space-accent) 12%, transparent);
+  --bg-dock-selected: var(--space-accent-soft);
+  --selection-bg: color-mix(in srgb, var(--space-accent) 22%, transparent);
 
   /* material — driven by the transparency and grain settings (0..1) */
   --transparency: 0;
   --grain: 0;
-  --sidebar-alpha: 1;
+  --frame-alpha: 1;
   --surface-alpha: 1;
   --glass-blur: 0px;
   --glass-edge: transparent;
@@ -26,73 +30,122 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  /* shape */
+  /* shape — concentric radii inside rounded parents: child = parent - inset */
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-toolbar: 7px;
-  --radius-row: 10px;
-  --radius-lg: 9px;
-  --radius-control: 10px;
-  --radius-menu: 18px;
-  --radius-popover: 18px;
-  --radius-command: 24px;
+  --radius-toolbar: 6px; /* address bar nav buttons (concentric: 10 - 4) */
+  --radius-menu-row: 6px; /* menu and popover rows */
+  --radius-footer-btn: 7px; /* sidebar footer icon buttons */
+  --radius-row: 8px; /* sidebar tab and folder rows */
+  --radius-tooltip: 8px; /* sidebar tooltips */
+  --radius-lg: 10px; /* page card corner radius (= PAGE_RADIUS in main) */
+  --radius-tile: 10px; /* favourite tiles */
+  --radius-dock-row: 10px; /* command dock / finder rows */
+  --radius-control: 10px; /* quick actions and controls */
+  --radius-menu: 10px; /* opaque menus and cards */
+  --radius-popover: 10px; /* opaque popovers */
+  --radius-command: 20px; /* command dock (⌘T) and finder (⌘K) */
   --radius-pill: 999px;
 
-  /* type */
+  /* type (scale: 11 / 12 / 13 / 15 / 20; weights: 400 / 500 / 600) */
   --font-sans: system-ui, -apple-system, 'Segoe UI Variable', 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
   --text-xs: 11px;
   --text-status: 11.5px;
   --text-sm: 12px;
   --text-menu: 13px;
-  --text-md: 13.5px;
-  --text-lg: 15px;
+  --text-md: 13px; /* body, sidebar rows, address bar */
+  --text-lg: 15px; /* command dock input */
   --text-xl: 20px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
 
   /* layout */
-  --sidebar-w: 248px;
+  --sidebar-w: 228px; /* Ardia density default width */
+  --sidebar-inset: 9px; /* sidebar inner horizontal padding */
   --titlebar-h: 44px;
   --addressbar-h: 38px;
-  --frame-gap: 5px; /* between the frame's floating panels (address bar, card) */
-  --split-gap: 5px; /* between a split's two pages (= SPLIT_GAP in main) */
-  --split-handle-w: 3px; /* the split divider's grip */
-  --split-handle-h: 32px;
-  --split-handle: var(--border-strong);
-  --row-h: 38px; /* sidebar rows */
-  --row-gap: 1px; /* between sidebar rows (lists, the New tab row) */
-  --control-size: 30px; /* icon buttons, menu rows, space dots' hit box */
-  --control-size-sm: 28px; /* address bar buttons and field */
+  --frame-gap: 8px; /* bezel around the page card (top is WindowControls strip) */
+  --split-gap: 8px; /* frame trough between a split's two cards (= SPLIT_GAP in main) */
+  --split-handle-w: 3px; /* split divider hover pill */
+  --split-handle-h: 28px;
+  --row-h: 34px; /* sidebar rows */
+  --row-gap: 3px; /* between sidebar rows */
+  --space-header-h: 30px; /* sidebar space header */
+  --folder-indent: 14px; /* folder children indent */
+  --footer-h: 36px; /* sidebar footer */
+  --footer-btn-size: 28px; /* sidebar footer icon buttons */
+  --control-size: 30px; /* icon buttons, space dots' hit box */
+  --control-size-sm: 28px; /* address bar nav buttons and URL field */
   --control-size-xs: 24px; /* in-row buttons (close tab) */
-  --icon-size: 16px; /* the dots' hit width, folder glyphs */
-  --space-dot: 7px; /* a space without an emoji: its colour dot (footer, space header) */
-  --favicon-size: 18px; /* tab favicons */
-  --tile-h: 44px; /* favourite tiles */
-  --tile-icon-size: 22px; /* the favicon of a favourite tile */
-  --window-controls-h: 32px; /* the window's top margin once open, holding the window buttons (WINDOW_CONTROLS_H) */
-  --window-control-w: 44px; /* Windows: one window button (minimize, maximize, close) */
+  --icon-size: 16px; /* sidebar icons, menu icons, folder glyphs, New Tab plus */
+  --space-dot: 6px; /* space colour dot in footer and space header */
+  --favicon-size: 16px; /* tab row favicons */
+  --tile-h: 41px; /* favourite tiles */
+  --tile-gap: 6px; /* gap between favourite tiles */
+  --tile-ring-w: 3px; /* active favourite tile ring */
+  --tile-icon-size: 20px; /* favourite tile favicon */
   --tile-min-w: 64px; /* narrowest favourite tile before the grid drops a column */
-  --connector-w: 28px; /* a popover's funnel, at its widest (where it leaves the card) */
-  --tooltip-max-w: 280px; /* a sidebar tooltip's widest card */
-  --title-fade: 24px; /* the tab title's fade-out at the row end */
-  --title-fade-hover: 44px; /* the same, widened when the row's buttons show */
-  --folder-bar-w: 2px; /* icon-only: a filed tab's bar per folder it sits in */
-  --folder-hue-s: 70%; /* a folder's colour from its hue: saturation (icon back, filed-tab bars) */
-  --folder-hue-l: 48%; /* the same: lightness */
-  --finder-w: 560px; /* the tab finder (⌘K) and the command field (⌘T) */
-  --finder-top: 20vh; /* how far down the window they open */
-  --finder-field-h: 44px; /* height of the search field row inside the picker */
-  --menu-row-h: 28px; /* yab menu item height */
+  --window-controls-h: 32px; /* open top window-controls strip (= WINDOW_CONTROLS_H) */
+  --window-control-w: 44px; /* Windows: one window button (minimize, maximize, close) */
+  --connector-w: 28px; /* popover funnel wide side */
+  --tooltip-max-w: 280px; /* sidebar tooltip max width */
+  --title-fade: 24px; /* tab title right fade mask */
+  --title-fade-hover: 44px; /* tab title right fade mask on hover (room for ×) */
+  --folder-bar-w: 2px; /* icon-only: filed tab's bar per folder */
+  --folder-hue-s: 70%; /* folder hue saturation */
+  --folder-hue-l: 48%; /* folder hue lightness */
+  --finder-w: 652px; /* command dock (⌘T) and tab finder (⌘K) width */
+  --finder-top: 20vh; /* vertical offset of command dock and finder */
+  --finder-field-h: 44px; /* search input row height inside command dock */
+  --dock-row-h: 36px; /* command dock suggestion row height */
+  --menu-row-h: 28px; /* menu item height */
   --menu-row-h-tall: 42px; /* site-menu row with status line */
   --menu-row-pad: 10px; /* horizontal padding of menu/popover rows */
-  --menu-inset: 6px; /* outer padding of menus and quick-action gap */
-  --popover-pad: 12px; /* inner padding of popovers and command field */
+  --menu-inset: 5px; /* outer padding of menus and separator margin */
+  --border-menu-w: 0.5px; /* crisp hairline border width on overlay cards */
+  --popover-pad: 12px; /* inner padding of popovers and command dock */
   --status-icon-size: 28px; /* site-menu row status circle */
   --quick-action-h: 32px; /* site-menu quick actions and extension tiles */
   --ext-tile-w: 52px; /* site-menu extension tile width */
   --pill-h: 28px; /* footer status pill */
 
-  /* motion */
-  --dur-press: 75ms;
+  /* motion — curves (redesign direction §5, improve-ux-motion) */
+  --ease: ease; /* fades, presses */
+  --ease-out: cubic-bezier(0.2, 0.4, 0.1, 0.98); /* enters */
+  --ease-in-out: cubic-bezier(0.4, 0.05, 0.2, 1); /* state moves, exits */
+  --ease-morph: cubic-bezier(0.35, 0.05, 0, 0.95); /* folder & space section morphs */
+  /* legacy aliases kept while sidebar/overlay/settings consume them */
+  --ease-in: var(--ease-in-out);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* motion — durations by frequency tier (redesign direction §5) */
+  --dur-press: 75ms; /* press down */
+  --dur-release: 350ms; /* release back to rest */
+  --dur-hover: 200ms; /* small color/fill hover transitions */
+  --dur-constant: 100ms; /* constant actions: ⌘T, ⌘K, ⌘L, tab switch, arrow keys (fade only) */
+  --dur-frequent-fade: 150ms; /* frequent enter fade (menus, popovers, tooltips, context menus) */
+  --dur-frequent-move: 250ms; /* frequent enter move */
+  --dur-frequent-exit: 180ms; /* frequent exit fade (no move) */
+  --dur-occasional-fade: 400ms; /* occasional enter fade (settings, confirm, downloads) */
+  --dur-occasional-exit: 300ms; /* occasional exit fade */
+  --dur-row-fade: 150ms; /* tab open fade */
+  --dur-row-enter: 250ms; /* tab open height/move */
+  --dur-row-exit: 180ms; /* tab close fade */
+  --dur-row-collapse: 250ms; /* tab close height collapse */
+  --dur-morph: 400ms; /* folder expand/collapse and space section morph */
+  --dur-drag-shift: 150ms; /* drag sibling shift */
+  --dur-drag-settle: 250ms; /* drag drop settle */
+  --dur-space-switch: 400ms; /* signature move: frame gradient + grain crossfade */
+  --dur-swap-out: 150ms; /* space switch: sidebar old content out */
+  --dur-swap-delay: 75ms; /* space switch: sidebar new content delay */
+
+  /* motion — press & enter scale targets */
+  --scale-press: 0.97;
+  --scale-enter: 0.97;
+
+  /* motion — existing durations kept for un-migrated consumers */
   --dur-popover-out: 100ms;
   --dur-command: 100ms;
   --dur-fast: 120ms;
@@ -106,11 +159,7 @@
   --dur-intro-move: 700ms;
   --delay-intro: 250ms;
   --delay-intro-content: 350ms;
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --dur-spring: 260ms; /* magnetic spring-back */
+  --dur-spring: 260ms;
   --dur-spin: 900ms; /* one turn of the loading spinner */
 
   --opacity-unloaded: 0.5; /* sidebar tabs whose page is not loaded yet */
@@ -125,17 +174,53 @@
 :root,
 :root[data-scheme='light'] {
   color-scheme: light;
-  --neutral-window: #f6f6f8;
-  --neutral-sidebar: #ececf0;
+  --frame-base: #fbfaf9;
+  --frame-top: #f0eeec;
+  --frame-bottom: #f6f5f4;
+  --grain-base: 0.05;
+  --neutral-sidebar: #f0eeec;
   --neutral-surface: #ffffff;
-  --bg-raised: #e3e4e6;
-  --border: rgb(0 0 0 / 0.08);
+  --bg-raised: #ffffff;
+  --bg-popover: #ffffff;
+  --bg-menu: #ffffff;
+  --bg-pill: #f1f2f4;
+  --bg-pill-hover: #f8f9fa;
+
+  /* ink-based chrome fills & borders (auto-harmonise with any space tint) */
+  --border: rgb(0 0 0 / 0.09);
   --border-strong: rgb(0 0 0 / 0.16);
+  --border-separator: rgb(0 0 0 / 0.1);
+  --border-menu: rgb(0 0 0 / 0.12);
+  --fill-subtle: rgb(0 0 0 / 0.05);
+  --fill-neutral: rgb(0 0 0 / 0.06);
+  --fill-neutral-hover: rgb(0 0 0 / 0.08);
+  --fill-pressed: rgb(0 0 0 / 0.12);
+  --bg-menu-hover: rgb(0 0 0 / 0.08);
+
+  /* sidebar row & favourite tile tokens (redesign direction §3) */
+  --bg-row-hover: rgb(0 0 0 / 0.05);
+  --bg-row-active: rgb(255 255 255 / 0.7);
+  --border-row-active: rgb(255 255 255 / 0.6);
+  --shadow-row-active: 0 1px 3px rgb(0 0 0 / 0.08), 0 4px 12px rgb(0 0 0 / 0.05);
+  --bg-tile: rgb(0 0 0 / 0.06);
+  --bg-tile-hover: rgb(0 0 0 / 0.1);
+
+  /* split divider handle (redesign direction §4) */
+  --split-handle: rgb(0 0 0 / 0.28);
+  --split-handle-active: rgb(0 0 0 / 0.5);
+
+  /* scrollbars */
+  --scrollbar-thumb: rgb(0 0 0 / 0.16);
+  --scrollbar-thumb-hover: rgb(0 0 0 / 0.3);
+
+  /* text hierarchy — alpha ink over tinted surfaces, primary near-black */
   --text: #1c1c1e;
-  --text-muted: #5b5b66;
-  --text-faint: #9a9aa6;
-  --text-secondary: #6e6e73;
-  --text-placeholder: #98989f;
+  --text-muted: rgb(0 0 0 / 0.62);
+  --text-secondary: rgb(0 0 0 / 0.55);
+  --text-faint: rgb(0 0 0 / 0.45);
+  --text-placeholder: rgb(0 0 0 / 0.42);
+
+  /* semantic */
   --ok: #1f9d5c;
   --warn: #c77a12;
   --danger: #d33a3a;
@@ -143,28 +228,19 @@
   --status-running: #9a9aa6;
   --status-waiting: #f08c1a;
   --status-done: #2f7cf6;
-  --shadow-raised: 0 8px 28px rgb(0 0 0 / 0.12);
-  --bg-popover: #e3e4e6;
-  --bg-menu: #e3e4e6;
-  --bg-pill: #f1f2f4;
-  --bg-pill-hover: #f8f9fa;
-  --bg-menu-hover: rgb(0 0 0 / 0.07);
-  --fill-neutral: rgb(0 0 0 / 0.06);
-  --fill-neutral-hover: rgb(0 0 0 / 0.09);
-  --fill-pressed: rgb(0 0 0 / 0.12);
   --status-on-bg: #1c1c1e;
   --status-on-fg: #ffffff;
   --status-off-bg: rgb(0 0 0 / 0.07);
   --status-off-fg: #1c1c1e;
   --switch-off: rgb(0 0 0 / 0.12);
   --caret: #0a84ff;
-  --border-menu: rgb(0 0 0 / 0.08);
-  --shadow-menu: 0 10px 30px rgb(0 0 0 / 0.12), 0 1px 3px rgb(0 0 0 / 0.08);
-  --shadow-command: 0 24px 60px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
+
+  /* shadows */
+  --shadow-raised: 0 8px 24px rgb(0 0 0 / 0.14), 0 1px 3px rgb(0 0 0 / 0.1);
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.14), 0 1px 3px rgb(0 0 0 / 0.1);
+  --shadow-command: 0 12px 48px rgb(0 0 0 / 0.18), 0 2px 6px rgb(0 0 0 / 0.08);
   --shadow-lift: 0 10px 24px rgb(0 0 0 / 0.16), 0 2px 6px rgb(0 0 0 / 0.1);
   --shadow-pill: 0 1px 4px rgb(0 0 0 / 0.07), 0 0 0 1px rgb(0 0 0 / 0.06);
-  --bg-tile: rgb(0 0 0 / 0.11);
-  --bg-tile-hover: rgb(0 0 0 / 0.17);
 
   /* offset-ink icon tints (Settings) */
   --tint-sage: #bfdcc7;
@@ -177,46 +253,73 @@
 
 :root[data-scheme='dark'] {
   color-scheme: dark;
-  --neutral-window: #0f0f11;
-  --neutral-sidebar: #141416;
-  --neutral-surface: #18181b;
-  --bg-raised: #242428;
-  --border: rgb(255 255 255 / 0.07);
-  --border-strong: rgb(255 255 255 / 0.13);
-  --text: #e6e6ea;
-  --text-muted: #9d9da8;
-  --text-faint: #65656f;
-  --text-secondary: #8e8e93;
-  --text-placeholder: #636366;
+  --frame-base: #29292a;
+  --frame-top: #2f2f30;
+  --frame-bottom: #333334;
+  --grain-base: 0.006;
+  --neutral-sidebar: #29292a;
+  --neutral-surface: #1c1c1e;
+  --bg-raised: #2c2c2e;
+  --bg-popover: #2c2c2e;
+  --bg-menu: #2c2c2e;
+  --bg-pill: #38383c;
+  --bg-pill-hover: #424247;
+
+  /* ink-based chrome fills & borders */
+  --border: rgb(255 255 255 / 0.09);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --border-separator: rgb(255 255 255 / 0.1);
+  --border-menu: rgb(255 255 255 / 0.1);
+  --fill-subtle: rgb(255 255 255 / 0.05);
+  --fill-neutral: rgb(255 255 255 / 0.06);
+  --fill-neutral-hover: rgb(255 255 255 / 0.08);
+  --fill-pressed: rgb(255 255 255 / 0.14);
+  --bg-menu-hover: rgb(255 255 255 / 0.08);
+
+  /* sidebar row & favourite tile tokens (redesign direction §3) */
+  --bg-row-hover: rgb(255 255 255 / 0.05);
+  --bg-row-active: rgb(255 255 255 / 0.1);
+  --border-row-active: rgb(255 255 255 / 0.12);
+  --shadow-row-active: 0 1px 3px rgb(0 0 0 / 0.24), 0 4px 12px rgb(0 0 0 / 0.16);
+  --bg-tile: rgb(255 255 255 / 0.06);
+  --bg-tile-hover: rgb(255 255 255 / 0.12);
+
+  /* split divider handle (redesign direction §4) */
+  --split-handle: rgb(255 255 255 / 0.32);
+  --split-handle-active: rgb(255 255 255 / 0.55);
+
+  /* scrollbars */
+  --scrollbar-thumb: rgb(255 255 255 / 0.18);
+  --scrollbar-thumb-hover: rgb(255 255 255 / 0.32);
+
+  /* text hierarchy */
+  --text: #f5f5f7;
+  --text-muted: rgb(255 255 255 / 0.68);
+  --text-secondary: rgb(255 255 255 / 0.58);
+  --text-faint: rgb(255 255 255 / 0.46);
+  --text-placeholder: rgb(255 255 255 / 0.44);
+
+  /* semantic */
   --ok: #3ccf86;
   --warn: #f0a63a;
-  --danger: #ff6b6b;
-  --control-active: #323238;
+  --danger: #e04842;
+  --control-active: #38383c;
   --status-running: #8b8b96;
   --status-waiting: #ff9f2e;
   --status-done: #4b93ff;
-  --shadow-raised: 0 10px 32px rgb(0 0 0 / 0.45);
-  --bg-popover: #242428;
-  --bg-menu: #242428;
-  --bg-pill: #323238;
-  --bg-pill-hover: #3b3b42;
-  --bg-menu-hover: rgb(255 255 255 / 0.08);
-  --fill-neutral: rgb(255 255 255 / 0.07);
-  --fill-neutral-hover: rgb(255 255 255 / 0.11);
-  --fill-pressed: rgb(255 255 255 / 0.14);
   --status-on-bg: #ececef;
   --status-on-fg: #1c1c1e;
   --status-off-bg: rgb(255 255 255 / 0.1);
   --status-off-fg: #ececef;
   --switch-off: #3a3a3c;
   --caret: #0a84ff;
-  --border-menu: rgb(255 255 255 / 0.08);
-  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.5);
-  --shadow-command: 0 24px 60px rgb(0 0 0 / 0.55);
+
+  /* shadows */
+  --shadow-raised: 0 8px 24px rgb(0 0 0 / 0.44), 0 1px 3px rgb(0 0 0 / 0.28);
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.44), 0 1px 3px rgb(0 0 0 / 0.28);
+  --shadow-command: 0 12px 48px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.3);
   --shadow-lift: 0 12px 28px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.35);
   --shadow-pill: 0 1px 4px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.08);
-  --bg-tile: rgb(255 255 255 / 0.1);
-  --bg-tile-hover: rgb(255 255 255 / 0.16);
 
   /* offset-ink icon tints (Settings) */
   --tint-sage: #3d5a48;
@@ -230,12 +333,14 @@
 /* ---------- derived surfaces ---------- */
 
 :root {
-  --sidebar-tint: color-mix(in oklch, var(--accent) 8%, var(--neutral-sidebar));
-  --bg-window: var(--neutral-window);
-  --bg-sidebar: color-mix(
-    in srgb,
-    var(--sidebar-tint) calc(var(--sidebar-alpha) * 100%),
-    transparent
+  /* Grain scales the direction's per-scheme target (0.05 light, 0.006 dark) with the grain setting
+     (default 0.35 → 1× target; 0 → off). */
+  --grain-opacity: calc(var(--grain-base) * var(--grain) / 0.35);
+  --bg-window: var(--frame-base);
+  --bg-sidebar: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--frame-top) calc(var(--frame-alpha) * 100%), transparent),
+    color-mix(in srgb, var(--frame-bottom) calc(var(--frame-alpha) * 100%), transparent)
   );
   --bg-surface: color-mix(
     in srgb,
@@ -252,18 +357,18 @@
 
 /* ---------- transparency → liquid glass (DESIGN.md §4) ---------- */
 
-/* See-through: the frame fades with the slider; the desktop shows through native vibrancy. */
+/* See-through: the frame gradient fades with the slider; native vibrancy/acrylic sits behind it. */
 :root[data-glass='on'],
 :root[data-glass='liquid'] {
   --bg-window: transparent;
-  --sidebar-alpha: calc(1 - var(--transparency) * 0.88);
+  --frame-alpha: calc(1 - var(--transparency) * 0.88);
   --surface-alpha: calc(1 - var(--transparency) * 0.12);
 }
 
 /* Liquid glass: the frame thins to a light tint — the desktop shows through it (no native blur),
    never fully clear — and the sidebar and cards float on it as glass panels with a lit edge. */
 :root[data-glass='liquid'] {
-  --sidebar-alpha: 0.3;
+  --frame-alpha: 0.3;
   --surface-alpha: 0.72;
   --glass-blur: 24px;
   --glass-edge: rgb(255 255 255 / 0.7);
@@ -279,20 +384,30 @@
 @media (prefers-reduced-transparency: reduce) {
   :root[data-glass='on'],
   :root[data-glass='liquid'] {
-    --bg-window: var(--neutral-window);
-    --sidebar-alpha: 1;
+    --bg-window: var(--frame-base);
+    --frame-alpha: 1;
     --surface-alpha: 1;
     --glass-blur: 0px;
   }
 }
 
+/* Reduced motion (redesign direction §5): keep fades, drop moves and scales. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-press: 0ms;
+    --dur-release: 0ms;
     --dur-fast: 0ms;
     --dur-knob: 0ms;
     --dur-swatch: 0ms;
     --dur-base: 0ms;
     --dur-spring: 0ms;
+    --dur-frequent-move: 0ms;
+    --dur-row-enter: 0ms;
+    --dur-row-collapse: 0ms;
+    --dur-morph: 0ms;
+    --dur-drag-shift: 0ms;
+    --dur-drag-settle: 0ms;
+    --scale-press: 1;
+    --scale-enter: 1;
   }
 }
