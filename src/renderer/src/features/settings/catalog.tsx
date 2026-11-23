@@ -1,19 +1,12 @@
 import type { ReactNode } from 'react'
-import {
-  Info,
-  Keyboard,
-  LockSimple,
-  Palette,
-  SlidersHorizontal,
-  Wrench,
-  type Icon,
-} from '@phosphor-icons/react'
+import type { IconComponent } from '../../ui/icons/InkIcon'
+import { inkIcon } from '../../ui/icons/adapter'
 import { About, Advanced, Appearance, General, Privacy, Shortcuts } from './panels'
 
 export interface SettingsSection {
   id: string
   label: string
-  icon: Icon
+  icon: IconComponent
   render: () => ReactNode
 }
 
@@ -23,10 +16,15 @@ export interface SettingsSection {
  * until AI tabs.
  */
 export const SECTIONS: SettingsSection[] = [
-  { id: 'general', label: 'General', icon: SlidersHorizontal, render: () => <General /> },
-  { id: 'appearance', label: 'Appearance', icon: Palette, render: () => <Appearance /> },
-  { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard, render: () => <Shortcuts /> },
-  { id: 'privacy', label: 'Privacy & data', icon: LockSimple, render: () => <Privacy /> },
-  { id: 'advanced', label: 'Advanced', icon: Wrench, render: () => <Advanced /> },
-  { id: 'about', label: 'About', icon: Info, render: () => <About /> },
+  { id: 'general', label: 'General', icon: inkIcon('general'), render: () => <General /> },
+  {
+    id: 'appearance',
+    label: 'Appearance',
+    icon: inkIcon('appearance'),
+    render: () => <Appearance />,
+  },
+  { id: 'shortcuts', label: 'Shortcuts', icon: inkIcon('shortcuts'), render: () => <Shortcuts /> },
+  { id: 'privacy', label: 'Privacy & data', icon: inkIcon('privacy'), render: () => <Privacy /> },
+  { id: 'advanced', label: 'Advanced', icon: inkIcon('developers'), render: () => <Advanced /> },
+  { id: 'about', label: 'About', icon: inkIcon('about'), render: () => <About /> },
 ]
