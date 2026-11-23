@@ -14,10 +14,10 @@ import type { MenuItemDef, MenuWhere } from '../menus/menuRegistry'
 import type { SpaceSessions } from './spaceSessions'
 
 /** Corner radius of the page. Must equal `--radius-lg` in tokens.css. */
-export const PAGE_RADIUS = 9
+export const PAGE_RADIUS = 10
 
 /** Space between the two pages of a split, where the divider shows. Must equal `--split-gap`. */
-export const SPLIT_GAP = 5
+export const SPLIT_GAP = 8
 
 interface TabView {
   view: WebContentsView

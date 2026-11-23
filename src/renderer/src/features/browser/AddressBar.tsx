@@ -26,8 +26,9 @@ function tint(themeColor: string | null | undefined): CSSProperties | undefined 
 }
 
 /**
- * yab-style address bar (spec, "Browser chrome"): back, forward, reload, and the URL centred with the host bright and the path dimmed. Clicking the URL (or ⌘L,
- * ⌘T) edits it. On the right: Copy link and the site menu (its extensions and settings). Always shown.
+ * Address bar inside the page card (redesign direction §2): back, forward, reload, and a centred
+ * transparent URL field (ink 0.05 on hover/edit, host bright + path faint). Page-action icons on
+ * the right (Copy link, Site menu) reveal on hover or focus. Inherits the page's theme-color.
  */
 export function AddressBar() {
   const tab = useWorkspace()?.activeTab ?? null
@@ -94,7 +95,7 @@ export function AddressBar() {
           disabled={!tab?.canGoBack}
           onClick={() => run('browser.goBack')}
         >
-          <ArrowLeft size={15} weight="bold" />
+          <ArrowLeft size={15} weight="regular" />
         </button>
         <button
           className={styles.button}
@@ -103,7 +104,7 @@ export function AddressBar() {
           disabled={!tab?.canGoForward}
           onClick={() => run('browser.goForward')}
         >
-          <ArrowRight size={15} weight="bold" />
+          <ArrowRight size={15} weight="regular" />
         </button>
         <button
           className={styles.button}
@@ -113,7 +114,7 @@ export function AddressBar() {
           data-loading={tab?.loading}
           onClick={() => run('browser.reload')}
         >
-          <ArrowClockwise size={15} weight="bold" />
+          <ArrowClockwise size={15} weight="regular" />
         </button>
       </div>
 
@@ -161,13 +162,18 @@ export function AddressBar() {
           aria-label={copied ? 'Link copied' : 'Copy link'}
           title="Copy link"
           disabled={!tab}
+          data-copied={copied || undefined}
           onClick={() => {
             if (!tab) return
             void window.bigBrowser.invoke('browser.copyLink', { tabId: tab.id })
             setCopied(true)
           }}
         >
-          {copied ? <Check size={15} weight="bold" /> : <LinkSimple size={15} weight="bold" />}
+          {copied ? (
+            <Check size={15} weight="regular" />
+          ) : (
+            <LinkSimple size={15} weight="regular" />
+          )}
         </button>
         <button
           className={styles.button}
@@ -184,7 +190,7 @@ export function AddressBar() {
               .catch(() => setSiteMenuOpen(false))
           }}
         >
-          <SlidersHorizontal size={15} weight="bold" />
+          <SlidersHorizontal size={15} weight="regular" />
         </button>
       </div>
     </header>

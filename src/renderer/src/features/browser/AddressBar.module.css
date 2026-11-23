@@ -1,5 +1,5 @@
-/* yab-style address bar on top of the page. Background: the site's theme colour, set inline as
-   runtime data, else the card token. Text colour follows it (black or white). */
+/* Address bar inside the page card (redesign direction §2). Background: the site's theme colour
+   set inline as runtime data, else the card's own surface. Text colour follows it. */
 .bar {
   flex: none;
   height: var(--addressbar-h);
@@ -8,40 +8,33 @@
   gap: var(--space-2);
   margin-bottom: var(--frame-gap);
   padding: 0 var(--space-1);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   color: var(--text);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
-  box-shadow: inset 0 1px 0 var(--glass-edge);
   transition:
-    background-color var(--dur-base) var(--ease),
-    color var(--dur-base) var(--ease);
+    background-color var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease);
 }
 
-:root[data-glass='liquid'] .bar {
-  border-color: var(--glass-edge);
-}
-
-.bar[data-tinted] {
-  border-color: transparent;
-}
-
-/* Attached to the page (setting): no card of its own, a separator line above the page. */
+/* Attached inside the page card (default): sits on the page's own colour, subtle bottom hairline. */
 :root[data-contextbar='attached'] .bar,
 :root[data-contextbar='attached'] .bar[data-tinted] {
   margin-bottom: 0;
-  border-width: 0 0 1px;
-  border-color: var(--border);
+  border-bottom: 1px solid var(--border);
   border-radius: 0;
   backdrop-filter: none;
-  box-shadow: none;
+}
+
+:root[data-contextbar='attached'] .bar[data-tinted] {
+  border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
 .nav {
   flex: none;
-  /* three buttons + gaps; the right-hand twin keeps the URL centred */
-  width: calc(3 * var(--control-size) + 2 * var(--space-hair));
+  /* three 28 px buttons + gaps; the right-hand twin keeps the URL centred */
+  width: calc(3 * var(--control-size-sm) + 2 * var(--space-hair));
   display: flex;
   align-items: center;
   gap: var(--space-hair);
@@ -54,7 +47,7 @@
 .button {
   display: grid;
   place-items: center;
-  width: var(--control-size);
+  width: var(--control-size-sm);
   height: var(--control-size-sm);
   border: none;
   border-radius: var(--radius-toolbar);
@@ -63,26 +56,62 @@
   opacity: 0.72;
   cursor: pointer;
   transition:
-    opacity var(--dur-fast) var(--ease),
-    background var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    opacity var(--dur-hover) var(--ease),
+    background-color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.button:hover:not(:disabled) {
+/* Page-action icons recede at rest and reveal on bar hover, keyboard focus, or active state. */
+.actions .button {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .bar:hover .actions .button:not(:disabled) {
+    opacity: 0.72;
+  }
+
+  .bar:hover .actions .button:disabled {
+    opacity: 0.28;
+  }
+
+  .button:hover:not(:disabled),
+  .bar:hover .actions .button:hover:not(:disabled) {
+    opacity: 1;
+    background: var(--fill-subtle);
+  }
+
+  .bar[data-tinted] .button:hover:not(:disabled),
+  .bar[data-tinted]:hover .actions .button:hover:not(:disabled) {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+}
+
+.bar:focus-within .actions .button:not(:disabled) {
+  opacity: 0.72;
+}
+
+.bar:focus-within .actions .button:focus-visible:not(:disabled),
+.actions .button[data-copied='true']:not(:disabled) {
   opacity: 1;
-  background: color-mix(in srgb, currentColor 10%, transparent);
 }
 
-/* Open site menu: stays visibly pressed while its popover is open (yab §4.1). */
+/* Open site menu: stays visibly pressed while its popover is open. */
 .button[aria-expanded='true']:not(:disabled) {
   opacity: 1;
   background: var(--fill-pressed);
 }
 
+.bar[data-tinted] .button[aria-expanded='true']:not(:disabled) {
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}
+
 .button:active:not(:disabled) {
-  transform: scale(0.9);
-  transition-duration: var(--dur-press);
-  transition-timing-function: ease;
+  transform: scale(var(--scale-press));
+  transition:
+    opacity var(--dur-press) var(--ease),
+    background-color var(--dur-press) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 .button:disabled {
@@ -122,42 +151,53 @@
   white-space: nowrap;
   overflow: hidden;
   cursor: text;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-hover) var(--ease);
 }
 
-.url:hover {
-  background: color-mix(in srgb, currentColor 7%, transparent);
+@media (hover: hover) {
+  .url:hover {
+    background: var(--fill-subtle);
+  }
+
+  .bar[data-tinted] .url:hover {
+    background: color-mix(in srgb, currentColor 7%, transparent);
+  }
 }
 
 .host {
   flex: none;
-  font-weight: 600;
+  font-weight: var(--weight-medium);
 }
 
 .rest {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: var(--weight-regular);
   color: var(--text-faint);
 }
 
-/* On a site colour the token greys would clash: dim the bar's own text colour instead. */
+/* On a site colour the neutral ink tokens would clash: dim the bar's own text colour instead. */
 .bar[data-tinted] .rest,
 .bar[data-tinted] .placeholder {
   color: inherit;
-  opacity: 0.55;
+  opacity: 0.52;
 }
 
 .placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
 }
 
 .input {
   padding: 0 var(--space-3);
   text-align: center;
   caret-color: var(--caret);
-  background: color-mix(in srgb, currentColor 8%, transparent);
+  background: var(--fill-subtle);
   outline: none;
+}
+
+.bar[data-tinted] .input {
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
 .input::placeholder {
