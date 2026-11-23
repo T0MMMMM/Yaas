@@ -332,6 +332,16 @@ export class TabViews {
     if (contents && !contents.isDestroyed()) contents.reload()
   }
 
+  isMuted(tabId: string): boolean {
+    const contents = this.views.get(tabId)?.view.webContents
+    return Boolean(contents && !contents.isDestroyed() && contents.isAudioMuted())
+  }
+
+  setMuted(tabId: string, muted: boolean): void {
+    const contents = this.views.get(tabId)?.view.webContents
+    if (contents && !contents.isDestroyed()) contents.setAudioMuted(muted)
+  }
+
   /** Opens the page's developer tools in their own window, or closes them. */
   toggleDevTools(tabId: string): void {
     const contents = this.views.get(tabId)?.view.webContents

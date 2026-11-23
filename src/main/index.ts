@@ -277,6 +277,9 @@ const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
 const sidebarMenuHost: SidebarMenuHost = {
   store: browser,
   closeTab,
+  reloadTab: (tabId) => tabViews?.reload(tabId),
+  isMuted: (tabId) => tabViews?.isMuted(tabId) ?? false,
+  setMuted: (tabId, muted) => tabViews?.setMuted(tabId, muted),
   emitShortcut,
   openOverlay: (request) => overlayView().open(request),
 }

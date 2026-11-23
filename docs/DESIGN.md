@@ -141,9 +141,12 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half
   of the shown tab's row pairs them (the row gets the `--accent-soft` fill; not onto or from a
   split or a favourite tile).
-- Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
-  move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
-  (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
+- Every row and tile: right-click opens its menu, drawn at the pointer with a Phosphor icon on
+  every row (tab: Reload, Duplicate, Mute/Unmute, Open in Split View or Separate, Copy Link |
+  Pin/Unpin, Add to/Remove from Favourites, Move to Folder ▸ | Close Tabs Below, Close/Remove;
+  folder: Rename, Change Icon…, Move to Folder ▸, Open All | Delete Folder). A tab whose page is
+  not loaded is dimmed (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the
+  setting is off.
 - **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to
   reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before
   it, the lower half after it; the middle half of a pinned folder's row files into it; the tiles

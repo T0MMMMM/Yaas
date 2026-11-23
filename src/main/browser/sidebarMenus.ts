@@ -13,6 +13,9 @@ export interface SidebarMenuHost {
   store: BrowserStore
   /** The user's close (unloads a favourite or pinned tab). */
   closeTab: (tabId: string) => void
+  reloadTab: (tabId: string) => void
+  isMuted: (tabId: string) => boolean
+  setMuted: (tabId: string, muted: boolean) => void
   emitShortcut: (shortcut: Shortcut) => void
   /** Shows a card in the overlay (a space's icon or colour, a confirmation). */
   openOverlay: (request: OverlayRequest) => void
@@ -104,7 +107,10 @@ function splitItems(
   ]
 }
 
-/** Pin, favourites, folder, split, copy, duplicate, then remove or close. */
+/**
+ * Reload, duplicate, mute/unmute, split/separate, copy link | pin, favourites, move to folder |
+ * close tabs below, close or remove. Every row carries a Phosphor icon.
+ */
 export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
   const { store } = host
   const snapshot = store.snapshot()
@@ -125,8 +131,42 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
     store.moveTab(tab.id, { section: 'pinned', folderId: folder.id, index: 0 })
     host.emitShortcut({ kind: 'rename-folder', folderId: folder.id })
   }
+  const muted = host.isMuted(tab.id)
+  const hasBelow = store.tabsBelow(tab.id).length > 0
   const kept = tab.section !== 'today'
   return [
+    {
+      kind: 'item',
+      id: 'reload',
+      label: 'Reload',
+      icon: 'ArrowClockwise',
+      run: () => host.reloadTab(tab.id),
+    },
+    {
+      kind: 'item',
+      id: 'duplicate',
+      label: 'Duplicate',
+      icon: 'CopySimple',
+      run: () => {
+        if (store.snapshot().tabs.some((t) => t.id === tab.id)) store.openTab(tab.spaceId, tab.url)
+      },
+    },
+    {
+      kind: 'item',
+      id: 'mute',
+      label: muted ? 'Unmute' : 'Mute',
+      icon: muted ? 'SpeakerHigh' : 'SpeakerSlash',
+      run: () => host.setMuted(tab.id, !muted),
+    },
+    ...splitItems(store, snapshot, tab),
+    {
+      kind: 'item',
+      id: 'copy-link',
+      label: 'Copy Link',
+      icon: 'LinkSimple',
+      run: () => clipboard.writeText(tab.url),
+    },
+    { kind: 'separator' },
     tab.section === 'pinned'
       ? {
           kind: 'item',
@@ -176,24 +216,17 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
         },
       ],
     },
-    ...splitItems(store, snapshot, tab),
+    { kind: 'separator' },
     {
       kind: 'item',
-      id: 'copy-link',
-      label: 'Copy Link',
-      icon: 'LinkSimple',
-      run: () => clipboard.writeText(tab.url),
-    },
-    {
-      kind: 'item',
-      id: 'duplicate',
-      label: 'Duplicate',
-      icon: 'CopySimple',
+      id: 'close-below',
+      label: 'Close Tabs Below',
+      icon: 'ArrowLineDown',
+      enabled: hasBelow,
       run: () => {
-        if (store.snapshot().tabs.some((t) => t.id === tab.id)) store.openTab(tab.spaceId, tab.url)
+        store.closeTabsBelow(tab.id)
       },
     },
-    { kind: 'separator' },
     kept
       ? {
           kind: 'item',
@@ -207,8 +240,8 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
 }
 
 /**
- * Rename (edited in the sidebar), move to the top level or into another folder (never into its own
- * subtree), delete with its contents. Change Icon… comes with the folder icons.
+ * Rename (edited in the sidebar), change icon, move to the top level or into another folder (never
+ * into its own subtree), open all its tabs in today, then delete with its contents.
  */
 export function folderMenu(
   host: SidebarMenuHost,
@@ -222,6 +255,7 @@ export function folderMenu(
   const exists = (): boolean => store.snapshot().folders.some((f) => f.id === folderId)
   const subtree = subtreeOf(snapshot, folderId)
   const targets = snapshot.folders.filter((f) => f.spaceId === folder.spaceId && !subtree.has(f.id))
+  const hasTabs = store.folderTabs(folderId).length > 0
   const moveTo = (parentId: string | null) => (): void =>
     store.moveFolder(folderId, {
       parentId,
@@ -272,6 +306,16 @@ export function folderMenu(
           run: moveTo(target.id),
         })),
       ],
+    },
+    {
+      kind: 'item',
+      id: 'open-all',
+      label: 'Open All',
+      icon: 'FolderOpen',
+      enabled: hasTabs,
+      run: () => {
+        store.openFolderTabs(folderId)
+      },
     },
     { kind: 'separator' },
     {
