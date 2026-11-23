@@ -687,7 +687,7 @@ test('the page menu fits what was clicked', async () => {
       'Open Link Here',
       'Download Linked File',
       'Copy Link',
-      'Share…',
+      ...(process.platform === 'darwin' ? ['Share…'] : []),
       'Inspect Element',
     ])
     const linkCount = await items.count()

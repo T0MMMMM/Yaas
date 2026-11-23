@@ -521,8 +521,9 @@ export class TabViews {
     params: Electron.ContextMenuParams,
   ): void {
     const pageURL = params.pageURL || contents.getURL()
-    const mediaLoop = params.mediaFlags.isLooping
-    const mediaControls = params.mediaFlags.isControlsVisible
+    const { isLooping: mediaLoop, isControlsVisible: mediaControls } = params.mediaFlags
+    const targetFrame = params.frame
+    const canShare = process.platform === 'darwin'
     const canSplit = shownSplit(this.store.snapshot().tabs, tabId) === null
     const openInTab = (url: string): void => {
       const entry = this.views.get(tabId)
@@ -543,9 +544,14 @@ export class TabViews {
     }
     const runMedia = (op: 'loop' | 'controls' | 'pip') =>
       live(() => {
-        void contents
-          .executeJavaScript(mediaScript(params.x, params.y, op), true)
-          .catch(() => undefined)
+        const zoom = contents.getZoomFactor() || 1
+        const script = mediaScript(params.x / zoom, params.y / zoom, op)
+        const frame = targetFrame && !targetFrame.isDestroyed() ? targetFrame : null
+        if (frame) {
+          void frame.executeJavaScript(script, true).catch(() => undefined)
+        } else {
+          void contents.executeJavaScript(script, true).catch(() => undefined)
+        }
       })
     const run: Record<FixedPageMenuId, () => void> = {
       noSuggestions: () => undefined,
@@ -564,8 +570,6 @@ export class TabViews {
       shareLink: () => {
         if (process.platform === 'darwin' && !this.win.isDestroyed()) {
           new ShareMenu({ urls: [params.linkURL] }).popup({ window: this.win })
-        } else {
-          clipboard.writeText(params.linkURL)
         }
       },
       copyEmailAddress: () => {
@@ -629,6 +633,10 @@ export class TabViews {
       mediaType: params.mediaType,
       mediaLoop,
       mediaControls,
+      mediaCanLoop: params.mediaFlags.canLoop,
+      mediaCanToggleControls: params.mediaFlags.canToggleControls,
+      mediaCanPip: params.mediaFlags.canShowPictureInPicture,
+      canShare,
       pageURL,
       canSplit,
       selectionText: params.selectionText,

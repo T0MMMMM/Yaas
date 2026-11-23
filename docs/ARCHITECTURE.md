@@ -513,7 +513,7 @@ results come back to the lead as a short summary + branch name, never the full c
   `core/browser/pageMenu.ts` (every entry carries a Phosphor icon name): spelling suggestions (at
   most 5, each running `replaceMisspelling`, or a disabled "No Suggestions") + Add to Dictionary;
   links (Open Link in New Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy
-  Link, Share…, plus Copy Email Address for `mailto:`; non-web links hide Open/Download); images
+  Link, Share… on macOS, plus Copy Email Address for `mailto:`; non-web links hide Open/Download); images
   (Open Image in New Tab, Download Image, Copy Image, Copy Image Address); video/audio (Open in New
   Tab, Download, Copy Address, Loop, Show/Hide Controls, plus Picture in Picture for video);
   selection (Go to "…" when the text is a URL, Search Google for "…", Copy); editable (Cut, Copy,

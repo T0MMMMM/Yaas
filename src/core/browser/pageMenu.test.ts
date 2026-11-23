@@ -14,6 +14,10 @@ const base: PageMenuContext = {
   mediaType: 'none',
   mediaLoop: false,
   mediaControls: false,
+  mediaCanLoop: true,
+  mediaCanToggleControls: true,
+  mediaCanPip: true,
+  canShare: true,
   pageURL: 'https://page.test/',
   canSplit: true,
   selectionText: '',
@@ -87,6 +91,23 @@ describe('pageMenu', () => {
     ])
     // Other non-web links hide Open/Download and do not add Copy Email Address.
     expect(ids({ linkURL: 'tel:+123456' })).toEqual(['copyLink', 'shareLink', '—', 'inspect'])
+
+    // Off macOS (canShare: false), Share… is hidden rather than silently copying.
+    expect(ids({ linkURL: 'https://a.test/', canShare: false })).toEqual([
+      'openLinkInNewTab',
+      'openLinkInSplitView',
+      'openLinkHere',
+      'downloadLink',
+      'copyLink',
+      '—',
+      'inspect',
+    ])
+    expect(ids({ linkURL: 'mailto:a@b.test', canShare: false })).toEqual([
+      'copyLink',
+      'copyEmailAddress',
+      '—',
+      'inspect',
+    ])
   })
 
   it('offers the four image actions on an image', () => {
@@ -126,6 +147,20 @@ describe('pageMenu', () => {
       'inspect',
     ])
     expect(itemsOf(video).find((e) => e.id === 'toggleMediaLoop')?.checked).toBe(true)
+
+    const disabledMedia = itemsOf(
+      pageMenu({
+        ...base,
+        mediaType: 'video',
+        srcURL: 'https://a.test/v.mp4',
+        mediaCanLoop: false,
+        mediaCanToggleControls: false,
+        mediaCanPip: false,
+      }),
+    )
+    expect(disabledMedia.find((e) => e.id === 'toggleMediaLoop')?.enabled).toBe(false)
+    expect(disabledMedia.find((e) => e.id === 'toggleMediaControls')?.enabled).toBe(false)
+    expect(disabledMedia.find((e) => e.id === 'pictureInPicture')?.enabled).toBe(false)
 
     expect(ids({ mediaType: 'audio', srcURL: 'https://a.test/a.mp3' })).toEqual([
       'openMediaInNewTab',

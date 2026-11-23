@@ -10,6 +10,14 @@ export interface PageMenuContext {
   mediaLoop: boolean
   /** Whether a clicked video/audio element is currently showing its controls. */
   mediaControls: boolean
+  /** Whether the clicked media element can be looped. */
+  mediaCanLoop: boolean
+  /** Whether the clicked media element's controls can be toggled. */
+  mediaCanToggleControls: boolean
+  /** Whether the clicked video element can enter Picture in Picture. */
+  mediaCanPip: boolean
+  /** Whether the platform provides a native Share menu (macOS only). */
+  canShare: boolean
   /** The current page's URL, for Copy Page URL, Save Page As… and View Page Source. */
   pageURL: string
   /** Whether this tab can be paired into a split (false when it is already split). */
@@ -198,7 +206,7 @@ export function pageMenu(context: PageMenuContext): PageMenuEntry[] {
           ]
         : []),
       on('copyLink'),
-      on('shareLink'),
+      ...(context.canShare ? [on('shareLink')] : []),
       ...(email ? [on('copyEmailAddress')] : []),
     ])
   }
@@ -219,9 +227,9 @@ export function pageMenu(context: PageMenuContext): PageMenuEntry[] {
     groups.push([
       ...(web ? [on('openMediaInNewTab'), on('downloadMedia')] : []),
       ...(context.srcURL ? [on('copyMediaAddress')] : []),
-      on('toggleMediaLoop', true, context.mediaLoop),
-      on('toggleMediaControls'),
-      ...(context.mediaType === 'video' ? [on('pictureInPicture')] : []),
+      on('toggleMediaLoop', context.mediaCanLoop, context.mediaLoop),
+      on('toggleMediaControls', context.mediaCanToggleControls),
+      ...(context.mediaType === 'video' ? [on('pictureInPicture', context.mediaCanPip)] : []),
     ])
   }
 

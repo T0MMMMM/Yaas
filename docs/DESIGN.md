@@ -200,8 +200,8 @@ goes to the field.
 **Page menu** — right-clicking a page draws its menu at the pointer, with a Phosphor icon on every
 row (extensions use their own 16 px icon or `PuzzlePiece`): spelling suggestions (at most 5, or a
 disabled "No Suggestions") and Add to Dictionary for a misspelled word; links (Open Link in New
-Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy Link, Share…, plus Copy
-Email Address for `mailto:`; non-web links hide Open/Download); images (Open Image in New Tab,
+Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy Link, Share… on macOS,
+plus Copy Email Address for `mailto:`; non-web links hide Open/Download); images (Open Image in New Tab,
 Download Image, Copy Image, Copy Image Address); video/audio (Open in New Tab, Download, Copy
 Address, Loop, Show/Hide Controls, plus Picture in Picture for video); selection (Go to "…" when
 the text is a URL, Search Google for "…", Copy); editable (Cut, Copy, Paste, Paste and Match Style,
