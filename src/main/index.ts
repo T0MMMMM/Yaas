@@ -1,5 +1,7 @@
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import {
   app,
   BrowserWindow,
@@ -39,8 +41,11 @@ import { shownSplit } from '@core/browser/splitBounds'
 import { splitPartner } from '@core/browser/splitPartner'
 import {
   ExternalUrlQueue,
+  handleOpenUrl,
+  handleSecondInstance,
   isDefaultBrowser,
   makeDefaultBrowser,
+  protocolClientTarget,
   urlFromArgv,
   type DefaultBrowserApi,
 } from './defaultBrowser'
@@ -77,10 +82,23 @@ if (!gotLock) app.quit()
 const externalUrls = new ExternalUrlQueue()
 if (gotLock) externalUrls.enqueue(urlFromArgv(process.argv))
 
+const execFileAsync = promisify(execFile)
+
 const defaultBrowserApi: DefaultBrowserApi = {
   platform: process.platform,
-  isDefaultProtocolClient: (protocol) => app.isDefaultProtocolClient(protocol),
-  setAsDefaultProtocolClient: (protocol) => app.setAsDefaultProtocolClient(protocol),
+  target: protocolClientTarget(process.execPath, process.argv, Boolean(process.defaultApp)),
+  isDefaultProtocolClient: (protocol, path, args) =>
+    path
+      ? app.isDefaultProtocolClient(protocol, path, args)
+      : app.isDefaultProtocolClient(protocol),
+  setAsDefaultProtocolClient: (protocol, path, args) =>
+    path
+      ? app.setAsDefaultProtocolClient(protocol, path, args)
+      : app.setAsDefaultProtocolClient(protocol),
+  runReg: async (args) => {
+    const { stdout } = await execFileAsync('reg.exe', args, { windowsHide: true })
+    return stdout
+  },
   openExternal: (url) => shell.openExternal(url),
 }
 
@@ -425,7 +443,7 @@ function openMainWindow(): void {
 registerCommands(
   {
     'app.info': () => ({ version: app.getVersion(), platform, glassSupported: glassSupported() }),
-    'app.defaultBrowser': () => ({ isDefault: isDefaultBrowser(defaultBrowserApi) }),
+    'app.defaultBrowser': async () => ({ isDefault: await isDefaultBrowser(defaultBrowserApi) }),
     'app.makeDefaultBrowser': () => makeDefaultBrowser(defaultBrowserApi),
     'settings.get': () => settings.get(),
     'settings.update': (patch) => settings.update(patch),
@@ -596,17 +614,13 @@ accounts.subscribe((list) => {
 
 app.on('open-url', (event, url) => {
   event.preventDefault()
-  if (!externalUrls.enqueue(url)) return
-  if (app.isReady() && !mainWindow) openMainWindow()
+  handleOpenUrl(url, externalUrls, () => {
+    if (app.isReady() && !mainWindow) openMainWindow()
+  })
 })
 
 app.on('second-instance', (_event, argv) => {
-  const url = urlFromArgv(argv)
-  if (url) {
-    externalUrls.enqueue(url)
-    return
-  }
-  focusMainWindow()
+  handleSecondInstance(argv, externalUrls, focusMainWindow)
 })
 
 app.on('will-quit', () => db.close())

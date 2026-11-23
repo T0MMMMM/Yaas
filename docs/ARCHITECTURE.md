@@ -615,13 +615,17 @@ results come back to the lead as a short summary + branch name, never the full c
   divider store at once. A mouse press or a key in a half on screen activates its tab (`activatesHalf`); the pair stays
   shown. Focus alone never does: a hidden view keeps its focus events.
 - **Default browser.** `main/defaultBrowser.ts` parses external `http`/`https` URLs from launch
-  arguments (`urlFromArgv`, ignoring flags and file paths), Windows/Linux `second-instance` argv,
-  and macOS `open-url`. An `ExternalUrlQueue` holds URLs that arrive before the window exists (or
-  while all windows are closed on macOS) and opens each once as a new today tab in the active space,
-  focusing the window; non-web URLs are ignored. Packaging (`electron-builder.yml` `protocols`)
-  declares `http` and `https`. Commands `app.defaultBrowser` (`isDefaultProtocolClient('https')`)
-  and `app.makeDefaultBrowser` (`setAsDefaultProtocolClient` for `http`/`https`, plus
-  `ms-settings:defaultapps` on Windows) drive the Default browser row in Settings → General.
+  arguments (`urlFromArgv`, ignoring flags and file paths), Windows/Linux `second-instance` argv
+  (`handleSecondInstance`), and macOS `open-url` (`handleOpenUrl`). An `ExternalUrlQueue` holds
+  URLs that arrive before the window exists (or while all windows are closed on macOS) and opens
+  each once as a new today tab in the active space, focusing the window; non-web URLs are ignored.
+  Packaging (`electron-builder.yml` `protocols`) declares `http` and `https`. On macOS/Linux,
+  `app.defaultBrowser` / `app.makeDefaultBrowser` use Electron's `isDefaultProtocolClient` /
+  `setAsDefaultProtocolClient` (passing `process.execPath` and resolved `argv[1]` in dev mode). On
+  Windows, status is read from HKCU `UrlAssociations\https\UserChoice` `ProgId` (`reg.exe query`,
+  no shell) against `BigBrowserURL`, and `app.makeDefaultBrowser` registers the HKCU ProgId,
+  `Software\BigBrowser\Capabilities` (`URLAssociations` for `http`/`https`), and
+  `Software\RegisteredApplications\Big Browser` before opening `ms-settings:defaultapps`.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
   the window's top margin is open. While the margin is open (macOS and Windows), main polls the
