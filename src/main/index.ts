@@ -34,7 +34,7 @@ import { MenuRegistry, menuRequest, type MenuItemDef, type MenuWhere } from './m
 import { DownloadsStore } from '@core/browser/downloadsStore'
 import { HistoryStore } from '@core/browser/historyStore'
 import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
-import { TabViews } from './browser/tabViews'
+import { PAGE_RADIUS, TabViews } from './browser/tabViews'
 import { shownSplit } from '@core/browser/splitBounds'
 import { splitPartner } from '@core/browser/splitPartner'
 import { emit, registerCommands } from './ipc/router'
@@ -351,6 +351,9 @@ function watchTopBand(win: BrowserWindow, visible: boolean): void {
   }, TOP_BAND_POLL_MS)
 }
 
+const pageRadiusFor = (style: Settings['contextBarStyle']): number =>
+  style === 'attached' ? 0 : PAGE_RADIUS
+
 function openMainWindow(): void {
   const win = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow = win
@@ -376,6 +379,7 @@ function openMainWindow(): void {
     () => overlayView.raise(),
     history,
   )
+  tabViews.setBorderRadius(pageRadiusFor(settings.get().contextBarStyle))
   tabViews.sync(browser.snapshot())
   win.on('closed', () => {
     mainWindow = null
@@ -521,6 +525,7 @@ registerCommands(
 // in between is CSS. Re-applying vibrancy on every tick of a slider flickers.
 let appliedMaterial = materialFor(settings.get().transparency)
 let appliedAdBlock = settings.get().adBlock
+let appliedContextBarStyle = settings.get().contextBarStyle
 settings.subscribe((next) => {
   if (next.adBlock !== appliedAdBlock) {
     const { added, removed } = diffHosts(appliedAdBlock.allowedHosts, next.adBlock.allowedHosts)
@@ -530,6 +535,10 @@ settings.subscribe((next) => {
     for (const tabId of tabViews?.tabIdsOnHosts([...added, ...removed]) ?? []) {
       tabViews?.reload(tabId)
     }
+  }
+  if (next.contextBarStyle !== appliedContextBarStyle) {
+    appliedContextBarStyle = next.contextBarStyle
+    tabViews?.setBorderRadius(pageRadiusFor(next.contextBarStyle))
   }
   if (!mainWindow) return
   const material = materialFor(next.transparency)
