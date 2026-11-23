@@ -4,6 +4,7 @@ import type { SpaceSummary } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useCompact } from './CompactContext'
+import { spaceEmoji } from './emoji'
 import { tilt } from './tilt'
 import styles from './SpaceHeader.module.css'
 
@@ -87,9 +88,7 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
 
   const iconSlot = (
     <span className={styles.iconSlot} aria-hidden="true">
-      <span className={styles.glyph} style={{ color: space.color }}>
-        {space.icon ?? <span className={styles.dot} />}
-      </span>
+      <span className={styles.glyph}>{spaceEmoji(space.icon, space.label)}</span>
       <CaretDown
         className={styles.chevron}
         data-collapsed={collapsed}
@@ -108,7 +107,7 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
       onContextMenu={(e) => {
         e.preventDefault()
         // Icon-only, the "…" button is hidden: the menu opens from the whole header.
-        open(more.current?.offsetParent ? more.current : e.currentTarget)
+        open(!compact && more.current ? more.current : e.currentTarget)
       }}
     >
       {renaming ? (

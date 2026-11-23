@@ -36,3 +36,17 @@ export function emojiGrapheme(text: string): string | null {
   const first = firstGrapheme(text)
   return first !== null && EMOJI_START.test(first) ? first : null
 }
+
+/**
+ * Fallback emoji for a space whose stored icon is null, so every space still shows an emoji in its
+ * header (and in emoji switcher mode) regardless of the footer switcher setting.
+ */
+export function spaceEmoji(icon: string | null, label: string): string {
+  if (icon) return icon
+  const key = label.trim().toLowerCase()
+  if (key === 'personal') return '🏠'
+  if (key === 'work') return '💼'
+  let hash = 0
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0
+  return COMMON_EMOJIS[hash % COMMON_EMOJIS.length] ?? '🏠'
+}

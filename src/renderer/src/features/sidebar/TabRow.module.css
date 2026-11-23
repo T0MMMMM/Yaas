@@ -6,6 +6,7 @@
   min-width: 0;
   /* Nested under its parent tab (depth 0…3, from the workspace). */
   margin-left: calc(var(--depth, 0) * var(--space-3));
+  transition: margin-left var(--dur-base) var(--ease-out);
 }
 
 /* A new row fades and slides in; a closed one (Rows, Sidebar.tsx) shrinks and fades out before
@@ -47,14 +48,15 @@
   align-items: center;
   gap: var(--space-2);
   min-height: var(--row-h);
-  padding: 7px var(--space-2);
-  /* Leaves room for the close button. */
-  padding-right: var(--control-size);
+  padding: 7px var(--control-size) 7px var(--space-2);
   border: none;
   border-radius: var(--radius-lg);
   background: transparent;
   text-align: left;
   cursor: pointer;
+  transition:
+    padding var(--dur-base) var(--ease-out),
+    gap var(--dur-base) var(--ease-out);
 }
 
 /* The card is a layer behind the text: only it tilts (angle per item, see tilt()). */
@@ -104,11 +106,16 @@
 .title {
   flex: 1;
   min-width: 0;
+  max-width: var(--sidebar-w);
   overflow: hidden;
   white-space: nowrap;
   /* The end of a long title fades out; on hover the fade widens to make room for the ×. */
   text-overflow: clip;
   mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade)), transparent);
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    max-width var(--dur-base) var(--ease-out),
+    visibility 0s;
 }
 
 .item:hover .title,
@@ -160,17 +167,27 @@
   visibility: hidden;
 }
 
-/* Icon-only sidebar: the favicon alone, centred, never indented; no × (use the menu or ⌘W). */
+/* Icon-only sidebar: the favicon glides to the centre, never indented; titles fade out smoothly. */
 :global([data-compact='true']) .item {
   margin-left: 0;
 }
 
 :global([data-compact='true']) .row {
-  justify-content: center;
-  padding: 7px 0;
+  gap: 0;
+  padding: 7px 0 7px calc((100% - var(--favicon-size)) / 2);
 }
 
-:global([data-compact='true']) .title,
+:global([data-compact='true']) .title {
+  max-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    max-width var(--dur-base) var(--ease-out),
+    visibility 0s linear var(--dur-fast);
+}
+
 :global([data-compact='true']) .close {
   display: none;
 }

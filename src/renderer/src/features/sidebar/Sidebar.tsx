@@ -1,17 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { DownloadSimple, GearSix, Plus, SidebarSimple } from '@phosphor-icons/react'
 import { useSidebarToggle } from '../../app/useSidebarResize'
+import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
 import { useWorkspace } from '../workspace/useWorkspace'
 import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
+import { spaceEmoji } from './emoji'
 import { FavoriteTiles } from './FavoriteTiles'
 import { exitsWhenGone } from './rows'
 import { Rows } from './SidebarRows'
 import { SpaceHeader } from './SpaceHeader'
-import { tilt } from './tilt'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import { TooltipContext, useTooltip } from './useTooltip'
 import styles from './Sidebar.module.css'
@@ -47,6 +48,7 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
 export function Sidebar({ compact = false }: { compact?: boolean }) {
   const workspace = useWorkspace()
   const sidebarToggle = useSidebarToggle()
+  const switcherStyle = useSettings((s) => s.settings?.spaceSwitcherStyle ?? 'emoji')
   const openSettings = useUi((s) => s.openSettings)
   const magnet = useMagnetic<HTMLButtonElement>()
   /** Whether the + menu is open in the overlay. */
@@ -95,23 +97,25 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             {/* The sidebar's own controls: icons only (left), settings (right). */}
             <div className={`${styles.titlebar} drag`}>
               <button
-                className={`${styles.iconButton} ${styles.titleButton} no-drag`}
+                className={`${styles.iconButton} no-drag`}
                 aria-label={sidebarToggle.compact ? 'Expand sidebar' : 'Icons only'}
                 title={sidebarToggle.compact ? 'Expand sidebar' : 'Icons-only sidebar'}
                 onClick={sidebarToggle.toggle}
+                {...magnet}
               >
                 <SidebarSimple size={16} weight="regular" />
               </button>
-              {!compact && (
-                <button
-                  className={`${styles.iconButton} ${styles.titleButton} no-drag`}
-                  aria-label="Settings"
-                  title="Settings (⌘,)"
-                  onClick={() => openSettings()}
-                >
-                  <GearSix size={16} weight="regular" />
-                </button>
-              )}
+              <button
+                className={`${styles.iconButton} ${styles.settingsButton} no-drag`}
+                aria-label="Settings"
+                title="Settings (⌘,)"
+                tabIndex={compact ? -1 : 0}
+                aria-hidden={compact || undefined}
+                onClick={() => openSettings()}
+                {...magnet}
+              >
+                <GearSix size={16} weight="regular" />
+              </button>
             </div>
 
             <div className={styles.scroll} ref={scroll}>
@@ -212,16 +216,20 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                     aria-label={s.label}
                     title={s.label}
                     className={styles.space}
-                    style={{ ...tilt(s.id), color: s.color }}
+                    style={{ color: s.color }}
                     onClick={() =>
                       void window.bigBrowser.invoke('browser.activateSpace', { spaceId: s.id })
                     }
                     {...magnet}
                   >
-                    {s.icon ? (
-                      <span className={styles.emoji}>{s.icon}</span>
-                    ) : (
+                    {switcherStyle === 'dots' ? (
                       <span className={styles.dot} />
+                    ) : switcherStyle === 'letter' ? (
+                      <span className={styles.letter}>
+                        {s.label.trim().charAt(0).toUpperCase() || '·'}
+                      </span>
+                    ) : (
+                      <span className={styles.emoji}>{spaceEmoji(s.icon, s.label)}</span>
                     )}
                   </button>
                 ))}

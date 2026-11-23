@@ -64,6 +64,7 @@
 
 .children[data-indent='true'] {
   padding-left: var(--space-3);
+  transition: padding-left var(--dur-base) var(--ease-out);
 }
 
 /* A tab or folder dragged onto the folder's row files into it (useTabDrag). */

@@ -17,15 +17,17 @@
   align-items: center;
   gap: var(--space-2);
   min-height: var(--row-h);
-  padding: 7px var(--space-2);
-  padding-right: var(--control-size);
+  padding: 7px var(--control-size) 7px var(--space-2);
   border: none;
   border-radius: var(--radius-lg);
   background: transparent;
   color: var(--text-muted);
   text-align: left;
   cursor: pointer;
-  transition: color var(--dur-fast) var(--ease);
+  transition:
+    color var(--dur-fast) var(--ease),
+    padding var(--dur-base) var(--ease-out),
+    gap var(--dur-base) var(--ease-out);
 }
 
 .row::before {
@@ -119,9 +121,14 @@
 }
 
 .name {
+  max-width: var(--sidebar-w);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    max-width var(--dur-base) var(--ease-out),
+    visibility 0s;
 }
 
 .field {
@@ -167,14 +174,24 @@
   color: var(--text);
 }
 
-/* Icon-only sidebar: the space icon stays visible centred over the favicons and swaps into the
-   chevron on hover; only the name and "…" button hide. */
+/* Icon-only sidebar: the space icon glides centred over the favicons and swaps into the chevron on
+   hover; the name fades out smoothly and "…" hides. */
 :global([data-compact='true']) .row {
-  justify-content: center;
-  padding: 7px 0;
+  gap: 0;
+  padding: 7px 0 7px calc((100% - var(--favicon-size)) / 2);
 }
 
-:global([data-compact='true']) .name,
+:global([data-compact='true']) .name {
+  max-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) var(--ease),
+    max-width var(--dur-base) var(--ease-out),
+    visibility 0s linear var(--dur-fast);
+}
+
 :global([data-compact='true']) .field,
 :global([data-compact='true']) .more {
   display: none;
