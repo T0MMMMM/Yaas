@@ -465,7 +465,8 @@ built yet are shown disabled with a "Soon" tag so the full scope stays visible.
 
 | Section | Option | Values (default) | Stage |
 |---|---|---|---|
-| **General** | Open at login | Off | v1 |
+| **General** | Default browser | Make default / Default (Windows opens OS Default apps) | ✅ |
+| | Open at login | Off | v1 |
 | | Restore open sessions on launch | On | MVP |
 | | Default folder for new sessions | Last used · Ask every time · Fixed folder | MVP |
 | | Confirm before closing a running session | On | MVP |
@@ -533,8 +534,8 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 
 Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
 web page swallows renderer key events. `Mod+Z` is the exception: a keydown handler of the UI
-(`app/Shell.tsx`), so in a page or a field it stays the normal undo. New window (`Mod+N`) comes
-later.
+(`app/Shell.tsx`), so in a page or a field it stays the normal undo. Several windows (`Mod+N`) were
+dropped by the owner.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.
