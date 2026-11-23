@@ -14,7 +14,8 @@ export interface SidebarMenuHost {
   /** The user's close (unloads a favourite or pinned tab). */
   closeTab: (tabId: string) => void
   reloadTab: (tabId: string) => void
-  isMuted: (tabId: string) => boolean
+  /** Whether the tab's view is muted, or null when the tab is unloaded (no view). */
+  isMuted: (tabId: string) => boolean | null
   setMuted: (tabId: string, muted: boolean) => void
   emitShortcut: (shortcut: Shortcut) => void
   /** Shows a card in the overlay (a space's icon or colour, a confirmation). */
@@ -132,6 +133,7 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
     host.emitShortcut({ kind: 'rename-folder', folderId: folder.id })
   }
   const muted = host.isMuted(tab.id)
+  const loaded = muted !== null
   const hasBelow = store.tabsBelow(tab.id).length > 0
   const kept = tab.section !== 'today'
   return [
@@ -140,6 +142,7 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
       id: 'reload',
       label: 'Reload',
       icon: 'ArrowClockwise',
+      enabled: loaded,
       run: () => host.reloadTab(tab.id),
     },
     {
@@ -154,9 +157,10 @@ export function tabMenu(host: SidebarMenuHost, tabId: string): MenuItemDef[] {
     {
       kind: 'item',
       id: 'mute',
-      label: muted ? 'Unmute' : 'Mute',
-      icon: muted ? 'SpeakerHigh' : 'SpeakerSlash',
-      run: () => host.setMuted(tab.id, !muted),
+      label: muted === true ? 'Unmute' : 'Mute',
+      icon: muted === true ? 'SpeakerHigh' : 'SpeakerSlash',
+      enabled: loaded,
+      run: () => host.setMuted(tab.id, muted !== true),
     },
     ...splitItems(store, snapshot, tab),
     {

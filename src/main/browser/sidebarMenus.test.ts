@@ -110,7 +110,7 @@ describe('tabMenu', () => {
     expect(store.snapshot().tabs.find((t) => t.id === tab.id)?.section).toBe('pinned')
   })
 
-  it('toggles Mute / Unmute through the host', () => {
+  it('toggles Mute / Unmute through the host and disables Reload and Mute when unloaded', () => {
     const { store, host, spaceId } = setup()
     const tab = store.openTab(spaceId, 'https://a.test/')
     find(tabMenu(host, tab.id), 'Mute').run?.()
@@ -119,6 +119,12 @@ describe('tabMenu', () => {
     expect(labels(after)).toContain('Unmute')
     find(after, 'Unmute').run?.()
     expect(host.setMuted).toHaveBeenCalledWith(tab.id, false)
+
+    // Unloaded tab (no view): host.isMuted returns null, disabling Reload and Mute.
+    vi.mocked(host.isMuted).mockReturnValueOnce(null)
+    const unloaded = tabMenu(host, tab.id)
+    expect(find(unloaded, 'Reload').enabled).toBe(false)
+    expect(find(unloaded, 'Mute').enabled).toBe(false)
   })
 
   it('Close Tabs Below closes today tabs drawn after it (subtree first) and disables when none', () => {

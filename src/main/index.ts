@@ -296,7 +296,7 @@ const sidebarMenuHost: SidebarMenuHost = {
   store: browser,
   closeTab,
   reloadTab: (tabId) => tabViews?.reload(tabId),
-  isMuted: (tabId) => tabViews?.isMuted(tabId) ?? false,
+  isMuted: (tabId) => tabViews?.isMuted(tabId) ?? null,
   setMuted: (tabId, muted) => tabViews?.setMuted(tabId, muted),
   emitShortcut,
   openOverlay: (request) => overlayView().open(request),

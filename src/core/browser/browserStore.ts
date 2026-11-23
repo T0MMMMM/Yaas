@@ -392,24 +392,43 @@ export class BrowserStore {
 
   /**
    * Closes every today tab drawn after `id` (its subtree and all subsequent today tabs, both
-   * halves of any split among them), bottom-up so children close before parents. Returns the
-   * number of tabs closed.
+   * halves of any split among them) in one transaction, emitting once and pushing a single
+   * reopen-closed entry so ⌘⇧T brings the whole batch back. Returns the number of tabs closed.
    */
   closeTabsBelow(id: string): number {
+    const first = this.firstOf(this.requireTab(id))
     const below = this.tabsBelow(id)
-    let closed = 0
-    for (const rowId of [...below].reverse()) {
-      const row = this.findTab(rowId)
-      if (!row) continue
-      if (this.pairOf(row)) {
-        this.closeSplit(row.id)
-        closed += 2
-      } else {
-        this.removeTab(row.id)
-        closed += 1
+    if (below.length === 0) return 0
+    const rowIds = new Set(below)
+    let removedRows: TabRow[] = []
+    this.transaction(() => {
+      // Unpair splits among the closed rows first so both halves get positions and reopen cleanly.
+      for (const second of this.secondRows(first.space_id)) {
+        if (second.split_of === null || !rowIds.has(second.split_of)) continue
+        const pairFirst = this.findTab(second.split_of)
+        if (pairFirst) {
+          this.unpair(pairFirst, second, false)
+          rowIds.add(second.id)
+        }
       }
-    }
-    return closed
+      removedRows = this.todayRows(first.space_id).filter((t) => rowIds.has(t.id))
+      if (removedRows.length === 0) return
+      const removed = new Set(removedRows.map((t) => t.id))
+      const space = this.requireSpace(first.space_id)
+      const active = space.active_tab_id
+      const next =
+        active !== null && removed.has(active)
+          ? this.nextActive(first.space_id, active, removed)
+          : active
+      const del = this.db.prepare('DELETE FROM tabs WHERE id = ?')
+      for (const row of removedRows) del.run(row.id)
+      this.renumberToday(first.space_id)
+      this.setActiveTab(first.space_id, next)
+    })
+    if (removedRows.length === 0) return 0
+    this.closed.push({ folders: [], tabs: removedRows.map(toClosed) })
+    this.emit()
+    return removedRows.length
   }
 
   /** Every tab inside `folderId` and its descendant folders, in drawn order (both halves of splits). */

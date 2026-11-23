@@ -332,9 +332,11 @@ export class TabViews {
     if (contents && !contents.isDestroyed()) contents.reload()
   }
 
-  isMuted(tabId: string): boolean {
+  /** Whether the tab's view is muted, or null when the tab has no view (unloaded). */
+  isMuted(tabId: string): boolean | null {
     const contents = this.views.get(tabId)?.view.webContents
-    return Boolean(contents && !contents.isDestroyed() && contents.isAudioMuted())
+    if (!contents || contents.isDestroyed()) return null
+    return contents.isAudioMuted()
   }
 
   setMuted(tabId: string, muted: boolean): void {

@@ -490,11 +490,12 @@ results come back to the lead as a short summary + branch name, never the full c
   at, anchor? }` (`at` = the right-click's `clientX/clientY`, window coordinates) build the row's
   items in `main/browser/sidebarMenus.ts` (`tabMenu` / `folderMenu`) with a Phosphor icon on every
   row and draw them in the overlay at the pointer (`showMenu`, see **Drawn menus**). Tab: Reload,
-  Duplicate, Mute/Unmute (`TabViews.isMuted` / `setMuted`), Open in Split View (or Separate on a
+  Duplicate, Mute/Unmute (`TabViews.isMuted` / `setMuted`; Reload and Mute are disabled while the
+  tab is unloaded), Open in Split View (or Separate on a
   split), Copy Link | Pin/Unpin (pinned end / today top), Add to/Remove from Favourites (favourites
   end / today top), Move to Folder ▸ (the space's folders, the current one checked, New Folder…) |
-  Close Tabs Below (`BrowserStore.closeTabsBelow`, closes today tabs drawn after it bottom-up,
-  disabled when none), Close (today) or Remove (favourite, pinned). Folder: Rename, Change Icon…,
+  Close Tabs Below (`BrowserStore.closeTabsBelow`, closes today tabs drawn after it in one batch
+  and one undo entry, disabled when none), Close (today) or Remove (favourite, pinned). Folder: Rename, Change Icon…,
   Move to Folder ▸ (Top level, then every folder of the space outside its own subtree; where it is
   now is checked and disabled), Open All (`BrowserStore.openFolderTabs`, opens the folder's and its
   child folders' tabs into today, disabled when empty) | Delete Folder. Rename (and New Folder…)

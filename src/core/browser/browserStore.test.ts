@@ -773,7 +773,7 @@ describe('BrowserStore closeTabsBelow and openFolderTabs', () => {
     expect(store.tabsBelow(b.id)).toEqual([b1.id, c.id])
   })
 
-  it('closeTabsBelow closes today tabs drawn after a tab (including splits) and keeps earlier ones', () => {
+  it('closeTabsBelow closes today tabs drawn after a tab in one batch (one emit, one undo)', () => {
     const { store, spaceId } = setup()
     const a = store.openTab(spaceId, 'https://a.test/')
     const a1 = store.openTab(spaceId, 'https://a1.test/', { parentId: a.id })
@@ -783,13 +783,23 @@ describe('BrowserStore closeTabsBelow and openFolderTabs', () => {
     const c = store.openTab(spaceId, 'https://c.test/')
     store.activateTab(c.id)
 
+    let emits = 0
+    store.subscribe(() => {
+      emits += 1
+    })
+
     expect(store.closeTabsBelow(a.id)).toBe(4)
+    expect(emits).toBe(1)
     expect(store.snapshot().tabs.map((t) => t.id)).toEqual([a.id])
     expect(store.snapshot().activeTabIds[spaceId]).toBe(a.id)
-    // Nothing left below: a second call is a no-op.
+    // Nothing left below: a second call is a no-op with no emit.
     expect(store.closeTabsBelow(a.id)).toBe(0)
-    // Closed tabs can be reopened.
+    expect(emits).toBe(1)
+    // One reopenClosed brings the entire batch back in order (a1 still under a).
     expect(store.reopenClosed()?.url).toBe(a1.url)
+    expect(store.snapshot().tabs.map((t) => t.url)).toEqual([a.url, a1.url, b.url, b2.url, c.url])
+    expect(store.snapshot().tabs.find((t) => t.url === a1.url)?.parentId).toBe(a.id)
+    expect(store.reopenClosed()).toBeNull()
   })
 
   it('openFolderTabs opens every tab in a folder and its child folders in drawn order', () => {
