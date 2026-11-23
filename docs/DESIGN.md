@@ -194,10 +194,17 @@ the pointer reaches its first row), Enter or Space chooses, Escape or a click ou
 card. Hovering a row moves the keyboard to it, except while a filter field has it: typing still
 goes to the field.
 
-**Page menu** — right-clicking a page draws its menu at the pointer: spelling suggestions (at most
-5, or a disabled "No Suggestions") for a misspelled word, then the link, image, edit or selection
-entries, Back / Forward / Reload on a blank spot, the extensions' items (their icons, submenus and
-checks) in their own group, then Inspect. No Look Up / Services on macOS.
+**Page menu** — right-clicking a page draws its menu at the pointer, with a Phosphor icon on every
+row (extensions use their own 16 px icon or `PuzzlePiece`): spelling suggestions (at most 5, or a
+disabled "No Suggestions") and Add to Dictionary for a misspelled word; links (Open Link in New
+Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy Link, Share…, plus Copy
+Email Address for `mailto:`; non-web links hide Open/Download); images (Open Image in New Tab,
+Download Image, Copy Image, Copy Image Address); video/audio (Open in New Tab, Download, Copy
+Address, Loop, Show/Hide Controls, plus Picture in Picture for video); selection (Go to "…" when
+the text is a URL, Search Google for "…", Copy); editable (Cut, Copy, Paste, Paste and Match Style,
+Select All); blank spot (Back, Forward, Reload, Copy Page URL, Save Page As…, Print…, View Page
+Source); the extensions' items (their icons, submenus and checks) in their own group; then Inspect
+Element last. No Look Up / Services on macOS.
 
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
 `title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on

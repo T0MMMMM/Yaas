@@ -633,7 +633,16 @@ test('the page menu is drawn', async () => {
     await rightClickPage(app, page, at)
     const overlay = await overlayPage(app)
     const menu = overlay.getByTestId('menu')
-    await expect(menu.getByRole('menuitem')).toHaveText(['Back', 'Forward', 'Reload', 'Inspect'])
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Back',
+      'Forward',
+      'Reload',
+      'Copy Page URL',
+      'Save Page As…',
+      'Print…',
+      'View Page Source',
+      'Inspect Element',
+    ])
     await expect(menu.getByRole('menuitem', { name: 'Forward' })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -650,6 +659,75 @@ test('the page menu is drawn', async () => {
     await menu.getByRole('menuitem', { name: 'Reload' }).click()
     await expect(menu).toHaveCount(0)
     await expect.poll(marked).toBe(false)
+  })
+})
+
+test('the page menu fits what was clicked', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/a'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A'])
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+
+    // Right-click a link: link items with icons, including Open Link in Split View.
+    const linkPoint = await app.evaluate(({ webContents }) =>
+      webContents
+        .getAllWebContents()
+        .find((w) => w.getURL().endsWith('/a'))
+        ?.executeJavaScript(
+          '(() => { const r = document.getElementById("b").getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) } })()',
+        ),
+    )
+    if (!linkPoint) throw new Error('Link rect not found')
+    await rightClickPage(app, page, linkPoint)
+    const items = menu.getByRole('menuitem')
+    await expect(items).toHaveText([
+      'Open Link in New Tab',
+      'Open Link in Split View',
+      'Open Link Here',
+      'Download Linked File',
+      'Copy Link',
+      'Share…',
+      'Inspect Element',
+    ])
+    const linkCount = await items.count()
+    for (let i = 0; i < linkCount; i++) {
+      await expect(items.nth(i).locator('svg, img')).toHaveCount(1)
+    }
+    await menu.getByRole('menuitem', { name: 'Open Link in Split View' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('split-row')).toHaveCount(1)
+    await expect(page.getByTestId('split-row').getByTestId('split-half')).toHaveText([
+      'Page A',
+      'Page B',
+    ])
+    await expect(page.getByTestId('url-rest')).toHaveText('/b')
+
+    // Right-click a blank spot on the active half (/b): Copy Page URL copies its URL.
+    await app.evaluate(({ clipboard }) => clipboard.writeText(''))
+    await expect(async () => {
+      if (!(await menu.isVisible())) await rightClickPage(app, page, { x: 100, y: 120 })
+      await expect(menu).toBeVisible({ timeout: 1_000 })
+    }).toPass()
+    await expect(items).toHaveText([
+      'Back',
+      'Forward',
+      'Reload',
+      'Copy Page URL',
+      'Save Page As…',
+      'Print…',
+      'View Page Source',
+      'Inspect Element',
+    ])
+    const blankCount = await items.count()
+    for (let i = 0; i < blankCount; i++) {
+      await expect(items.nth(i).locator('svg, img')).toHaveCount(1)
+    }
+    await menu.getByRole('menuitem', { name: 'Copy Page URL' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toBe(site.url('/b'))
   })
 })
 

@@ -159,13 +159,17 @@ test("an extension's context menu item is drawn in the page menu", async () => {
       await rightClickPage(app, page)
       await expect(item).toBeVisible({ timeout: 1_000 })
     }).toPass()
-    // Its own group, before Inspect.
+    // Its own group, before Inspect Element.
     await expect(menu.getByRole('menuitem')).toHaveText([
       'Back',
       'Forward',
       'Reload',
+      'Copy Page URL',
+      'Save Page As…',
+      'Print…',
+      'View Page Source',
       'Fixture Menu',
-      'Inspect',
+      'Inspect Element',
     ])
     await expect(item).toHaveAttribute('aria-haspopup', 'menu')
     await item.hover()

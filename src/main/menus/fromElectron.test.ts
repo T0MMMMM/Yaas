@@ -103,7 +103,7 @@ describe('toMenuItemDefs', () => {
     expect(defs.map((d) => asItem(d).checked)).toEqual([true, false])
   })
 
-  it('gives an item with an icon a 16 px PNG data URL', () => {
+  it('gives an item with an icon a 16 px PNG data URL and uses fallbackIcon when given', () => {
     const big = fakeImage(32)
     const defs = toMenuItemDefs(
       [
@@ -117,6 +117,19 @@ describe('toMenuItemDefs', () => {
     expect(asItem(defs[1]).icon).toBe('data:image/png;base64,16')
     expect(big.resize).toHaveBeenCalledWith({ width: 16, height: 16 })
     expect(asItem(defs[2]).icon).toBeUndefined()
+
+    const withFallback = toMenuItemDefs(
+      [
+        { label: 'NoIcon', submenu: [{ label: 'Child' }] },
+        { label: 'WithIcon', icon: fakeImage(16) },
+      ],
+      () => undefined,
+      'extension',
+      'PuzzlePiece',
+    )
+    expect(asItem(withFallback[0]).icon).toBe('PuzzlePiece')
+    expect(asItem(asItem(withFallback[0]).submenu?.[0]).icon).toBe('PuzzlePiece')
+    expect(asItem(withFallback[1]).icon).toBe('data:image/png;base64,16')
   })
 
   it('runs the original click through invoke', () => {
