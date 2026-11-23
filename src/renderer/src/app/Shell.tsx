@@ -1,14 +1,19 @@
-import { useEffect, type CSSProperties } from 'react'
+import { useEffect, useSyncExternalStore, type CSSProperties } from 'react'
 import { AddressBar } from '../features/browser/AddressBar'
 import { PageSlot } from '../features/browser/PageSlot'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
+import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
+import { onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
+import { FrameBackdrop } from '../theme/FrameBackdrop'
 import { useSidebarResize } from './useSidebarResize'
 import { WindowControls } from './WindowControls'
 import styles from './Shell.module.css'
+
+const getSystemScheme = () => resolveScheme('system')
 
 /** Whether ⌘Z in `el` is a text undo: an input, a text area or editable content. */
 function isTextField(el: Element | null): boolean {
@@ -16,12 +21,18 @@ function isTextField(el: Element | null): boolean {
   return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.isContentEditable
 }
 
-/** Main layout: sidebar | address bar over the page card (spec, "Browser chrome"). */
+/** Main layout: space-tinted frame wrapping sidebar | address bar inside the page card. */
 export function Shell() {
   const view = useUi((s) => s.view)
   const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
   const platform = useSettings((s) => s.info?.platform)
+  const colorScheme = useSettings((s) => s.settings?.colorScheme ?? 'system')
+  const defaultAccent = useSettings((s) => s.settings?.accent ?? '#7C5CFF')
+  const workspace = useWorkspace()
+
+  const systemScheme = useSyncExternalStore(onSystemSchemeChange, getSystemScheme)
+  const scheme = colorScheme === 'system' ? systemScheme : colorScheme
 
   useEffect(() => initBrowser(), [initBrowser])
 
@@ -52,12 +63,23 @@ export function Shell() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  const activeSpace = workspace?.space ?? null
+  const spaceColor = activeSpace?.color ?? defaultAccent
+  const isSplit = Boolean(workspace?.activeSplit)
+
   return (
     <div
-      className={`${styles.shell} grainy`}
+      className={styles.shell}
       data-resizing={resize.resizing}
-      style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
+      style={
+        {
+          '--sidebar-w': `${resize.width}px`,
+          '--space-accent': spaceColor,
+        } as CSSProperties
+      }
     >
+      <FrameBackdrop spaceId={activeSpace?.id ?? null} color={spaceColor} scheme={scheme} />
+
       {/* The window buttons wait in the top margin (Linux keeps its native title bar). */}
       {(platform === 'mac' || platform === 'windows') && <WindowControls platform={platform} />}
 
@@ -78,7 +100,7 @@ export function Shell() {
         </div>
 
         <div className={styles.column}>
-          <div className={styles.page}>
+          <div className={styles.page} data-split={isSplit || undefined}>
             <AddressBar />
             <main className={styles.card}>
               <PageSlot />

@@ -1,0 +1,45 @@
+/* Full-window frame gradient + grain backdrop. Applying --frame-alpha on this wrapper keeps the
+   inner stacked crossfade layers at 100 % coverage so switching spaces never dips or doubles alpha
+   under native vibrancy/acrylic. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--frame-alpha);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--layer-top), var(--layer-bottom));
+}
+
+/* Tactile frame grain living inside each layer so it crossfades seamlessly with the gradient. */
+.layer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  image-rendering: pixelated;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.2' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.2' intercept='-0.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 64px 64px;
+}
+
+.entering {
+  will-change: opacity;
+  animation: frame-fade-in var(--dur-space-switch) var(--ease) both;
+}
+
+@keyframes frame-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
