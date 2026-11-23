@@ -229,9 +229,20 @@ Tab ↵" or "Open in New Tab ↵") on the right. Typing puts "Go to <url>" (or "
 first and matches open tabs across **all spaces** (picking another space's tab switches space). The
 list scrolls inside the window; no tab is created until Enter.
 
-**Address bar buttons** — left: Back, Forward, Reload. Right: Copy link (`browser.copyLink`; a
-check mark for 1.2 s) and the site menu (below; it holds the extensions). Both groups are three
-buttons wide so the URL stays centred.
+**Address bar buttons** — lives **inside the page card**, on the page's own colour (`theme-color`
+tint kept, height `--addressbar-h` 38 px): transparent URL field at rest, `--fill-subtle` (`ink 0.05`)
+fill on hover/edit, host bright (500) + path faint (400). Left: Back, Forward, Reload (28 px, radius
+`--radius-toolbar` 6 px, concentric with the 10 px page card). Right: Copy link (`browser.copyLink`;
+a check mark for 1.2 s) and the site menu (below; it holds the extensions) — hover-revealed (or
+visible on focus / while open / while copied). Both groups are three buttons wide so the URL stays
+centred.
+
+**Page card and split trough** — the floating page card sits inside an `--frame-gap` (8 px) bezel
+with `--radius-lg` (10 px, `= PAGE_RADIUS` in main), **no border and no shadow** (contrast with the
+tinted frame alone). In split view, the two cards are separated by an `--split-gap` (8 px,
+`= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through; the
+divider (`SplitDivider`) is invisible at rest and reveals a centred 3×28 px pill (`--split-handle-w`
+× `--split-handle-h`) on hover, keyboard focus or drag. Double-clicking the divider resets 50/50.
 
 **Sidebar title row** — the drag row at the top of the sidebar holds its own buttons: the icons-only
 switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Settings on the
@@ -277,34 +288,43 @@ All visual values are CSS custom properties on `:root`, toggled by `data-*` attr
 Components only ever reference tokens — never raw colors or pixel values.
 
 ```html
-<html data-scheme="light" data-glass="on" data-platform="mac" style="--accent:…; --transparency:…; --grain:…">
+<html data-scheme="light" data-glass="on" data-platform="mac" style="--accent:…; --transparency:…; --grain:…; --frame-top:…; --frame-bottom:…">
 ```
 
 ### 3.1 Color
 
-The user picks **one accent** (onboarding); each space can override it. Everything else is derived
-with `oklch()` / `color-mix()`, so any accent stays legible in both schemes.
+The user picks **one accent** (onboarding); each space has its own colour (`space.color`) that drives
+the window frame. The frame is a vertical gradient over a warm neutral (`theme/windowTint.ts`,
+`theme/FrameBackdrop.tsx`): light blends over `#FBFAF9` (`a = 0.27`, or `0.09` for neutral spaces),
+dark blends over `#29292A` (`a = 0.18`, or `0.06` for neutral spaces), with the bottom stop lifted
+`+0.25` in lightness. Switching spaces crossfades stacked gradient + grain layers in 400 ms `ease`
+(`--dur-space-switch`) while the page card stays still. Secondary/muted/faint chrome text uses
+alpha ink (`rgb(0 0 0 / α)` light, `rgb(255 255 255 / α)` dark) so it harmonises with any space tint.
 
 | Token | Role |
 |---|---|
-| `--accent` | Chosen color (app default or active space) |
-| `--accent-soft` | `color-mix(in oklch, var(--accent) 16%, transparent)` — selected tab, hovers |
-| `--accent-strong` | Accent adjusted for contrast with text on it |
-| `--on-accent` | Text/icon on accent (black or white, computed in JS from luminance) |
-| `--bg-window` | Window background (`transparent` when glass is on) |
-| `--bg-sidebar` | Sidebar fill: accent-tinted neutral; translucent when glass is on |
-| `--bg-surface` | Main pane |
-| `--bg-raised` | Cards, settings panel, palette, menus (`#e3e4e6` light / `#242428` dark) |
-| `--bg-popover` | Solid popover card (`#e3e4e6` light / `#242428` dark) |
-| `--bg-menu` / `--bg-menu-hover` | Opaque menu card (`#e3e4e6` light / `#242428` dark) and its hovered row |
-| `--bg-pill` / `--bg-pill-hover` / `--shadow-pill` | Floating pill buttons inside popovers and the command dock (`#f1f2f4` light / `#323238` dark) |
-| `--fill-neutral` / `--fill-neutral-hover` / `--fill-pressed` | Neutral fills for quick actions, extension tiles, pills, selected rows, and pressed toolbar openers |
-| `--border-menu` / `--shadow-menu` / `--shadow-command` | Menu/popover card hairline, popover shadow, and command-field shadow |
+| `--accent` / `--space-accent` | Chosen app accent / active space colour (overridden on `Shell`) |
+| `--accent-soft` / `--space-accent-soft` | `color-mix(in oklch, var(--accent) 16%, transparent)` / space colour at 12 % (`--bg-dock-selected`) |
+| `--on-accent` / `--on-danger` | Text/icon on accent (computed from luminance) / always white on `--danger` |
+| `--frame-base` | Warm neutral base behind the frame gradient (`#fbfaf9` light / `#29292a` dark) |
+| `--frame-top` / `--frame-bottom` | Vertical frame gradient stops computed from the space colour (`windowTint.ts`) |
+| `--frame-alpha` | Frame opacity (`1` opaque, fades with `--transparency`, `0.3` in liquid glass) |
+| `--bg-window` | Window fallback background (`var(--frame-base)`, `transparent` when glass is on) |
+| `--bg-sidebar` | Frame vertical gradient derived from `--frame-top`/`--frame-bottom` and `--frame-alpha` (used by onboarding) |
+| `--bg-surface` / `--neutral-surface` | Page card surface (`#ffffff` light / `#1c1c1e` dark) |
+| `--bg-raised` / `--bg-popover` / `--bg-menu` | Opaque overlay cards (`#ffffff` light / `#2c2c2e` dark) |
+| `--bg-menu-hover` | Neutral menu hover/selected row (`ink 0.08`) |
+| `--bg-dock-selected` | Command dock selected row (`--space-accent` at 12 %) |
+| `--bg-row-hover` / `--bg-row-active` / `--border-row-active` / `--shadow-row-active` | Sidebar row hover (`ink 0.05`) and active elevated card (`rgba(255,255,255,0.70)` light + hairline rim + soft shadow / `rgba(255,255,255,0.10)` dark) |
+| `--bg-pill` / `--bg-pill-hover` / `--shadow-pill` | Floating pill buttons inside popovers and the command dock |
+| `--fill-subtle` / `--fill-neutral` / `--fill-neutral-hover` / `--fill-pressed` | Ink-based neutral fills (`0.05` / `0.06` / `0.08` / `0.12–0.14`) for URL hover/edit, quick actions, tiles, rows and pressed buttons |
+| `--border-menu` / `--border-menu-w` / `--shadow-menu` / `--shadow-command` | Overlay card hairline (`0.5px`, `ink 0.12` light / `white 0.10` dark), popover shadow (`0 8px 24px rgb(0 0 0/0.14), 0 1px 3px rgb(0 0 0/0.10)`), and command-dock shadow |
 | `--shadow-lift` | A sidebar row lifted while it is dragged (light and dark) |
-| `--bg-tile` / `--bg-tile-hover` | Favourite tile card (darker neutral grey at rest and on hover) |
-| `--border` / `--border-strong` | Hairlines |
-| `--text` / `--text-muted` / `--text-faint` | Text hierarchy (`--text` light `#1c1c1e`) |
-| `--text-secondary` / `--text-placeholder` | Status lines, hints, shortcuts, and input placeholders |
+| `--bg-tile` / `--bg-tile-hover` | Favourite tile card (`ink 0.06` at rest, hover lift) |
+| `--border` / `--border-strong` / `--border-separator` | Hairlines (`ink 0.09`, `ink 0.16`, sidebar separator `ink 0.10`) |
+| `--split-handle` / `--split-handle-active` | Split divider hover pill (`ink 0.28` light / `white 0.32` dark) and drag pill (`0.50` / `0.55`) |
+| `--selection-bg` / `--scrollbar-thumb` / `--scrollbar-thumb-hover` | Palette-themed browser selection and custom scrollbars |
+| `--text` / `--text-muted` / `--text-secondary` / `--text-faint` / `--text-placeholder` | Text hierarchy (`#1c1c1e` light / `#f5f5f7` dark + alpha ink steps) |
 | `--status-on-bg` / `--status-on-fg` / `--status-off-bg` / `--status-off-fg` | Site-menu row status circle fills and glyphs |
 | `--switch-off` / `--caret` | Switch off-track and text selection / focus caret (`#0a84ff`) |
 | `--tint-sage` … `--tint-teal` | Six muted pastel tints (light and dark) for the Settings offset-ink icons |
@@ -346,8 +366,8 @@ Two settings drive the material, both 0–1 and set as CSS variables:
 
 | Setting | Effect |
 |---|---|
-| `transparency` → `--transparency` | `0` = opaque. The **slider** covers the frosted range (0–0.89): native blur of the desktop under a fading frame. **Liquid glass** is a separate cell at the end of the slider (value 1, `data-glass="liquid"`): no blur, the frame thins to a light tint (30 %, never fully clear) and the **desktop shows through it**; the sidebar and the session card float on it as glass panels (semi-opaque, lit edge, soft sheen, shadow). |
-| `grain` → `--grain` | Grain intensity on the frame (opacity `grain × 0.3`), `0` = off. |
+| `transparency` → `--transparency` | `0` = opaque (`--frame-alpha: 1`). The **slider** covers the frosted range (0–0.89): native blur of the desktop under a fading tinted gradient (`--frame-alpha: calc(1 - var(--transparency) * 0.88)`). **Liquid glass** is a separate cell at the end of the slider (value 1, `data-glass="liquid"`): no blur, the frame thins to `--frame-alpha: 0.3` and the **desktop shows through it**; the sidebar floats as a glass panel. `FrameBackdrop` applies `--frame-alpha` on its wrapper so space-switch crossfades never double-alpha over vibrancy. |
+| `grain` → `--grain` | Scales the per-scheme grain target (`--grain-base`: `0.05` light, `0.006` dark; `--grain-opacity: calc(var(--grain-base) * var(--grain) / 0.35)` so default `0.35` hits exact target and `0` = off). |
 
 ### 3.4 Sliders
 
@@ -365,12 +385,13 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Group | Tokens |
 |---|---|
 | Spacing (4 px scale) | `--space-hair` 2 (tight icon rows) · `--space-1` 4 · `--space-2` 8 · `--space-3` 12 · `--space-4` 16 · `--space-6` 24 · `--space-8` 32 |
-| Radius | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 7 · `--radius-lg` 9 · `--radius-row` 10 · `--radius-control` 10 · `--radius-menu` 18 · `--radius-popover` 18 · `--radius-command` 24 · `--radius-pill` 999 |
+| Radius (concentric) | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 6 (address bar nav buttons) · `--radius-menu-row` 6 · `--radius-footer-btn` 7 · `--radius-row` 8 (sidebar rows) · `--radius-tooltip` 8 · `--radius-lg` 10 (page card `= PAGE_RADIUS`) · `--radius-tile` 10 · `--radius-dock-row` 10 · `--radius-control` 10 · `--radius-menu` 10 · `--radius-popover` 10 · `--radius-command` 20 (dock / finder) · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
-| Size | `--text-xs` 11 · `--text-status` 11.5 · `--text-sm` 12 · `--text-menu` 13 · `--text-md` 13.5 (base) · `--text-lg` 15 · `--text-xl` 20 |
-| Layout | `--sidebar-w` 248 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 5 (between the frame's panels) · `--split-gap` 5 (between a split's two pages, = `SPLIT_GAP` in main; the divider sits in it) · `--split-handle-w` 3 / `--split-handle-h` 32 / `--split-handle` (`--border-strong`; `--accent` on hover and focus): the divider's grip · `--row-h` 38 (sidebar rows) · `--row-gap` 1 (between sidebar rows) · `--tile-h` 44 (favourite tiles) · `--tile-min-w` 64 (narrowest favourite tile) · `--connector-w` 28 (a popover funnel's wide side) · `--tooltip-max-w` 280 (a sidebar tooltip) · `--title-fade` 24 / `--title-fade-hover` 44 (tab title fade) · `--folder-bar-w` 2 (icon-only: a filed tab's bar per folder) · `--folder-hue-s` 70% / `--folder-hue-l` 48% (a folder's colour from its hue: icon back, filed-tab bars) · `--window-controls-h` 32 (the window's top margin once open, = `WINDOW_CONTROLS_H`) · `--window-control-w` 44 (Windows: one window button) · `--finder-w` 560, `--finder-top` 20vh, and `--finder-field-h` 44 (the tab finder and the command field) · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 6 · `--popover-pad` 12 |
-| Controls | `--control-size` 30 (icon buttons, menu rows, space dots) · `--control-size-sm` 28 (address bar) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 (dots, folder glyphs) · `--space-dot` 7 (a space's colour dot: footer, space header) · `--favicon-size` 18 (tab favicons) · `--tile-icon-size` 22 (favourite tile favicons) · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
-| Motion | `--dur-press` 75 ms · `--dur-popover-out` 100 ms · `--dur-command` 100 ms · `--dur-fast` 120 ms · `--dur-knob` 160 ms · `--dur-popover-in` 180 ms · `--dur-swatch` 180 ms · `--dur-base` 200 ms · `--dur-fade-slow` 300 ms · `--dur-spring` 260 ms (magnetic spring-back) · `--dur-intro-content` 500 ms · `--dur-intro` 600 ms · `--dur-intro-move` 700 ms · `--delay-intro` 250 ms · `--delay-intro-content` 350 ms · `--dur-spin` 900 ms (loading spinner) · `--ease` `cubic-bezier(.2,.8,.2,1)` · `--ease-out` `cubic-bezier(0.16, 1, 0.3, 1)` · `--ease-in` `cubic-bezier(0.7, 0, 0.84, 0)` (popover/command/fade durations stay non-zero under `prefers-reduced-motion` to run opacity-only fades) |
+| Type scale & weights | `--text-xs` 11 · `--text-status` 11.5 · `--text-sm` 12 · `--text-menu` 13 · `--text-md` 13 (body, rows, address bar) · `--text-lg` 15 (dock input) · `--text-xl` 20 · `--weight-regular` 400 · `--weight-medium` 500 · `--weight-semibold` 600 |
+| Layout | `--sidebar-w` 228 · `--sidebar-inset` 9 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 8 (bezel around the page card) · `--split-gap` 8 (frame trough between split cards `= SPLIT_GAP` in main) · `--split-handle-w` 3 / `--split-handle-h` 28 (invisible divider pill revealed on hover/focus/drag) · `--row-h` 34 · `--row-gap` 3 · `--space-header-h` 30 · `--folder-indent` 14 · `--footer-h` 36 · `--footer-btn-size` 28 · `--tile-h` 41 · `--tile-gap` 6 · `--tile-ring-w` 3 · `--tile-min-w` 64 · `--connector-w` 28 · `--tooltip-max-w` 280 · `--title-fade` 24 / `--title-fade-hover` 44 · `--folder-bar-w` 2 · `--folder-hue-s` 70% / `--folder-hue-l` 48% · `--window-controls-h` 32 (`= WINDOW_CONTROLS_H`) · `--window-control-w` 44 · `--finder-w` 652, `--finder-top` 20vh, `--finder-field-h` 44, `--dock-row-h` 36 · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 5 · `--border-menu-w` 0.5px · `--popover-pad` 12 |
+| Controls | `--control-size` 30 · `--control-size-sm` 28 (address bar buttons and field) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 · `--space-dot` 6 · `--favicon-size` 16 · `--tile-icon-size` 20 · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
+| Motion curves | `--ease`: `ease` (fades, presses) · `--ease-out`: `cubic-bezier(0.2, 0.4, 0.1, 0.98)` (enters) · `--ease-in-out`: `cubic-bezier(0.4, 0.05, 0.2, 1)` (state moves, exits) · `--ease-morph`: `cubic-bezier(0.35, 0.05, 0, 0.95)` (folder/section morphs) · legacy aliases `--ease-in` / `--ease-bounce` kept for un-migrated consumers |
+| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform
@@ -404,9 +425,11 @@ margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
 
 ## 5. Grain
 
-`.grainy` containers (the app shell, the onboarding page) get a pre-rendered, high-contrast SVG
-noise tile on a `::before` layer **under** their children — the grain lives on the window frame,
-never over content. Opacity follows `--grain`; no live filter, so it costs nothing at runtime.
+`FrameBackdrop` (in the main shell) and `.grainy` containers (the onboarding page) render a
+pre-rendered `128×128 px` fine SVG noise tile at `64×64 px` (`image-rendering: pixelated`) **under**
+their children — the grain lives on the window frame, never over content, and crossfades with the
+frame gradient on space switch. Opacity follows `--grain-opacity` (`0.05` light, `0.006` dark at
+default grain `0.35`; `0` = off); no live filter, so it costs nothing at runtime.
 
 ## 6. Onboarding (first launch)
 
