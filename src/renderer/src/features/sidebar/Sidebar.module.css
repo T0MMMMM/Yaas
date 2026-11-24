@@ -419,11 +419,11 @@ kbd {
   transition: opacity var(--dur-frequent-exit) var(--ease);
 }
 
-/* Between pinned and today: hairline ink 0.10, with hover-revealed Clear on the right. */
+/* Between pinned and today: full-width hairline ink 0.10, with hover-revealed Clear on the right. */
 .separator {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   min-height: var(--control-size-xs);
   margin: var(--space-1) 0;
   padding: 0 var(--space-2);
@@ -433,9 +433,12 @@ kbd {
   flex: 1;
   height: 1px;
   background: var(--border-separator);
+  transition: margin-right var(--dur-hover) var(--ease);
 }
 
 .clear {
+  position: absolute;
+  right: var(--space-1);
   padding: var(--space-hair) var(--space-1);
   border: none;
   border-radius: var(--radius-sm);
@@ -453,8 +456,13 @@ kbd {
     transform var(--dur-release) var(--ease-out);
 }
 
-/* Shown only while the separator is hovered or Clear has keyboard focus. */
+/* Shown only while the separator is hovered or Clear has keyboard focus; the hairline trims back
+   so Clear sits in clean open space. */
 @media (hover: hover) {
+  .separator:has(.clear):hover .rule {
+    margin-right: var(--space-8);
+  }
+
   .separator:hover .clear {
     opacity: 1;
   }
@@ -463,6 +471,10 @@ kbd {
     color: var(--text);
     background: var(--bg-row-hover);
   }
+}
+
+.separator:has(.clear):focus-within .rule {
+  margin-right: var(--space-8);
 }
 
 .clear:focus-visible {
@@ -700,7 +712,7 @@ kbd {
 }
 
 .sidebar[data-compact='true'] .separator {
-  padding: 0;
+  padding: 0 var(--space-1);
 }
 
 .sidebar[data-compact='true'] .ghostTiles {
