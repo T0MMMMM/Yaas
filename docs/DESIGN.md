@@ -180,7 +180,10 @@ phase timing — opacity `150 ms ease` (`--dur-frequent-fade`) and scale from `0
 at the trigger-facing origin over `250 ms` `--ease-out` (`--dur-frequent-move`) — and exit with an
 opacity-only `180 ms ease` fade (`--dur-frequent-exit`, `data-state="closing"`, `inert`) before the
 overlay hides; Occasional cards (`downloads`, `confirm`) enter in `400 ms` fade / `450 ms` move and
-retrace scale back toward the trigger on a `300 ms` exit (`--dur-occasional-exit`). Because enters
+exit with the same `180 ms` fade, no move. Input never waits for an exit: the keyboard goes back as
+the exit starts (`overlay.closing`), and since the overlay view takes every click until it hides (a
+`WebContentsView` cannot let clicks through), no overlay exit lasts longer than
+`--dur-frequent-exit`; a second press during the fade hides it at once. Because enters
 and exits are driven by `@starting-style` transitions, interrupting mid-flight retargets smoothly
 from the on-screen value. A chosen item's action always runs first, never after the animation. Under
 `prefers-reduced-motion`, move/scale tokens zero out while fades keep their duration. The + menu

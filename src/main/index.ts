@@ -559,6 +559,7 @@ registerCommands(
       menus.clear()
       overlayView().open(request)
     },
+    'overlay.closing': ({ opened }) => overlayView().closing(opened),
     'overlay.close': () => overlayView().close(),
     'overlay.choose': ({ menuId, itemId }) => menus.choose(menuId, itemId),
     // From the overlay itself, the pointer is on the strip: hide it at once so the page gets the click.

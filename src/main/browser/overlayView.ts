@@ -34,6 +34,8 @@ export class OverlayView {
   private fade: ReturnType<typeof setTimeout> | null = null
   /** Where the keyboard goes back on close: the page a page menu was opened on, else the UI. */
   private returnFocusTo: WebContents | null = null
+  /** `overlay.opened` events sent since the overlay loaded, to spot a stale `closing`. */
+  private opened = 0
 
   constructor(
     private readonly win: BrowserWindow,
@@ -64,6 +66,8 @@ export class OverlayView {
     win.on('closed', () => this.view.webContents.close())
 
     const contents = this.view.webContents
+    // A reload restarts the overlay's own count of `overlay.opened`.
+    contents.on('did-finish-load', () => (this.opened = 0))
     contents.setWindowOpenHandler(() => ({ action: 'deny' }))
     contents.on('will-navigate', (event) => event.preventDefault())
     void contents.loadURL(`${rendererUrl}#overlay`).catch(() => undefined)
@@ -99,6 +103,7 @@ export class OverlayView {
       this.pendingShow = null
       if (!this.isOpen) return
       contents.focus()
+      this.opened += 1
       emit(contents, 'overlay.opened', request)
     }
     if (contents.isLoading()) {
@@ -107,19 +112,34 @@ export class OverlayView {
     } else show()
   }
 
+  /**
+   * A dismissal started: the overlay plays its exit, then calls `close`. Meanwhile the keyboard
+   * goes back at once, so typing never waits for the fade. `opened` is the overlay's count of
+   * `overlay.opened`: a different one means a newer popover opened since, which keeps the keyboard.
+   * The view itself stays until `close` (a `WebContentsView` cannot let clicks through), so the
+   * overlay keeps those exits short (`--dur-frequent-exit` at most).
+   */
+  closing(opened: number): void {
+    if (!this.isOpen || opened !== this.opened) return
+    this.returnFocus()
+  }
+
   close(): void {
     if (!this.isOpen) return
     this.isOpen = false
-    const hadFocus = this.view.webContents.isFocused()
-    this.view.setVisible(false)
-    // Hand the keyboard back to where the popover was opened from: the page or the UI.
-    const target = this.returnFocusTo
+    // Before hiding: a hidden view no longer reports the focus it had.
+    this.returnFocus()
     this.returnFocusTo = null
-    if (hadFocus) {
-      if (target && !target.isDestroyed()) target.focus()
-      else this.win.webContents.focus()
-    }
+    this.view.setVisible(false)
     this.onClosed()
+  }
+
+  /** Hands the keyboard back to where the popover was opened from (the page or the UI), if it has it. */
+  private returnFocus(): void {
+    if (!this.view.webContents.isFocused()) return
+    const target = this.returnFocusTo
+    if (target && !target.isDestroyed()) target.focus()
+    else this.win.webContents.focus()
   }
 
   /**

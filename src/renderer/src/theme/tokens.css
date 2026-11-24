@@ -134,7 +134,7 @@
   --dur-frequent-exit: 180ms; /* frequent exit fade (no move) */
   --dur-occasional-fade: 400ms; /* occasional enter fade (settings, confirm, downloads) */
   --dur-occasional-move: 450ms; /* occasional enter move (finishes just past fade climax) */
-  --dur-occasional-exit: 300ms; /* occasional exit fade (no retrace move) */
+  --dur-occasional-exit: 300ms; /* occasional exit fade, no move (Settings; overlay cards use frequent-exit) */
   --delay-tooltip: 500ms; /* tooltip hover rest delay before reveal */
   --dur-row-fade: 150ms; /* tab open fade */
   --dur-row-enter: 250ms; /* tab open height/move */

@@ -53,28 +53,25 @@ const NEW_MENU: MenuSpecItem[] = [
   },
 ]
 
-/** Exit fade durations by frequency tier, kept equal to the CSS tokens (`tokens.css`). */
+/**
+ * Exit fade durations by frequency tier, kept equal to the CSS tokens (`tokens.css`). The view
+ * takes every click over the window until it hides (a `WebContentsView` cannot let them through,
+ * and shrinking it would re-lay out the card mid-fade), so no exit outlasts the frequent one: the
+ * occasional cards (downloads, confirm) fade out in `--dur-frequent-exit` too, not the 300 ms of the
+ * Settings modal. The keyboard does not wait at all (`overlay.closing`).
+ */
 const CONSTANT_EXIT_MS = 100 // --dur-constant (⌘T, ⌘K)
-const FREQUENT_EXIT_MS = 180 // --dur-frequent-exit (menus, popovers, anchored cards)
-const OCCASIONAL_EXIT_MS = 300 // --dur-occasional-exit (downloads, confirm)
+const FREQUENT_EXIT_MS = 180 // --dur-frequent-exit (menus, popovers, every anchored card)
 
 function exitMsFor(kind: OverlayRequest['kind'] | undefined): number {
-  switch (kind) {
-    case 'command':
-    case 'tab-finder':
-      return CONSTANT_EXIT_MS
-    case 'downloads':
-    case 'confirm':
-      return OCCASIONAL_EXIT_MS
-    default:
-      return FREQUENT_EXIT_MS
-  }
+  return kind === 'command' || kind === 'tab-finder' ? CONSTANT_EXIT_MS : FREQUENT_EXIT_MS
 }
 
 /**
  * What the overlay view renders (`#overlay`): one popover or card at a time, floating over the page.
- * Main shows the view and says which popover with `overlay.opened`; a dismissal plays the card's
- * exit animation, then hides the view with `overlay.close`. Otherwise it may draw a sidebar
+ * Main shows the view and says which popover with `overlay.opened`; a dismissal hands the keyboard
+ * back at once (`overlay.closing`), plays the card's exit animation, then hides the view with
+ * `overlay.close`. Otherwise it may draw a sidebar
  * tooltip (`overlay.tooltip`), never focused; a popover replaces it.
  */
 export function Overlay() {
@@ -89,6 +86,8 @@ export function Overlay() {
   const exit = useRef<number | null>(null)
   /** Tracks the active request kind so `close` uses the right tier exit duration without changing identity. */
   const requestKind = useRef<OverlayRequest['kind'] | undefined>(undefined)
+  /** `overlay.opened` events received, so main can tell a stale `overlay.closing` from the current one. */
+  const openedCount = useRef(0)
   const initBrowser = useBrowser((s) => s.init)
   const initDownloads = useDownloads((s) => s.init)
   const workspace = useWorkspace()
@@ -128,6 +127,7 @@ export function Overlay() {
         clearTooltipFade()
         setTooltip(null)
         setOpenId((id) => id + 1)
+        openedCount.current += 1
         requestKind.current = next.kind
         setRequest(next)
       }),
@@ -178,15 +178,22 @@ export function Overlay() {
   }, [])
 
   const close = useCallback(() => {
-    if (exit.current !== null) return
-    setClosing(true)
-    exit.current = window.setTimeout(() => {
+    const finish = (): void => {
       exit.current = null
       setClosing(false)
       requestKind.current = undefined
       setRequest(null)
       void window.bigBrowser.invoke('overlay.close')
-    }, exitMsFor(requestKind.current))
+    }
+    // Dismissed again mid-exit (a press during the fade): hide now rather than hold the input.
+    if (exit.current !== null) {
+      window.clearTimeout(exit.current)
+      finish()
+      return
+    }
+    setClosing(true)
+    void window.bigBrowser.invoke('overlay.closing', { opened: openedCount.current })
+    exit.current = window.setTimeout(finish, exitMsFor(requestKind.current))
   }, [])
 
   if (!request) {

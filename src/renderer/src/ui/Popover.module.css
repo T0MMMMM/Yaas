@@ -25,15 +25,13 @@
   }
 }
 
-/* Occasional tier (downloads, confirm): enter fade 400 ms + move 450 ms ease-out; exit retraces
-   scale back toward the trigger in 300 ms ease-in-out alongside a 300 ms fade. */
+/* Occasional tier (downloads, confirm): enter fade 400 ms + move 450 ms ease-out. The exit is the
+   frequent one, a fade only: the overlay view takes every click until it hides, so it never holds
+   them longer than `--dur-frequent-exit` (app/Overlay.tsx). */
 .card[data-tier='occasional'] {
   --card-enter-fade: var(--dur-occasional-fade);
   --card-enter-move: var(--dur-occasional-move);
   --card-enter-scale: var(--scale-enter);
-  --card-exit-fade: var(--dur-occasional-exit);
-  --card-exit-move: var(--dur-occasional-exit);
-  --card-exit-scale: var(--scale-enter);
 }
 
 /* Exit: retargets smoothly from any in-flight enter value (interruption keeps intent). */
@@ -43,10 +41,6 @@
   transition:
     opacity var(--card-exit-fade, var(--dur-frequent-exit)) var(--ease),
     transform var(--card-exit-move, var(--dur-frequent-move)) var(--ease-in-out);
-}
-
-.card[data-tier='occasional'][data-state='closing'] {
-  transform: scale(var(--card-exit-scale, var(--scale-enter)));
 }
 
 /* Where a card sits so the neck can be centred on the button: `--anchor-mid` (the button's centre

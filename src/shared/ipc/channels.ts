@@ -61,6 +61,7 @@ export const COMMAND_CHANNELS = [
   'window.close',
   'window.isMaximized',
   'overlay.open',
+  'overlay.closing',
   'overlay.close',
   'overlay.choose',
   'overlay.tooltip',

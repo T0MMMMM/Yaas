@@ -532,6 +532,16 @@ export const commands = {
   'browser.openWebStore': { input: z.void(), output: z.void() },
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
+  /**
+   * From the overlay, as a dismissal starts (before its exit animation): main hands the keyboard
+   * back at once, so typing never waits for the fade. `opened` counts the `overlay.opened` events
+   * the overlay received; main ignores a stale one (a newer popover opened meanwhile).
+   */
+  'overlay.closing': {
+    input: z.object({ opened: z.number().int().nonnegative() }).strict(),
+    output: z.void(),
+  },
+  /** From the overlay, once its exit animation played: hides the view. */
   'overlay.close': { input: z.void(), output: z.void() },
   /** From the overlay: the item chosen in main's menu (a stale or unknown menu does nothing). */
   'overlay.choose': {
