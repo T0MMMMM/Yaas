@@ -204,7 +204,7 @@ export class TabViews {
   private split: { firstId: string; secondId: string; ratio: number } | null = null
   /** The ratio a divider drag shows before it is stored, or null. */
   private previewRatio: number | null = null
-  /** Corner radius applied to page views: 0 when the address bar is attached, else PAGE_RADIUS. */
+  /** Corner radius applied to page views: always PAGE_RADIUS so bottom corners stay rounded. */
   private borderRadius = PAGE_RADIUS
 
   constructor(
@@ -353,7 +353,7 @@ export class TabViews {
     else contents.openDevTools({ mode: 'detach' })
   }
 
-  /** Updates the corner radius of every tab view (0 when the address bar is attached). */
+  /** Updates the corner radius of every tab view (defaults to PAGE_RADIUS). */
   setBorderRadius(radius: number): void {
     this.borderRadius = radius
     for (const { view } of this.views.values()) view.setBorderRadius(radius)
