@@ -1,6 +1,6 @@
-/* The head of the space section (SpaceHeader): a full tab-height row with card hover and tilt.
-   Clicking anywhere on the row folds the section; hovering swaps the space icon into a chevron
-   and reveals the "…" button on the right. */
+/* Space header (redesign direction §3, §5): 30 px tall, 8 px radius, 13 px / 600 name with right
+   fade mask, space emoji or 6 px colour dot that swaps into a chevron on hover, and hover-only
+   "…" options button. */
 
 .header {
   position: relative;
@@ -8,26 +8,28 @@
   margin-bottom: var(--row-gap);
 }
 
+/* Static hit layer; visual card layer (::before) carries hover fill and press scale. */
 .row {
   position: relative;
   isolation: isolate;
   width: 100%;
   min-width: 0;
+  height: var(--space-header-h);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--row-h);
-  padding: 7px var(--control-size) 7px var(--space-2);
+  padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-row);
   background: transparent;
   color: var(--text-muted);
   text-align: left;
   cursor: pointer;
+  user-select: none;
   transition:
-    color var(--dur-fast) var(--ease),
-    padding var(--dur-base) var(--ease-out),
-    gap var(--dur-base) var(--ease-out);
+    color var(--dur-hover) var(--ease),
+    padding var(--dur-frequent-move) var(--ease-out),
+    gap var(--dur-frequent-move) var(--ease-out);
 }
 
 .row::before {
@@ -38,37 +40,47 @@
   border-radius: inherit;
   background: transparent;
   transition:
-    background var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    background-color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.header:hover .row,
+@media (hover: hover) {
+  .header:hover .row {
+    color: var(--text);
+  }
+
+  .header:hover .row::before {
+    background: var(--bg-row-hover);
+  }
+}
+
 .header[data-menu-open] .row {
   color: var(--text);
 }
 
-.header:hover .row::before,
 .header[data-menu-open] .row::before {
-  background: var(--hover-fill);
-  transform: rotate(var(--tilt-hover));
+  background: var(--bg-row-hover);
 }
 
-/* The emoji (or dot) and the chevron share the leading icon cell: one fades out as the other fades in. */
+.row:active::before {
+  transform: scale(var(--scale-press));
+  transition:
+    background-color var(--dur-press) var(--ease),
+    transform var(--dur-press) var(--ease);
+}
+
+/* The emoji (or 6 px colour dot) and the chevron share the leading 16 px slot: fast swap on hover. */
 .iconSlot {
   flex: none;
   display: grid;
   place-items: center;
-  width: var(--favicon-size);
-  height: var(--favicon-size);
+  width: var(--icon-size);
+  height: var(--icon-size);
 }
 
 .glyph,
 .chevron {
   grid-area: 1 / 1;
-  transition:
-    opacity var(--dur-fast) var(--ease),
-    visibility 0s,
-    rotate var(--dur-base) var(--ease-bounce);
 }
 
 .glyph {
@@ -76,6 +88,7 @@
   place-items: center;
   font-size: var(--text-md);
   line-height: 1;
+  transition: opacity var(--dur-swap-out) var(--ease);
 }
 
 .dot {
@@ -85,28 +98,46 @@
   background: currentColor;
 }
 
-/* Hidden at rest (visibility, so it is out of the way once faded), shown while the row is hovered
-   or has keyboard focus. */
+/* Hidden at rest (visibility keeps it out of the way once faded); revealed on hover or focus. */
 .chevron {
   width: var(--text-sm);
   height: var(--text-sm);
   opacity: 0;
   visibility: hidden;
-  transition-delay: 0s, var(--dur-fast), 0s;
+  transition:
+    opacity var(--dur-swap-out) var(--ease),
+    visibility 0s linear var(--dur-swap-out),
+    rotate var(--dur-morph) var(--ease-morph);
 }
 
 .chevron[data-collapsed='true'] {
   rotate: -90deg;
 }
 
-.header:hover .chevron,
+@media (hover: hover) {
+  .header:hover .chevron {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity var(--dur-frequent-fade) var(--ease) var(--dur-swap-delay),
+      visibility 0s,
+      rotate var(--dur-morph) var(--ease-morph);
+  }
+
+  .header:hover .glyph {
+    opacity: 0;
+  }
+}
+
 .row:focus-visible .chevron {
   opacity: 1;
   visibility: visible;
-  transition-delay: 0s;
+  transition:
+    opacity var(--dur-frequent-fade) var(--ease) var(--dur-swap-delay),
+    visibility 0s,
+    rotate var(--dur-morph) var(--ease-morph);
 }
 
-.header:hover .glyph,
 .row:focus-visible .glyph {
   opacity: 0;
 }
@@ -116,7 +147,8 @@
   flex: 1;
   min-width: 0;
   font-size: var(--text-md);
-  font-weight: 600;
+  font-weight: var(--weight-semibold);
+  line-height: 1.25;
   color: inherit;
 }
 
@@ -124,11 +156,23 @@
   max-width: var(--sidebar-w);
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
+  text-overflow: clip;
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade)), transparent);
   transition:
-    opacity var(--dur-fast) var(--ease),
-    max-width var(--dur-base) var(--ease-out),
+    opacity var(--dur-frequent-fade) var(--ease),
+    max-width var(--dur-frequent-move) var(--ease-out),
     visibility 0s;
+}
+
+@media (hover: hover) {
+  .header:hover .name {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade-hover)), transparent);
+  }
+}
+
+.header:focus-within .name,
+.header[data-menu-open] .name {
+  mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade-hover)), transparent);
 }
 
 .field {
@@ -137,13 +181,14 @@
   outline: none;
   background: transparent;
   color: var(--text);
+  caret-color: var(--caret);
   font-family: inherit;
 }
 
 /* Shown while the row is hovered, the menu is open from it, or it has keyboard focus. */
 .more {
   position: absolute;
-  top: calc((var(--row-h) - var(--control-size-xs)) / 2);
+  top: calc((var(--space-header-h) - var(--control-size-xs)) / 2);
   right: var(--space-1);
   display: grid;
   place-items: center;
@@ -155,30 +200,50 @@
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  user-select: none;
   opacity: 0;
   transition:
-    background var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease),
-    opacity var(--dur-fast) var(--ease);
+    background-color var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease),
+    opacity var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.header:hover .more,
+@media (hover: hover) {
+  .header:hover .more {
+    opacity: 1;
+  }
+
+  .more:hover {
+    background: var(--fill-neutral-hover);
+    color: var(--text);
+  }
+}
+
 .more:focus-visible,
 .more[aria-expanded='true'] {
   opacity: 1;
 }
 
-.more:hover,
 .more[aria-expanded='true'] {
-  background: var(--hover-fill);
+  background: var(--fill-neutral-hover);
   color: var(--text);
+}
+
+.more:active {
+  transform: scale(var(--scale-press));
+  transition:
+    background-color var(--dur-press) var(--ease),
+    color var(--dur-press) var(--ease),
+    opacity var(--dur-press) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 /* Icon-only sidebar: the space icon glides centred over the favicons and swaps into the chevron on
    hover; the name fades out smoothly and "…" hides. */
 :global([data-compact='true']) .row {
   gap: 0;
-  padding: 7px 0 7px calc((100% - var(--favicon-size)) / 2);
+  padding: 0 0 0 calc((100% - var(--icon-size)) / 2);
 }
 
 :global([data-compact='true']) .name {
@@ -187,9 +252,9 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity var(--dur-fast) var(--ease),
-    max-width var(--dur-base) var(--ease-out),
-    visibility 0s linear var(--dur-fast);
+    opacity var(--dur-frequent-fade) var(--ease),
+    max-width var(--dur-frequent-move) var(--ease-out),
+    visibility 0s linear var(--dur-frequent-fade);
 }
 
 :global([data-compact='true']) .field,

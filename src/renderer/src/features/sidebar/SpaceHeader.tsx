@@ -4,8 +4,6 @@ import type { SpaceSummary } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useCompact } from './CompactContext'
-import { spaceEmoji } from './emoji'
-import { tilt } from './tilt'
 import styles from './SpaceHeader.module.css'
 
 /** Same bounds as the contract's space names. */
@@ -52,10 +50,10 @@ function NameField({ space }: { space: SpaceSummary }) {
 }
 
 /**
- * The head of the space section: a full tab-height row showing the space's emoji (or its colour
- * dot), its name and a "…" button on hover. Hovering anywhere on the row highlights it like a tab
- * card and swaps the icon into a chevron; clicking anywhere on the row folds or expands the pinned
- * section. In icon-only mode the icon stays visible and still swaps into the chevron on hover.
+ * The head of the space section: a 30 px row showing the space's emoji (or its 6 px colour dot),
+ * its 13 px/600 name and a hover-only "…" button. Hovering anywhere on the row highlights it with
+ * hover ink and swaps the leading icon into a chevron; clicking folds or expands the pinned
+ * section. In icon-only mode the icon stays centred and still swaps into the chevron on hover.
  */
 export function SpaceHeader({ space }: { space: SpaceSummary }) {
   const compact = useCompact()
@@ -88,7 +86,9 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
 
   const iconSlot = (
     <span className={styles.iconSlot} aria-hidden="true">
-      <span className={styles.glyph}>{spaceEmoji(space.icon, space.label)}</span>
+      <span className={styles.glyph}>
+        {space.icon ? space.icon : <span className={styles.dot} style={{ color: space.color }} />}
+      </span>
       <CaretDown
         className={styles.chevron}
         data-collapsed={collapsed}
@@ -101,7 +101,6 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
   return (
     <div
       className={styles.header}
-      style={tilt(space.id)}
       data-testid="space-header"
       data-menu-open={menuOpen || undefined}
       onContextMenu={(e) => {
