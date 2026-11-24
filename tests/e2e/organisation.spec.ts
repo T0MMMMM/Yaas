@@ -734,6 +734,25 @@ test('switching space fades the old rows out as a copy, with no duplicate tab ro
   })
 })
 
+test("a new row's enter ends on time while the workspace keeps updating", async () => {
+  await withBrowser(async ({ page, site }) => {
+    const spaceId = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.state').then((s) => s.activeSpaceId),
+    )
+    await openTab(page, site.url('/a'))
+    // Workspace updates with no tab added (like a page loading) must not keep the row entering.
+    const stillEntering = await page.evaluate(async (spaceId) => {
+      const end = performance.now() + 900
+      for (let i = 0; performance.now() < end; i++) {
+        await window.bigBrowser.invoke('browser.renameSpace', { spaceId, name: `Home ${i % 2}` })
+        await new Promise((resolve) => setTimeout(resolve, 40))
+      }
+      return document.querySelectorAll('[data-testid=sidebar] [data-entering]').length
+    }, spaceId)
+    expect(stillEntering).toBe(0)
+  })
+})
+
 test('moving a tab draws no exiting row', async () => {
   await withBrowser(async ({ page, site }) => {
     await page.evaluate(() => window.bigBrowser.invoke('settings.update', { autoFolders: false }))

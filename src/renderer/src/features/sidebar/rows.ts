@@ -48,3 +48,19 @@ export function newlyOpenedTabIds(
   }
   return added
 }
+
+/**
+ * The rows still playing their enter once `added` opened, closed tabs and `done` (a batch whose
+ * enter ended) left out. Returns the same set when nothing changed, so a re-render with a new
+ * `openIds` (a page load, a title) does not restart the enter timer or touch the rows.
+ */
+export function enteringAfter(
+  entering: ReadonlySet<string>,
+  added: ReadonlySet<string>,
+  openIds: ReadonlySet<string>,
+  done: ReadonlySet<string> = new Set(),
+): ReadonlySet<string> {
+  const kept = [...entering].filter((id) => openIds.has(id) && !done.has(id))
+  if (added.size === 0 && kept.length === entering.size) return entering
+  return new Set([...kept, ...added])
+}

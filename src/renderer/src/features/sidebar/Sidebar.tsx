@@ -10,7 +10,7 @@ import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
 import { spaceEmoji } from './emoji'
 import { FavoriteTiles } from './FavoriteTiles'
-import { exitsWhenGone, newlyOpenedTabIds, ROW_ENTER_MS } from './rows'
+import { enteringAfter, exitsWhenGone, newlyOpenedTabIds, ROW_ENTER_MS } from './rows'
 import { Rows } from './SidebarRows'
 import { SpaceHeader } from './SpaceHeader'
 import { SpaceSwapStage } from './SpaceSwapStage'
@@ -75,35 +75,45 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   const sectionCollapsed = space?.sectionCollapsed ?? false
   const openTabIds = workspace?.openTabIds ?? EMPTY_IDS
 
-  // Track genuinely newly opened tab ids in the current space so only they play row-enter.
+  // Track genuinely newly opened tab ids in the current space so only they play row-enter. Each
+  // batch of new ids (`batch`) ends its enter on its own timer; a page load or a title change (a
+  // new `openTabIds` with nothing added) keeps the same set, so no row's enter restarts.
   const [openTracker, setOpenTracker] = useState<{
     spaceId: string | null
     openIds: ReadonlySet<string> | null
     entering: ReadonlySet<string>
-  }>({ spaceId: null, openIds: null, entering: EMPTY_IDS })
+    batch: ReadonlySet<string>
+  }>({ spaceId: null, openIds: null, entering: EMPTY_IDS, batch: EMPTY_IDS })
 
   if (spaceId !== openTracker.spaceId || openTabIds !== openTracker.openIds) {
     const added = newlyOpenedTabIds(openTracker.spaceId, spaceId, openTracker.openIds, openTabIds)
-    const nextEntering =
-      spaceId !== openTracker.spaceId
-        ? EMPTY_IDS
-        : added.size > 0
-          ? new Set([...openTracker.entering, ...added].filter((id) => openTabIds.has(id)))
-          : openTracker.entering.size > 0
-            ? new Set([...openTracker.entering].filter((id) => openTabIds.has(id)))
-            : EMPTY_IDS
-    setOpenTracker({ spaceId, openIds: openTabIds, entering: nextEntering })
+    setOpenTracker({
+      spaceId,
+      openIds: openTabIds,
+      entering:
+        spaceId === openTracker.spaceId
+          ? enteringAfter(openTracker.entering, added, openTabIds)
+          : EMPTY_IDS,
+      batch: added.size > 0 ? added : openTracker.batch,
+    })
   }
 
   useEffect(() => {
-    if (openTracker.entering.size === 0) return
-    const timer = window.setTimeout(() => {
-      setOpenTracker((current) =>
-        current.entering.size === 0 ? current : { ...current, entering: EMPTY_IDS },
-      )
+    const batch = openTracker.batch
+    if (batch.size === 0) return
+    // No cleanup: a later batch must not cancel this one's timer (a stale one finds nothing).
+    window.setTimeout(() => {
+      setOpenTracker((current) => {
+        const entering = enteringAfter(
+          current.entering,
+          EMPTY_IDS,
+          current.openIds ?? EMPTY_IDS,
+          batch,
+        )
+        return entering === current.entering ? current : { ...current, entering }
+      })
     }, ROW_ENTER_MS + 30)
-    return () => window.clearTimeout(timer)
-  }, [openTracker.entering])
+  }, [openTracker.batch])
 
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
   const exits = useMemo(() => exitsWhenGone(openTabIds), [openTabIds])
