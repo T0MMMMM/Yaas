@@ -1,4 +1,9 @@
-import { DEFAULT_ACCENT, settingsSchema, type Settings } from '@shared/ipc/contract'
+import {
+  DEFAULT_ACCENT,
+  SIDEBAR_DEFAULT,
+  settingsSchema,
+  type Settings,
+} from '@shared/ipc/contract'
 import type { Database } from '../store/database'
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -12,8 +17,8 @@ export const DEFAULT_SETTINGS: Settings = {
   magneticButtons: true,
   autoFolders: true,
   contextBarStyle: 'attached',
-  sidebarWidth: 248,
-  sidebarExpandedWidth: 248,
+  sidebarWidth: SIDEBAR_DEFAULT,
+  sidebarExpandedWidth: SIDEBAR_DEFAULT,
   autoArchive: { enabled: false, afterDays: 14 },
   onboardingDone: false,
   adBlock: { enabled: true, allowedHosts: [] },

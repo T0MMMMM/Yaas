@@ -21,7 +21,7 @@ export const SIDEBAR_COMPACT_MAX = 72
 export const SIDEBAR_COMPACT = 56
 export const SIDEBAR_COMPACT_FROM = 120
 export const SIDEBAR_MAX = 440
-export const SIDEBAR_DEFAULT = 248
+export const SIDEBAR_DEFAULT = 228
 /** Default app and initial space accent color. */
 export const DEFAULT_ACCENT = '#7C5CFF'
 /** Height of the window's top margin once open, with the window buttons (= `--window-controls-h`). */
