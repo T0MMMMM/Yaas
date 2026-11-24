@@ -290,6 +290,8 @@ test('the sidebar uses the system font and Ardia row metrics', async () => {
     expect(fontFamily).not.toContain('Satoshi')
     expect(fontFamily).toMatch(/^(system-ui|-apple-system)/)
     const tab = page.getByTestId('tab')
+    // Measured at rest: a new row grows from 0 while it enters.
+    await expect(tab).not.toHaveAttribute('data-entering')
     const rowHeight = await tab.evaluate((el) => (el as HTMLElement).offsetHeight)
     expect(rowHeight).toBe(34)
     // Active tab keeps regular 400 weight (never bold).
