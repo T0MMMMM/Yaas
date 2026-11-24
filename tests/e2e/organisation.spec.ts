@@ -678,6 +678,62 @@ test('switching space draws no exiting rows', async () => {
   })
 })
 
+test('switching space fades the old rows out as a copy, with no duplicate tab rows', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    const home = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.state').then((s) => s.activeSpaceId),
+    )
+    const work = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.createSpace', { name: 'Work', color: '#3366ff' }),
+    )
+    await page.evaluate(
+      ({ spaceId, input }) => window.bigBrowser.invoke('browser.openTab', { spaceId, input }),
+      { spaceId: work.id, input: site.url('/c') },
+    )
+    await page.evaluate(
+      (spaceId) => window.bigBrowser.invoke('browser.activateSpace', { spaceId }),
+      home,
+    )
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A'])
+    await expect(page.getByTestId('space-swap')).toHaveCount(0)
+
+    // Every frame of the swap: the tab rows with a test id, and what the old space's copy shows.
+    const seen = await page.evaluate(async (spaceId) => {
+      const sidebar = document.querySelector('[data-testid=sidebar]')
+      if (!sidebar) throw new Error('no sidebar')
+      let maxTabs = 0
+      let copyText = ''
+      let copyHandles = 0
+      const look = () => {
+        maxTabs = Math.max(maxTabs, sidebar.querySelectorAll('[data-testid=tab]').length)
+        const copy = sidebar.querySelector('[data-testid=space-swap]')
+        if (!copy) return
+        copyText ||= copy.textContent ?? ''
+        copyHandles = Math.max(copyHandles, copy.querySelectorAll('[data-testid], [id]').length)
+      }
+      const observer = new MutationObserver(look)
+      observer.observe(sidebar, { childList: true, subtree: true, attributes: true })
+      await window.bigBrowser.invoke('browser.activateSpace', { spaceId })
+      const end = performance.now() + 600
+      while (performance.now() < end) {
+        look()
+        await new Promise((resolve) => requestAnimationFrame(resolve))
+      }
+      observer.disconnect()
+      return { maxTabs, copyText, copyHandles }
+    }, work.id)
+
+    expect(seen.maxTabs).toBe(1)
+    expect(seen.copyText).toContain('Page A')
+    expect(seen.copyHandles).toBe(0)
+    await expect(today.getByTestId('tab')).toHaveText(['Page C'])
+    await expect(page.getByTestId('space-swap')).toHaveCount(0)
+    await expect(page.getByTestId('tab')).toHaveCount(1)
+  })
+})
+
 test('moving a tab draws no exiting row', async () => {
   await withBrowser(async ({ page, site }) => {
     await page.evaluate(() => window.bigBrowser.invoke('settings.update', { autoFolders: false }))

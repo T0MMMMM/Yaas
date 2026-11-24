@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { DownloadSimple, GearSix, Plus, SidebarSimple } from '@phosphor-icons/react'
 import { useSidebarToggle } from '../../app/useSidebarResize'
 import { useSettings } from '../../stores/settings'
@@ -9,23 +9,11 @@ import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
 import { spaceEmoji } from './emoji'
-import { Favicon } from './Favicon'
 import { FavoriteTiles } from './FavoriteTiles'
-import { FolderGlyph } from './glyphs'
-import { folderHue, folderIcon } from './hash'
 import { exitsWhenGone, newlyOpenedTabIds, ROW_ENTER_MS } from './rows'
 import { Rows } from './SidebarRows'
 import { SpaceHeader } from './SpaceHeader'
-import {
-  finishSpaceSwap,
-  INITIAL_SWAP,
-  markSwapVisible,
-  nextSpaceSwap,
-  SWAP_DELAY_MS,
-  SWAP_IN_MS,
-  SWAP_OUT_MS,
-  type SpaceSnapshot,
-} from './spaceSwap'
+import { SpaceSwapStage } from './SpaceSwapStage'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import { TooltipContext, useTooltip } from './useTooltip'
 import styles from './Sidebar.module.css'
@@ -52,115 +40,6 @@ async function clearToday(nodes: SidebarNode[], activeId: string | null): Promis
   for (const tabId of todayCloseOrder(nodes, activeId)) {
     await window.bigBrowser.invoke('browser.closeTab', { tabId })
   }
-}
-
-/** Inert visual mirror of a space's rows while it fades out during a space switch (no test ids). */
-function GhostRows({ nodes, activeId }: { nodes: SidebarNode[]; activeId: string | null }) {
-  return (
-    <>
-      {nodes.map((node, index) => {
-        if (node.kind === 'tab') {
-          const active = node.tab.id === activeId
-          return (
-            <li
-              key={`t:${node.tab.id}:${index}`}
-              className={styles.ghostRow}
-              data-active={active || undefined}
-            >
-              <Favicon tab={node.tab} className={styles.ghostFavicon} />
-              <span className={styles.ghostTitle}>{node.tab.title}</span>
-            </li>
-          )
-        }
-        if (node.kind === 'split') {
-          const active = node.first.id === activeId || node.second.id === activeId
-          return (
-            <li
-              key={`s:${node.first.id}:${index}`}
-              className={styles.ghostRow}
-              data-active={active || undefined}
-            >
-              <Favicon tab={node.first} className={styles.ghostFavicon} />
-              <span className={styles.ghostTitle}>
-                {node.first.title} | {node.second.title}
-              </span>
-            </li>
-          )
-        }
-        const auto = node.kind === 'auto-folder'
-        const name = auto ? node.host : node.folder.name
-        const icon = auto ? { kind: 'hue' as const, hue: folderHue(name) } : folderIcon(node.folder)
-        return (
-          <li key={`f:${name}:${index}`} className={styles.ghostFolder}>
-            <div className={styles.ghostRow}>
-              {icon.kind === 'emoji' ? (
-                <span className={styles.ghostEmoji}>{icon.emoji}</span>
-              ) : (
-                <FolderGlyph hue={icon.hue} open={auto ? true : !node.folder.collapsed} />
-              )}
-              <span className={styles.ghostTitle}>{name}</span>
-            </div>
-          </li>
-        )
-      })}
-    </>
-  )
-}
-
-/** Outgoing space visual overlay fading out over 150 ms while the new space enters after 75 ms. */
-function SpaceSwapGhost({
-  snapshot,
-  onDone,
-}: {
-  snapshot: SpaceSnapshot
-  onDone: (gen: number) => void
-}) {
-  const { space, sections, activeId, gen } = snapshot
-  useEffect(() => {
-    const timer = window.setTimeout(() => onDone(gen), SWAP_OUT_MS + 40)
-    return () => window.clearTimeout(timer)
-  }, [gen, onDone])
-
-  return (
-    <div className={styles.swapGhost} aria-hidden="true" inert onAnimationEnd={() => onDone(gen)}>
-      {sections.favorites.length > 0 && (
-        <ul className={styles.ghostTiles}>
-          {sections.favorites.map((tab) => (
-            <li
-              key={tab.id}
-              className={styles.ghostTile}
-              data-active={tab.id === activeId || undefined}
-            >
-              <Favicon tab={tab} className={styles.ghostTileIcon} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className={styles.ghostHeader}>
-        <span className={styles.ghostIconSlot}>
-          {space.icon ? space.icon : <span className={styles.dot} style={{ color: space.color }} />}
-        </span>
-        <span className={styles.ghostHeaderName}>{space.label}</span>
-      </div>
-      {!space.sectionCollapsed && sections.pinned.length > 0 && (
-        <ul className={styles.list}>
-          <GhostRows nodes={sections.pinned} activeId={activeId} />
-        </ul>
-      )}
-      <div className={styles.separator}>
-        <span className={styles.rule} />
-      </div>
-      <div className={styles.ghostRow}>
-        <Plus size={16} weight="regular" />
-        <span className={styles.ghostTitle}>New tab</span>
-      </div>
-      {sections.today.length > 0 && (
-        <ul className={styles.list}>
-          <GhostRows nodes={sections.today} activeId={activeId} />
-        </ul>
-      )}
-    </div>
-  )
 }
 
 /**
@@ -226,38 +105,6 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
     return () => window.clearTimeout(timer)
   }, [openTracker.entering])
 
-  // Signature space-switch swap: old space content fades out in 150 ms, new fades in after 75 ms.
-  const [swap, setSwap] = useState(INITIAL_SWAP)
-  const nextSwap = nextSpaceSwap(swap, space && sections ? { space, sections, activeId } : null)
-  if (nextSwap !== swap) setSwap(nextSwap)
-
-  useEffect(() => {
-    if (swap.swapCount === 0 || swap.incomingVisible) return
-    const currentSwap = swap.swapCount
-    const timer = window.setTimeout(
-      () => setSwap((current) => markSwapVisible(current, currentSwap)),
-      SWAP_DELAY_MS,
-    )
-    return () => window.clearTimeout(timer)
-  }, [swap.swapCount, swap.incomingVisible])
-
-  const liveContent = useRef<HTMLDivElement>(null)
-  const liveAnim = useRef<Animation | null>(null)
-  useLayoutEffect(() => {
-    if (swap.swapCount === 0) return
-    const el = liveContent.current
-    if (!el || typeof el.animate !== 'function') return
-    liveAnim.current?.cancel()
-    liveAnim.current = el.animate([{ opacity: 0 }, { opacity: 1 }], {
-      delay: SWAP_DELAY_MS,
-      duration: SWAP_IN_MS,
-      easing: 'ease',
-      fill: 'backwards',
-    })
-  }, [swap.swapCount])
-
-  useEffect(() => () => liveAnim.current?.cancel(), [])
-
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
   const exits = useMemo(() => exitsWhenGone(openTabIds), [openTabIds])
   const scroll = useRef<HTMLDivElement>(null)
@@ -309,14 +156,11 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
 
             <div className={styles.scroll} ref={scroll}>
               <div className={styles.scrollStage}>
-                {swap.outgoing && (
-                  <SpaceSwapGhost
-                    key={swap.outgoing.gen}
-                    snapshot={swap.outgoing}
-                    onDone={(gen) => setSwap((current) => finishSpaceSwap(current, gen))}
-                  />
-                )}
-                <div ref={liveContent} className={styles.spaceContent}>
+                <SpaceSwapStage
+                  spaceId={spaceId}
+                  className={styles.spaceContent}
+                  layerClassName={styles.swapLayer}
+                >
                   {sections && (
                     <FavoriteTiles
                       tabs={sections.favorites}
@@ -399,7 +243,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                       />
                     )}
                   </ul>
-                </div>
+                </SpaceSwapStage>
               </div>
             </div>
 

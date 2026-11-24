@@ -1,84 +1,70 @@
-import type { SidebarSections, SpaceSummary } from '../workspace/workspace'
+import { durationOf, easingOf } from './dragLift'
 
-/** Outgoing space fade duration (`--dur-swap-out`). */
-export const SWAP_OUT_MS = 150
-/** Delay before incoming space fades in (`--dur-swap-delay`). */
-export const SWAP_DELAY_MS = 75
-/** Incoming space fade duration (`--dur-row-fade`). */
-export const SWAP_IN_MS = 150
+// The sidebar's space-switch swap (redesign direction §5): the old space's content fades out over
+// --dur-swap-out while the new one fades in after --dur-swap-delay. The old content is a stripped
+// copy of the real rows taken before React draws the new space (SpaceSwapStage), so it looks
+// exactly like what was on screen. Imperative on purpose, like the drag lift: the copy is no
+// React tree.
 
-export interface SpaceSnapshot {
-  /** Monotonic generation id so React keys each outgoing snapshot cleanly. */
-  gen: number
-  space: SpaceSummary
-  sections: SidebarSections
-  activeId: string | null
-}
-
-export interface SpaceSwapState {
-  current: SpaceSnapshot | null
-  outgoing: SpaceSnapshot | null
-  /** Incremented whenever the active space changes so the live content replays its enter fade. */
-  swapCount: number
-  /** False during the 75 ms enter delay so a rapid follow-up switch keeps the visible outgoing ghost. */
-  incomingVisible: boolean
-}
-
-export const INITIAL_SWAP: SpaceSwapState = {
-  current: null,
-  outgoing: null,
-  swapCount: 0,
-  incomingVisible: true,
+/** A swap in flight: the old content's layer and the new content's delayed fade-in. */
+export interface SpaceSwap {
+  layer: HTMLElement
+  fadeIn: Animation | null
+  /** When the new content becomes visible (performance.now() time). */
+  visibleAt: number
 }
 
 /**
- * Pure state machine for the fast space-switch sidebar swap (redesign direction §5: old out
- * 150 ms, new in after 75 ms). When interrupted mid-flight while the previous incoming space is
- * still hidden behind its 75 ms delay, keeps the visible outgoing snapshot so spam-switching
- * never flashes blank.
+ * Whether the new content of `swap` is still hidden behind its delay: switching again then keeps
+ * the old content on screen instead of copying an invisible space, so spam-switching never
+ * flashes blank.
  */
-export function nextSpaceSwap(
-  state: SpaceSwapState,
-  next: { space: SpaceSummary; sections: SidebarSections; activeId: string | null } | null,
-): SpaceSwapState {
-  if (!next) return state
-  const prev = state.current
-  if (!prev) {
-    return {
-      current: { gen: 0, ...next },
-      outgoing: null,
-      swapCount: 0,
-      incomingVisible: true,
-    }
-  }
-  if (prev.space.id === next.space.id) {
-    if (
-      prev.space === next.space &&
-      prev.sections === next.sections &&
-      prev.activeId === next.activeId
-    ) {
-      return state
-    }
-    return { ...state, current: { ...prev, ...next } }
-  }
-  const outgoing = state.outgoing !== null && !state.incomingVisible ? state.outgoing : prev
-  const gen = prev.gen + 1
-  return {
-    current: { gen, ...next },
-    outgoing,
-    swapCount: state.swapCount + 1,
-    incomingVisible: false,
-  }
+export function hidesIncoming(swap: SpaceSwap | null, now: number): boolean {
+  return swap !== null && swap.layer.isConnected && now < swap.visibleAt
 }
 
-/** Marks the incoming space as visible once the 75 ms swap delay has elapsed. */
-export function markSwapVisible(state: SpaceSwapState, swapCount: number): SpaceSwapState {
-  if (state.swapCount !== swapCount || state.incomingVisible) return state
-  return { ...state, incomingVisible: true }
+/**
+ * Starts a swap: `snapshot` (the old content) goes in an inert layer before `live`, fades out
+ * (`layerClass`, Sidebar CSS) and leaves the DOM; `live` fades in after the delay. With no
+ * snapshot, the running swap's layer stays and only the fade-in restarts.
+ */
+export function startSpaceSwap(
+  live: HTMLElement,
+  snapshot: HTMLElement | null,
+  previous: SpaceSwap | null,
+  layerClass: string | undefined,
+): SpaceSwap {
+  previous?.fadeIn?.cancel()
+  let layer = previous?.layer ?? null
+  if (snapshot || !layer?.isConnected) {
+    layer?.remove()
+    const own = document.createElement('div')
+    if (layerClass) own.className = layerClass
+    own.setAttribute('aria-hidden', 'true')
+    own.setAttribute('data-testid', 'space-swap')
+    own.inert = true
+    if (snapshot) own.append(snapshot)
+    own.addEventListener('animationend', (e) => {
+      if (e.target === own) own.remove()
+    })
+    live.before(own)
+    layer = own
+  }
+  const delay = durationOf(live, '--dur-swap-delay')
+  const fadeIn =
+    typeof live.animate === 'function'
+      ? live.animate([{ opacity: 0 }, { opacity: 1 }], {
+          delay,
+          duration: durationOf(live, '--dur-row-fade'),
+          easing: easingOf(live, '--ease'),
+          fill: 'backwards',
+        })
+      : null
+  return { layer, fadeIn, visibleAt: performance.now() + delay }
 }
 
-/** Clears the outgoing snapshot once its 150 ms fade finishes (ignoring stale generations). */
-export function finishSpaceSwap(state: SpaceSwapState, finishedGen: number): SpaceSwapState {
-  if (!state.outgoing || state.outgoing.gen !== finishedGen) return state
-  return { ...state, outgoing: null }
+/** Stops a swap at once: the old content goes and the new one shows. */
+export function endSpaceSwap(swap: SpaceSwap | null): void {
+  swap?.fadeIn?.cancel()
+  swap?.layer.remove()
 }
