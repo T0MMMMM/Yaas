@@ -26,7 +26,7 @@ function Tile({
   const shownHalf = second && activeId === second.id ? second : tab
   const active = activeId === tab.id || shownHalf !== tab
   const title = second ? `${tab.title} | ${second.title}` : tab.title
-  const ringColor = useFaviconColor(shownHalf.faviconUrl)
+  const ringColor = useFaviconColor(active ? shownHalf.faviconUrl : null)
   const itemStyle = {
     ...tilt(tab.id),
     ...(ringColor ? { '--tile-ring': ringColor } : {}),
