@@ -260,7 +260,8 @@ view, each half is its own 10 px card separated from top to bottom by the `--spl
 `= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through:
 the focused half carries `AddressBar` at its top and the unfocused half carries a quiet 38 px
 click-to-focus header (`SplitInactiveBar`, tinted with its own `theme-color`) so both cards stay
-aligned and switching halves never reflows page height. The divider (`SplitDivider`) is invisible
+aligned and switching halves never reflows page height. The divider (`SplitDivider`) covers the trough
+from the header bars to the bottom, follows a drag live with both header bars, is invisible
 at rest and reveals a centred 3×28 px pill (`--split-handle-w` × `--split-handle-h`) on hover,
 keyboard focus or drag. Double-clicking the divider resets 50/50.
 

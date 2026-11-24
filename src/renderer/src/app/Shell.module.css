@@ -158,6 +158,10 @@
 }
 
 /* Split view: each half is its own 10 px card with the 8 px frame trough running top to bottom. */
+.page[data-split='true'] {
+  position: relative; /* the divider spans the trough, bars and pages */
+}
+
 :root[data-contextbar='attached'] .page[data-split='true'],
 .page[data-split='true'] .card {
   border-radius: 0;

@@ -607,11 +607,13 @@ results come back to the lead as a short summary + branch name, never the full c
   has a `PAGE_RADIUS` corner radius that must equal `--radius-lg`.
 - **Split screen.** When the active tab is a half of a split, `TabViews` shows both halves' views
   at `splitBounds(bounds, ratio, SPLIT_GAP)` (`core/browser/splitBounds.ts`, pure) and hides the
-  rest. `SPLIT_GAP` must equal `--split-gap`: the UI draws the divider in that gap (`PageSlot`).
+  rest. `SPLIT_GAP` must equal `--split-gap`: the UI draws the divider in that gap (`Shell`, from the header bars down).
   A divider drag is run by main (`browser.splitDrag` start/move/end/cancel): once the pointer
   enters a page the UI gets no more events, so `start` opens the overlay as a full-window capture
-  layer (`split-drag`), `move` lays the views out live at `splitRatioAt(x)` without storing,
-  `end` stores the ratio once, Escape (or the overlay closing) restores it. Arrow keys on the
+  layer (`split-drag`), `move` lays the views out live at `splitRatioAt(x)` without storing and
+  emits it as `browser.splitPreview` (the UI's header bars and divider follow through
+  `useWorkspace`), `end` stores the ratio once, Escape (or the overlay closing) restores it; both
+  emit a `null` preview. Arrow keys on the
   divider store at once. A mouse press or a key in a half on screen activates its tab (`activatesHalf`); the pair stays
   shown. Focus alone never does: a hidden view keeps its focus events.
 - **Default browser.** `main/defaultBrowser.ts` parses external `http`/`https` URLs from launch

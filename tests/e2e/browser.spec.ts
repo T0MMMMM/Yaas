@@ -933,6 +933,9 @@ test('the overlay layer drives a split drag, Escape cancels one', async () => {
     const before = await shownPages(app)
     const overlay = await overlayPage(app)
     const layer = overlay.getByTestId('split-drag-layer')
+    const inactiveBar = page.getByTestId('split-inactive-bar')
+    const barWidth = async () => (await inactiveBar.boundingBox())?.width ?? 0
+    const barBefore = await barWidth()
 
     // The pointer's events reach the overlay's capture layer instead of the UI.
     const { x, y } = await dividerCentre(page)
@@ -945,23 +948,30 @@ test('the overlay layer drives a split drag, Escape cancels one', async () => {
     await expect
       .poll(async () => (await shownPages(app))[0]?.width ?? 0)
       .toBeGreaterThan(before[0]?.width ?? 0)
+    // The header bars follow the pages before release, not only once the ratio is stored.
+    await expect.poll(barWidth).not.toBe(barBefore)
     await overlay.mouse.up()
     await page.mouse.up() // the UI's release too: main ends the drag once
     await expect(layer).toBeHidden()
     await expect.poll(() => storedRatio(page, a.id)).toBeGreaterThan(0.55)
     const stored = await storedRatio(page, a.id)
     const after = await shownPages(app)
+    const barAfter = await barWidth()
 
-    // Escape puts the stored ratio back.
-    await page.mouse.move(...(Object.values(await dividerCentre(page)) as [number, number]))
+    // The trough between the header bars grabs the divider too; Escape puts the stored ratio back.
+    const bar = await inactiveBar.boundingBox()
+    if (!bar) throw new Error('inactive bar not found')
+    await page.mouse.move((await dividerCentre(page)).x, bar.y + bar.height / 2)
     await page.mouse.down()
     await expect(layer).toBeVisible()
     await overlay.mouse.move(x - 200, y, { steps: 3 })
     await expect.poll(async () => (await shownPages(app))[0]?.width).not.toBe(after[0]?.width)
+    await expect.poll(barWidth).not.toBe(barAfter)
     await overlay.keyboard.press('Escape')
     await expect(layer).toBeHidden()
     await page.mouse.up()
     await expect.poll(async () => JSON.stringify(await shownPages(app))).toBe(JSON.stringify(after))
+    await expect.poll(barWidth).toBe(barAfter)
     expect(await storedRatio(page, a.id)).toBe(stored)
   })
 })

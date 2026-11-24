@@ -3,7 +3,7 @@
   flex: 1;
   min-height: 0;
   display: flex;
-  position: relative; /* the split panes and divider are placed in it */
+  position: relative; /* the split panes are placed in it */
 }
 
 :root[data-contextbar='attached'] .slot[data-tinted]::before,

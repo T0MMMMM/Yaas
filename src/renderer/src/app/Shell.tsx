@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore, type CSSProperties } from 'react'
 import { DEFAULT_ACCENT } from '@shared/ipc/contract'
 import { AddressBar } from '../features/browser/AddressBar'
 import { PageSlot } from '../features/browser/PageSlot'
+import { SplitDivider } from '../features/browser/SplitDivider'
 import { SplitInactiveBar } from '../features/browser/SplitInactiveBar'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
@@ -131,6 +132,8 @@ export function Shell() {
             <main className={styles.card}>
               <PageSlot />
             </main>
+            {/* Over the whole trough, header bars included: the drag grip runs top to bottom. */}
+            {split && <SplitDivider tabId={split.first.id} ratio={split.ratio} />}
           </div>
         </div>
       </div>

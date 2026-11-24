@@ -1,5 +1,5 @@
-/* Sits in the 8 px frame trough main leaves between the two split cards (same maths as splitBounds).
-   Invisible at rest; reveals a centred 3×28 px pill on hover, keyboard focus or drag. */
+/* Sits in the 8 px frame trough main leaves between the two split cards (same maths as splitBounds),
+   from the header bars to the bottom of the pages. Invisible at rest; reveals a centred 3×28 px pill on hover, keyboard focus or drag. */
 .divider {
   position: absolute;
   top: 0;
