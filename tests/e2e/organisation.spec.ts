@@ -557,6 +557,8 @@ test('favourite tiles fill the width and wrap', async () => {
     }
     await moveToFavorites(ids.slice(0, 3))
     await expect(tiles).toHaveCount(3)
+    const tileHeight = await tiles.first().evaluate((el) => (el as HTMLElement).offsetHeight)
+    expect(tileHeight).toBe(41)
     const three = await tops()
     expect(new Set(three.map((t) => t.top)).size).toBe(1)
     const widths = three.map((t) => t.width)

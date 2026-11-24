@@ -283,16 +283,21 @@ test('settings hide the page', async () => {
   })
 })
 
-test('the sidebar uses the system font and 34 px rows', async () => {
+test('the sidebar uses the system font and Ardia row metrics', async () => {
   await withBrowser(async ({ app, page, site }) => {
     await openTab(app, page, site.url('/a'))
     const fontFamily = await page.evaluate(() => getComputedStyle(document.body).fontFamily)
     expect(fontFamily).not.toContain('Satoshi')
     expect(fontFamily).toMatch(/^(system-ui|-apple-system)/)
-    const rowHeight = await page
-      .getByTestId('tab')
-      .evaluate((el) => (el as HTMLElement).offsetHeight)
+    const tab = page.getByTestId('tab')
+    const rowHeight = await tab.evaluate((el) => (el as HTMLElement).offsetHeight)
     expect(rowHeight).toBe(34)
+    // Active tab keeps regular 400 weight (never bold).
+    await expect(tab.locator('span').last()).toHaveCSS('font-weight', '400')
+    const headerHeight = await page
+      .getByTestId('space-header')
+      .evaluate((el) => (el as HTMLElement).offsetHeight)
+    expect(headerHeight).toBe(30)
 
     await page.getByRole('button', { name: 'New tab, space or settings' }).click()
     const menu = (await overlayPage(app)).getByTestId('menu')
