@@ -4,8 +4,8 @@ import { useUi } from '../../stores/ui'
 import { SECTIONS } from './catalog'
 import styles from './SettingsView.module.css'
 
-/** Length of the exit animation (`--dur-fast`): the view is unmounted once it has played. */
-const EXIT_MS = 120
+/** Length of the Occasional exit animation (`--dur-occasional-exit`): unmounts once played. */
+const EXIT_MS = 300
 
 /**
  * Settings as a modal dialog with a left navigation (DESIGN.md §7).
@@ -42,7 +42,8 @@ export function SettingsView() {
   return (
     <div
       className={`${styles.backdrop} no-drag`}
-      data-state={closing ? 'closing' : undefined}
+      data-state={closing ? 'closing' : 'open'}
+      inert={closing}
       onMouseDown={(e) => e.target === e.currentTarget && closeSettings()}
     >
       <div

@@ -1,3 +1,6 @@
+/* Settings modal (DESIGN.md §7, Ardia §5.5, redesign direction §5 Occasional tier):
+   Enter fades backdrop & panel over 400 ms ease + scales panel from 0.97 in 450 ms ease-out;
+   exit retraces scale back to 0.97 in 300 ms ease-in-out alongside a 300 ms fade. */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -5,9 +8,16 @@
   display: grid;
   place-items: center;
   padding: var(--space-6);
-  background: rgb(0 0 0 / 0.35);
-  backdrop-filter: blur(2px);
-  animation: fade-in var(--dur-base) var(--ease-out);
+  background: var(--bg-backdrop);
+  backdrop-filter: blur(4px);
+  opacity: 1;
+  transition: opacity var(--dur-occasional-fade) var(--ease);
+}
+
+@starting-style {
+  .backdrop {
+    opacity: 0;
+  }
 }
 
 .panel {
@@ -15,51 +25,84 @@
   height: min(640px, 100%);
   display: flex;
   background: var(--bg-raised);
-  border: 1px solid var(--border-menu);
+  border: var(--border-menu-w) solid var(--border-menu);
   border-radius: var(--radius-command);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-command);
   overflow: hidden;
-  animation: pop-in var(--dur-base) var(--ease-out);
+  opacity: 1;
+  transform: none;
+  transform-origin: center;
+  transition:
+    opacity var(--dur-occasional-fade) var(--ease),
+    transform var(--dur-occasional-move) var(--ease-out);
 }
 
-/* ---------- left navigation ---------- */
+@starting-style {
+  .panel {
+    opacity: 0;
+    transform: scale(var(--scale-enter));
+  }
+}
+
+.backdrop[data-state='closing'] {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-occasional-exit) var(--ease);
+}
+
+.backdrop[data-state='closing'] .panel {
+  opacity: 0;
+  transform: scale(var(--scale-enter));
+  transition:
+    opacity var(--dur-occasional-exit) var(--ease),
+    transform var(--dur-occasional-exit) var(--ease-in-out);
+}
+
+/* ---------- left navigation (Ardia 214 px warm neutral sidebar) ---------- */
 
 .nav {
-  width: 210px;
+  width: var(--settings-nav-w);
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-hair);
   padding: var(--space-4) var(--space-2);
   overflow-y: auto;
-  background: color-mix(in oklch, var(--accent) 6%, var(--neutral-sidebar));
-  border-right: 1px solid var(--border);
+  background: var(--neutral-sidebar);
+  border-right: var(--border-menu-w) solid var(--border);
+  user-select: none;
 }
 
 .navTitle {
   margin: 0 0 var(--space-3);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-2);
   font-size: var(--text-lg);
-  font-weight: 650;
+  font-weight: var(--weight-semibold);
+  color: var(--text);
 }
 
 .navItem {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 32px;
-  padding: 0 var(--space-3);
+  min-height: var(--quick-action-h);
+  padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-row);
   background: transparent;
   position: relative;
   isolation: isolate;
   color: var(--text-muted);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
   text-align: left;
   cursor: pointer;
+  transition:
+    color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-/* Card layer behind the label: only it tilts (same motion as the sidebar). */
+/* Card layer behind the label: only it tilts (matches the sidebar askew motion). */
 .navItem::before {
   content: '';
   position: absolute;
@@ -68,31 +111,41 @@
   border-radius: inherit;
   background: transparent;
   transition:
-    background var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    background var(--dur-hover) var(--ease),
+    box-shadow var(--dur-hover) var(--ease),
+    transform var(--dur-frequent-move) var(--ease-out);
 }
 
-.navItem:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .navItem:hover {
+    color: var(--text);
+  }
+
+  .navItem:hover::before {
+    background: var(--bg-row-hover);
+    transform: rotate(var(--tilt-hover));
+  }
 }
 
-.navItem:hover::before {
-  background: color-mix(in srgb, var(--neutral-surface) 45%, transparent);
-  transform: rotate(var(--tilt-hover));
+.navItem:active {
+  transform: scale(var(--scale-press));
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease);
 }
 
 .navItem[aria-current='page'] {
   color: var(--text);
+  font-weight: var(--weight-medium);
 }
 
 .navItem[aria-current='page']::before {
-  background: var(--control-active);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  background: var(--bg-row-active);
+  box-shadow: var(--shadow-row-active);
   transform: rotate(var(--tilt-selected));
 }
 
 .navItem[aria-current='page'] svg {
-  color: var(--accent);
+  color: var(--space-accent);
 }
 
 /* ---------- right pane ---------- */
@@ -108,44 +161,65 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-4) var(--space-2) var(--space-6);
+  min-height: 52px;
+  padding: 0 var(--space-4) 0 var(--space-6);
+  border-bottom: var(--border-menu-w) solid var(--border);
 }
 
 .paneHeader h2 {
   margin: 0;
-  font-size: var(--text-xl);
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
 }
 
 .close {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: var(--control-size-sm);
+  height: var(--control-size-sm);
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-menu-row);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
+  transition:
+    background var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.close:hover {
-  background: var(--border);
-  color: var(--text);
+@media (hover: hover) {
+  .close:hover {
+    background: var(--bg-menu-hover);
+    color: var(--text);
+  }
+}
+
+.close:active {
+  transform: scale(var(--scale-press));
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease);
 }
 
 .paneBody {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-2) var(--space-6) var(--space-6);
+  padding: var(--space-4) var(--space-6) var(--space-6);
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
-  animation: fade-in var(--dur-fast) var(--ease);
+  opacity: 1;
+  transition: opacity var(--dur-swap-out) var(--ease);
 }
 
-/* ---------- groups & rows ---------- */
+@starting-style {
+  .paneBody {
+    opacity: 0;
+  }
+}
+
+/* ---------- grouped section cards (Ardia §5.5) ---------- */
 
 .group {
   display: flex;
@@ -155,30 +229,33 @@
 
 .groupTitle {
   margin: 0;
-  font-size: var(--text-xs);
-  font-weight: 650;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-faint);
+  padding: 0 var(--space-1);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text);
 }
 
 .groupRows {
   display: flex;
   flex-direction: column;
+  padding: 0 var(--space-3);
+  border: var(--border-menu-w) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-settings-group);
 }
 
 .groupRows > .fields,
 .groupRows > div:not(.row) {
-  padding: var(--space-2) 0;
+  padding: var(--space-3) 0;
 }
 
 .row {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  min-height: 48px;
+  min-height: var(--titlebar-h);
   padding: var(--space-2) 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-menu-w) solid var(--border);
 }
 
 .row:last-child {
@@ -190,13 +267,16 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-hair);
 }
 
 .rowLabel {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  color: var(--text);
 }
 
 .row[data-soon='true'] .rowLabel {
@@ -204,8 +284,9 @@
 }
 
 .rowDescription {
-  color: var(--text-faint);
+  color: var(--text-secondary);
   font-size: var(--text-sm);
+  line-height: 1.35;
 }
 
 .rowControl {
@@ -216,25 +297,45 @@
 }
 
 .soon {
-  padding: 1px 6px;
+  padding: 1px var(--space-2);
   border-radius: var(--radius-pill);
-  background: var(--border);
+  background: var(--fill-neutral);
   color: var(--text-faint);
   font-size: var(--text-xs);
-  font-weight: 600;
+  font-weight: var(--weight-medium);
 }
 
 .button {
-  padding: 5px var(--space-3);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: transparent;
+  min-height: var(--control-size-sm);
+  padding: 0 var(--space-3);
+  border: var(--border-menu-w) solid var(--border-strong);
+  border-radius: var(--radius-menu-row);
+  background: var(--bg-raised);
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  user-select: none;
   cursor: pointer;
+  transition:
+    background var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    background: var(--bg-menu-hover);
+  }
+}
+
+.button:active:not(:disabled) {
+  transform: scale(var(--scale-press));
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease);
 }
 
 .button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .actions {
@@ -244,58 +345,28 @@
 }
 
 .kbd {
-  padding: 2px var(--space-2);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  font-family: var(--font-sans);
+  padding: var(--space-hair) var(--space-2);
+  border: var(--border-menu-w) solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+  font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .empty,
 .statement {
-  margin: 0;
+  margin: var(--space-3) 0;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--border);
+  border-radius: var(--radius-row);
+  background: var(--fill-subtle);
   color: var(--text-muted);
+  font-size: var(--text-md);
+  line-height: 1.45;
 }
 
 .muted {
-  color: var(--text-faint);
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(6px);
-  }
-}
-
-/* The exit: opacity-only ease-in, faster than open (ux-motion #5, #18). */
-.backdrop[data-state='closing'] {
-  pointer-events: none;
-  animation: fade-out var(--dur-popover-out) var(--ease-in) forwards;
-}
-
-.backdrop[data-state='closing'] .panel {
-  animation: fade-out var(--dur-popover-out) var(--ease-in) forwards;
-}
-
-@keyframes fade-out {
-  to {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .panel {
-    animation-name: fade-in;
-  }
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
