@@ -503,7 +503,7 @@ A **modal dialog** (centered panel, 880 × up to 640 px, radius `--radius-comman
 of the sidebar (hidden in icons-only mode), the + menu's Settings, a space menu's Space Settings…,
 the app menu's Settings… or `Mod+,`; `Esc`, the close button or a click on the backdrop closes
 it. Occasional tier motion: enters with a `400 ms ease` fade + `450 ms --ease-out` scale from `0.97`
-and retraces on a `300 ms` exit (`--dur-occasional-exit`, `inert` while closing). **Left
+and fades out in `300 ms` with no move (`--dur-occasional-exit`, `inert` while closing). **Left
 navigation** (`--settings-nav-w` `214 px`, warm neutral `--neutral-sidebar`) lists the sections
 with offset-ink icons; the right pane shows grouped section cards (`--bg-settings-group`, `10 px`
 radius, `12 px`-inset hairline dividers). Each option is a row: label + one-line description on the

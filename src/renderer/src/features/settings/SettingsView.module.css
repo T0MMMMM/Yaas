@@ -1,6 +1,6 @@
 /* Settings modal (DESIGN.md §7, Ardia §5.5, redesign direction §5 Occasional tier):
    Enter fades backdrop & panel over 400 ms ease + scales panel from 0.97 in 450 ms ease-out;
-   exit retraces scale back to 0.97 in 300 ms ease-in-out alongside a 300 ms fade. */
+   exit is a 300 ms fade only, no move, and lets clicks through at once. */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -51,10 +51,7 @@
 
 .backdrop[data-state='closing'] .panel {
   opacity: 0;
-  transform: scale(var(--scale-enter));
-  transition:
-    opacity var(--dur-occasional-exit) var(--ease),
-    transform var(--dur-occasional-exit) var(--ease-in-out);
+  transition: opacity var(--dur-occasional-exit) var(--ease);
 }
 
 /* ---------- left navigation (Ardia 214 px warm neutral sidebar) ---------- */
@@ -134,7 +131,6 @@
 
 .navItem[aria-current='page'] {
   color: var(--text);
-  font-weight: var(--weight-medium);
 }
 
 .navItem[aria-current='page']::before {
