@@ -8,8 +8,8 @@ let mounts = 0
 /**
  * A sidebar row's tooltip in the overlay (tooltip mode: the view is a strip from the sidebar's
  * edge): the row's favicon and title, its site below. One card for the whole hover: moving to
- * another row springs it there (`top` follows the anchor's vertical centre); it pops in when
- * mounted and fades out while `closing`.
+ * another row swaps position and content in place (warm state); it enters from scale 0.97 on mount
+ * and fades out while `closing`.
  */
 export function OverlayTooltip({ tooltip, closing }: { tooltip: Tooltip; closing: boolean }) {
   // Set once at mount: the same card slides from row to row instead of being replaced.
