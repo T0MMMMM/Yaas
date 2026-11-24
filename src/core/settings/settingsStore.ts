@@ -1,8 +1,8 @@
-import { settingsSchema, type Settings } from '@shared/ipc/contract'
+import { DEFAULT_ACCENT, settingsSchema, type Settings } from '@shared/ipc/contract'
 import type { Database } from '../store/database'
 
 export const DEFAULT_SETTINGS: Settings = {
-  accent: '#7C5CFF',
+  accent: DEFAULT_ACCENT,
   colorScheme: 'system',
   transparency: 0.4,
   grain: 0.35,

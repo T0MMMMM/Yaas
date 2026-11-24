@@ -1,4 +1,5 @@
 import { useEffect, useSyncExternalStore, type CSSProperties } from 'react'
+import { DEFAULT_ACCENT } from '@shared/ipc/contract'
 import { AddressBar } from '../features/browser/AddressBar'
 import { PageSlot } from '../features/browser/PageSlot'
 import { SettingsView } from '../features/settings/SettingsView'
@@ -28,7 +29,7 @@ export function Shell() {
   const resize = useSidebarResize()
   const platform = useSettings((s) => s.info?.platform)
   const colorScheme = useSettings((s) => s.settings?.colorScheme ?? 'system')
-  const defaultAccent = useSettings((s) => s.settings?.accent ?? '#7C5CFF')
+  const defaultAccent = useSettings((s) => s.settings?.accent ?? DEFAULT_ACCENT)
   const workspace = useWorkspace()
 
   const systemScheme = useSyncExternalStore(onSystemSchemeChange, getSystemScheme)
