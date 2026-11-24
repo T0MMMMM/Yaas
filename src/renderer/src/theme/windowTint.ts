@@ -26,8 +26,8 @@ const TINT_SATURATION = 0.36
 const TINT_LIGHTNESS = 0.527
 const BOTTOM_LIGHTNESS_LIFT = 0.25
 
-/** Colors below this HSL saturation are treated as neutral/achromatic spaces. */
-const NEUTRAL_SATURATION_MAX = 0.08
+/** Colors with sRGB chroma `(max - min) / 255` below this threshold are treated as neutral. */
+const NEUTRAL_CHROMA_MAX = 0.06
 
 const FALLBACK_COLOR = '#8E8E93'
 
@@ -37,6 +37,10 @@ function hexToRgb(hex: string): Rgb {
     parseInt(hex.slice(3, 5), 16),
     parseInt(hex.slice(5, 7), 16),
   ]
+}
+
+function rgbChroma([r, g, b]: Rgb): number {
+  return (Math.max(r, g, b) - Math.min(r, g, b)) / 255
 }
 
 function rgbToHex([r, g, b]: Rgb): string {
@@ -58,7 +62,7 @@ function mixRgb(base: Rgb, overlay: Rgb, alpha: number): Rgb {
 /** Whether a hex color is near-achromatic and should use the weaker neutral tint weight. */
 export function isNeutralSpaceColor(color: string): boolean {
   if (!isHex(color)) return true
-  return hexToHsl(color).s < NEUTRAL_SATURATION_MAX
+  return rgbChroma(hexToRgb(color)) < NEUTRAL_CHROMA_MAX
 }
 
 /**
@@ -68,8 +72,8 @@ export function isNeutralSpaceColor(color: string): boolean {
  */
 export function frameGradient(spaceColor: string, scheme: ColorScheme): FrameGradient {
   const safe = isHex(spaceColor) ? spaceColor : FALLBACK_COLOR
-  const { h, s } = hexToHsl(safe)
-  const neutral = s < NEUTRAL_SATURATION_MAX
+  const neutral = isNeutralSpaceColor(safe)
+  const { h } = hexToHsl(safe)
   const tintSaturation = neutral ? 0 : TINT_SATURATION
 
   const topTint = hexToRgb(hslToHex({ h, s: tintSaturation, l: TINT_LIGHTNESS }))

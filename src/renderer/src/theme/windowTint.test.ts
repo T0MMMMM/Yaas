@@ -3,10 +3,14 @@ import { isHex, relativeLuminance } from './color'
 import { frameGradient, isNeutralSpaceColor } from './windowTint'
 
 describe('isNeutralSpaceColor', () => {
-  it('treats greys, black, white and invalid values as neutral', () => {
+  it('treats greys, black, white, near-white, near-black and invalid values as neutral', () => {
     expect(isNeutralSpaceColor('#111111')).toBe(true)
     expect(isNeutralSpaceColor('#8E8E93')).toBe(true)
     expect(isNeutralSpaceColor('#FFFFFF')).toBe(true)
+    expect(isNeutralSpaceColor('#F8F8FA')).toBe(true)
+    expect(isNeutralSpaceColor('#F5F4F0')).toBe(true)
+    expect(isNeutralSpaceColor('#0A0A0C')).toBe(true)
+    expect(isNeutralSpaceColor('#141418')).toBe(true)
     expect(isNeutralSpaceColor('invalid')).toBe(true)
   })
 
@@ -57,6 +61,14 @@ describe('frameGradient', () => {
     const orange = frameGradient('#FF8A3D', 'light')
     expect(violet.top).not.toBe(green.top)
     expect(green.top).not.toBe(orange.top)
+  })
+
+  it('keeps near-white and near-black custom colors neutral instead of inflating hue tint', () => {
+    for (const scheme of ['light', 'dark'] as const) {
+      const neutral = frameGradient('#8E8E93', scheme)
+      expect(frameGradient('#F8F8FA', scheme)).toEqual(neutral)
+      expect(frameGradient('#0A0A0C', scheme)).toEqual(neutral)
+    }
   })
 
   it('falls back cleanly when given an invalid color string', () => {
