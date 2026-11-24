@@ -323,8 +323,10 @@ function MenuCard({
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     let place
     if (from) {
-      const inset =
-        (card.querySelector<HTMLElement>('[role="menuitem"]')?.offsetTop ?? 0) + card.clientTop
+      // The card's own border width, fractional like the funnel's (connector.ts): `clientTop`
+      // rounds the 0.5 px hairline.
+      const border = parseFloat(getComputedStyle(card).borderTopWidth) || 0
+      const inset = (card.querySelector<HTMLElement>('[role="menuitem"]')?.offsetTop ?? 0) + border
       place = placeCard({ x: from.right + SUBMENU_GAP, y: from.top - inset }, size, viewport, {
         x: from.left - SUBMENU_GAP,
         y: from.bottom + inset,

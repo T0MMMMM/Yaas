@@ -11,7 +11,7 @@
   composes: card from './Popover.module.css';
   --card-radius: var(--radius-menu);
   --card-bg: var(--bg-menu);
-  min-width: calc(var(--control-size) * 6);
+  min-width: 0;
   width: max-content;
   display: flex;
   flex-direction: column;
