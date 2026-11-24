@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowClockwise,
   ArrowLeft,
@@ -7,22 +7,19 @@ import {
   LinkSimple,
   SlidersHorizontal,
 } from '@phosphor-icons/react'
-import { isHex, onAccentColor } from '../../theme/color'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useWorkspace } from '../workspace/useWorkspace'
+import { addressBarTint } from './addressBarTint'
 import styles from './AddressBar.module.css'
 
 const BLANK = 'about:blank'
 /** How long Copy link shows its check mark. */
 const COPIED_MS = 1200
 
-/** The site's colour, as runtime data: the bar takes it, with legible text on top. */
-function tint(themeColor: string | null | undefined): CSSProperties | undefined {
-  if (!themeColor) return undefined
-  const style: CSSProperties = { backgroundColor: themeColor }
-  if (isHex(themeColor)) style.color = onAccentColor(themeColor)
-  return style
+interface AddressBarProps {
+  /** True when the bar sits inside one half of a split view (lets nav groups shrink cleanly). */
+  compact?: boolean
 }
 
 /**
@@ -30,7 +27,7 @@ function tint(themeColor: string | null | undefined): CSSProperties | undefined 
  * transparent URL field (ink 0.05 on hover/edit, host bright + path faint). Page-action icons on
  * the right (Copy link, Site menu) reveal on hover or focus. Inherits the page's theme-color.
  */
-export function AddressBar() {
+export function AddressBar({ compact = false }: AddressBarProps = {}) {
   const tab = useWorkspace()?.activeTab ?? null
   const addressFocus = useUi((s) => s.addressFocus)
   const [editing, setEditing] = useState(false)
@@ -80,11 +77,14 @@ export function AddressBar() {
     if (tab) void window.bigBrowser.invoke(command, { tabId: tab.id })
   }
 
+  const barTint = addressBarTint(tab?.themeColor)
+
   return (
     <header
       className={`${styles.bar} drag`}
-      style={tint(tab?.themeColor)}
-      data-tinted={tab?.themeColor ? true : undefined}
+      style={barTint}
+      data-tinted={barTint ? true : undefined}
+      data-compact={compact || undefined}
       data-testid="address-bar"
     >
       <div className={`${styles.nav} no-drag`}>

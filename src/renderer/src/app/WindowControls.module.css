@@ -9,7 +9,13 @@
   /* The buttons never spill over the address bar below. */
   overflow: hidden;
   -webkit-app-region: no-drag;
-  transition: height var(--dur-frequent-move) var(--ease-in-out);
+  transition: height var(--dur-frequent-fade) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip {
+    transition: none;
+  }
 }
 
 .strip[data-open='true'] {
@@ -48,7 +54,7 @@
   visibility: visible;
   transition:
     opacity var(--dur-frequent-fade) var(--ease),
-    translate var(--dur-frequent-move) var(--ease-out),
+    translate var(--dur-frequent-fade) var(--ease-out),
     visibility 0s;
 }
 

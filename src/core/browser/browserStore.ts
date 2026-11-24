@@ -379,6 +379,113 @@ export class BrowserStore {
   }
 
   /**
+   * Ids of the today rows drawn after `id` (its own subtree first, then subsequent branches).
+   * Empty for pinned/favourite tabs and for the last today row.
+   */
+  tabsBelow(id: string): string[] {
+    const first = this.firstOf(this.requireTab(id))
+    if (first.section !== 'today') return []
+    const order = treeOrder(this.todayRows(first.space_id))
+    const index = order.indexOf(first.id)
+    return index === -1 ? [] : order.slice(index + 1)
+  }
+
+  /**
+   * Closes every today tab drawn after `id` (its subtree and all subsequent today tabs, both
+   * halves of any split among them) in one transaction, emitting once and pushing a single
+   * reopen-closed entry so ⌘⇧T brings the whole batch back. Returns the number of tabs closed.
+   */
+  closeTabsBelow(id: string): number {
+    const first = this.firstOf(this.requireTab(id))
+    const below = this.tabsBelow(id)
+    if (below.length === 0) return 0
+    const rowIds = new Set(below)
+    let removedRows: TabRow[] = []
+    this.transaction(() => {
+      // Unpair splits among the closed rows first so both halves get positions and reopen cleanly.
+      for (const second of this.secondRows(first.space_id)) {
+        if (second.split_of === null || !rowIds.has(second.split_of)) continue
+        const pairFirst = this.findTab(second.split_of)
+        if (pairFirst) {
+          this.unpair(pairFirst, second, false)
+          rowIds.add(second.id)
+        }
+      }
+      removedRows = this.todayRows(first.space_id).filter((t) => rowIds.has(t.id))
+      if (removedRows.length === 0) return
+      const removed = new Set(removedRows.map((t) => t.id))
+      const space = this.requireSpace(first.space_id)
+      const active = space.active_tab_id
+      const next =
+        active !== null && removed.has(active)
+          ? this.nextActive(first.space_id, active, removed)
+          : active
+      const del = this.db.prepare('DELETE FROM tabs WHERE id = ?')
+      for (const row of removedRows) del.run(row.id)
+      this.renumberToday(first.space_id)
+      this.setActiveTab(first.space_id, next)
+    })
+    if (removedRows.length === 0) return 0
+    this.closed.push({ folders: [], tabs: removedRows.map(toClosed) })
+    this.emit()
+    return removedRows.length
+  }
+
+  /** Every tab inside `folderId` and its descendant folders, in drawn order (both halves of splits). */
+  folderTabs(folderId: string): BrowserTab[] {
+    const folder = this.requireFolder(folderId)
+    const subtree = this.folderSubtree(folder)
+    const folderIds = new Set(subtree.map((f) => f.id))
+    const tabs = (
+      this.db
+        .prepare("SELECT * FROM tabs WHERE space_id = ? AND section = 'pinned' ORDER BY position")
+        .all(folder.space_id) as unknown as TabRow[]
+    ).filter((t) => t.folder_id !== null && folderIds.has(t.folder_id))
+    const seconds = new Map<string, TabRow>()
+    const byFolder = new Map<string, TabRow[]>()
+    for (const t of tabs) {
+      if (t.split_of !== null) {
+        seconds.set(t.split_of, t)
+        continue
+      }
+      if (t.folder_id === null) continue
+      byFolder.set(t.folder_id, [...(byFolder.get(t.folder_id) ?? []), t])
+    }
+    const childFolders = new Map<string, FolderRow[]>()
+    for (const f of subtree) {
+      if (f.id === folder.id || f.parent_id === null) continue
+      childFolders.set(f.parent_id, [...(childFolders.get(f.parent_id) ?? []), f])
+    }
+    const walk = (id: string): TabRow[] =>
+      [
+        ...(childFolders.get(id) ?? []).map((f) => ({
+          position: f.position,
+          rows: () => walk(f.id),
+        })),
+        ...(byFolder.get(id) ?? []).map((t) => ({
+          position: t.position,
+          rows: () => {
+            const second = seconds.get(t.id)
+            return second ? [t, second] : [t]
+          },
+        })),
+      ]
+        .sort((a, b) => a.position - b.position)
+        .flatMap((entry) => entry.rows())
+    return walk(folder.id).map(toTab)
+  }
+
+  /** Opens a new today tab for every tab in `folderId` (and its child folders), in drawn order. */
+  openFolderTabs(folderId: string): BrowserTab[] {
+    const tabs = this.folderTabs(folderId)
+    if (tabs.length === 0) return []
+    const opened: BrowserTab[] = []
+    for (const tab of tabs) opened.push(this.openTab(tab.spaceId, tab.url))
+    if (opened[0] && opened.length > 1) this.activateTab(opened[0].id)
+    return opened
+  }
+
+  /**
    * Moves a tab to `index` of a list (a folder, at any depth, only in pinned), keeping both lists
    * contiguous.
    * Leaving today drops its parent and hands its children to that parent. Into today, see

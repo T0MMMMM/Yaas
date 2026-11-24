@@ -2,7 +2,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { expect, test } from '@playwright/test'
-import { launchApp, overlayPage, uiPage } from './helpers'
+import { startSite } from './fixtures/site'
+import { finishOnboarding, launchApp, overlayPage, uiPage } from './helpers'
 
 test('first launch shows onboarding, then the browser', async () => {
   const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
@@ -109,6 +110,35 @@ test('the address bar is attached by default and can get its own card', async ()
     await expect.poll(() => root('contextbar')).toBe('card')
   } finally {
     await app.close()
+    rmSync(userData, { recursive: true, force: true })
+  }
+})
+
+test('a link from outside opens a tab', async () => {
+  const userData = mkdtempSync(join(tmpdir(), 'big-browser-e2e-'))
+  const site = await startSite()
+  try {
+    const app = await launchApp(userData, {}, [site.url('/a')])
+    try {
+      const page = await uiPage(app)
+      await finishOnboarding(page)
+      await expect(page.getByTestId('today').getByTestId('tab')).toHaveText(['Page A'])
+      await expect(page.getByTestId('url-rest')).toHaveText('/a')
+
+      await page.getByRole('button', { name: 'Settings', exact: true }).click()
+      const settings = page.getByTestId('settings')
+      await expect(settings).toBeVisible()
+      await expect(settings.getByText('Default browser')).toBeVisible()
+      await expect(
+        settings
+          .getByRole('button', { name: 'Make default' })
+          .or(settings.getByText('Default', { exact: true })),
+      ).toBeVisible()
+    } finally {
+      await app.close().catch(() => undefined)
+    }
+  } finally {
+    await site.close()
     rmSync(userData, { recursive: true, force: true })
   }
 })

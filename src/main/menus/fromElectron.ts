@@ -46,27 +46,30 @@ function iconOf(icon: NativeImage | string | undefined | null): string | undefin
 
 /**
  * Converts Electron menu items, submenus included, to drawn menu items. Ids are `prefix:path`
- * (`extension:0.1`), unique across the menu; choosing an item calls `invoke` with it.
+ * (`extension:0.1`), unique across the menu; choosing an item calls `invoke` with it. When
+ * `fallbackIcon` is given, items without an image icon use that Phosphor icon name.
  */
 export function toMenuItemDefs(
   items: ElectronMenuEntry[],
   invoke: InvokeElectronItem,
   prefix = 'electron',
+  fallbackIcon?: string,
 ): MenuItemDef[] {
-  return convert(items, invoke, `${prefix}:`)
+  return convert(items, invoke, `${prefix}:`, fallbackIcon)
 }
 
 function convert(
   items: ElectronMenuEntry[],
   invoke: InvokeElectronItem,
   idPrefix: string,
+  fallbackIcon: string | undefined,
 ): MenuItemDef[] {
   const defs = items.flatMap((item, index): MenuItemDef[] => {
     if (item.visible === false) return []
     if (item.type === 'separator') return [{ kind: 'separator' }]
     const id = `${idPrefix}${index}`
     const children = childrenOf(item)
-    const icon = iconOf(item.icon)
+    const icon = iconOf(item.icon) ?? fallbackIcon
     const checkable = item.type === 'checkbox' || item.type === 'radio'
     return [
       {
@@ -77,7 +80,7 @@ function convert(
         ...(icon && { icon }),
         ...(checkable && { checked: item.checked === true }),
         ...(children
-          ? { submenu: convert(children, invoke, `${id}.`) }
+          ? { submenu: convert(children, invoke, `${id}.`, fallbackIcon) }
           : { run: () => invoke(item, {}) }),
       },
     ]

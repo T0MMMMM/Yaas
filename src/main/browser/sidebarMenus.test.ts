@@ -10,9 +10,16 @@ function setup() {
   const store = new BrowserStore(openDatabase(':memory:'), {
     defaultSpace: { name: 'Personal', color: '#7C5CFF' },
   })
+  const muted = new Set<string>()
   const host: SidebarMenuHost = {
     store,
     closeTab: vi.fn(),
+    reloadTab: vi.fn(),
+    isMuted: vi.fn((id: string) => muted.has(id)),
+    setMuted: vi.fn((id: string, value: boolean) => {
+      if (value) muted.add(id)
+      else muted.delete(id)
+    }),
     emitShortcut: vi.fn(),
     openOverlay: vi.fn(),
   }
@@ -37,6 +44,13 @@ function find(items: MenuItemDef[], label: string): Extract<MenuItemDef, { kind:
 
 const labels = (items: MenuItemDef[] | undefined): string[] =>
   (items ?? []).map((item) => (item.kind === 'item' ? item.label : item.kind))
+
+/** Every leaf and parent item in a menu tree, submenus included. */
+function allItems(items: MenuItemDef[]): Extract<MenuItemDef, { kind: 'item' }>[] {
+  return items.flatMap((item) =>
+    item.kind === 'item' ? [item, ...(item.submenu ? allItems(item.submenu) : [])] : [],
+  )
+}
 
 describe('endOf', () => {
   it("counts a folder's tabs and child folders, and the top level's own folders only", () => {
@@ -63,18 +77,22 @@ describe('endOf', () => {
 })
 
 describe('tabMenu', () => {
-  it('lists pin, favourites, folders, copy, duplicate and close', () => {
+  it('lists rows in order with an icon on every row', () => {
     const { store, host, spaceId } = setup()
     store.createFolder(spaceId, 'Reading')
     const tab = store.openTab(spaceId, 'https://a.test/')
     const items = tabMenu(host, tab.id)
     expect(labels(items)).toEqual([
+      'Reload',
+      'Duplicate',
+      'Mute',
+      'Copy Link',
+      'separator',
       'Pin',
       'Add to Favourites',
       'Move to Folder',
-      'Copy Link',
-      'Duplicate',
       'separator',
+      'Close Tabs Below',
       'Close',
     ])
     expect(labels(find(items, 'Move to Folder').submenu)).toEqual([
@@ -82,8 +100,44 @@ describe('tabMenu', () => {
       'separator',
       'New Folder…',
     ])
+    expect(find(items, 'Close Tabs Below').enabled).toBe(false)
+    for (const item of allItems(items)) {
+      expect(item.icon).toMatch(/^[A-Z][A-Za-z0-9]*$/)
+    }
+    find(items, 'Reload').run?.()
+    expect(host.reloadTab).toHaveBeenCalledWith(tab.id)
     find(items, 'Pin').run?.()
     expect(store.snapshot().tabs.find((t) => t.id === tab.id)?.section).toBe('pinned')
+  })
+
+  it('toggles Mute / Unmute through the host and disables Reload and Mute when unloaded', () => {
+    const { store, host, spaceId } = setup()
+    const tab = store.openTab(spaceId, 'https://a.test/')
+    find(tabMenu(host, tab.id), 'Mute').run?.()
+    expect(host.setMuted).toHaveBeenCalledWith(tab.id, true)
+    const after = tabMenu(host, tab.id)
+    expect(labels(after)).toContain('Unmute')
+    find(after, 'Unmute').run?.()
+    expect(host.setMuted).toHaveBeenCalledWith(tab.id, false)
+
+    // Unloaded tab (no view): host.isMuted returns null, disabling Reload and Mute.
+    vi.mocked(host.isMuted).mockReturnValueOnce(null)
+    const unloaded = tabMenu(host, tab.id)
+    expect(find(unloaded, 'Reload').enabled).toBe(false)
+    expect(find(unloaded, 'Mute').enabled).toBe(false)
+  })
+
+  it('Close Tabs Below closes today tabs drawn after it (subtree first) and disables when none', () => {
+    const { store, host, spaceId } = setup()
+    const a = store.openTab(spaceId, 'https://a.test/')
+    store.openTab(spaceId, 'https://a1.test/', { parentId: a.id })
+    const b = store.openTab(spaceId, 'https://b.test/')
+
+    expect(find(tabMenu(host, b.id), 'Close Tabs Below').enabled).toBe(false)
+    const items = tabMenu(host, a.id)
+    expect(find(items, 'Close Tabs Below').enabled).toBe(true)
+    find(items, 'Close Tabs Below').run?.()
+    expect(store.snapshot().tabs.map((t) => t.id)).toEqual([a.id])
   })
 
   it('New Folder… files the tab into a new folder and asks the sidebar to name it', () => {
@@ -97,13 +151,20 @@ describe('tabMenu', () => {
 })
 
 describe('tabMenu and splits', () => {
-  it('Open in Split View splits the tab with the active tab', () => {
+  it('Open in Split View sits between Mute and Copy Link and splits with the active tab', () => {
     const { store, host, spaceId } = setup()
     const active = store.openTab(spaceId, 'https://a.test/')
     const other = store.openTab(spaceId, 'https://b.test/', { activate: false })
     store.activateTab(active.id)
     const items = tabMenu(host, other.id)
-    expect(labels(items)).toContain('Open in Split View')
+    expect(labels(items).slice(0, 6)).toEqual([
+      'Reload',
+      'Duplicate',
+      'Mute',
+      'Open in Split View',
+      'Copy Link',
+      'separator',
+    ])
     expect(labels(items)).not.toContain('Separate')
     find(items, 'Open in Split View').run?.()
     expect(store.snapshot().tabs.find((t) => t.id === other.id)?.splitOf).toBe(active.id)
@@ -131,7 +192,7 @@ describe('tabMenu and splits', () => {
 describe('folderMenu', () => {
   const anchor = { x: 10, y: 20, width: 200, height: 28 }
 
-  it('moves a folder to the top level or any folder outside its own subtree', () => {
+  it('lists Rename, Change Icon…, Move to Folder, Open All, separator, Delete Folder with icons', () => {
     const { store, host, spaceId } = setup()
     const outer = store.createFolder(spaceId, 'Outer')
     const inner = store.createFolder(spaceId, 'Inner', outer.id)
@@ -143,9 +204,16 @@ describe('folderMenu', () => {
       'Rename',
       'Change Icon…',
       'Move to Folder',
+      'Open All',
       'separator',
       'Delete Folder',
     ])
+    for (const item of allItems(items)) {
+      expect(item.icon).toMatch(/^[A-Z][A-Za-z0-9]*$/)
+    }
+    // Empty folder: Open All is disabled.
+    expect(find(items, 'Open All').enabled).toBe(false)
+
     const move = find(items, 'Move to Folder').submenu
     // Not into itself, Inner or Deep (its subtree).
     expect(labels(move)).toEqual(['Top level', 'separator', 'Other'])
@@ -157,6 +225,23 @@ describe('folderMenu', () => {
 
     find(folderMenu(host, inner.id, anchor), 'Top level').run?.()
     expect(store.snapshot().folders.find((f) => f.id === inner.id)?.parentId).toBeNull()
+  })
+
+  it('Open All opens the tabs inside the folder into today', () => {
+    const { store, host, spaceId } = setup()
+    const folder = store.createFolder(spaceId, 'Reading')
+    const t = store.openTab(spaceId, 'https://a.test/')
+    store.moveTab(t.id, { section: 'pinned', folderId: folder.id, index: 0 })
+
+    const items = folderMenu(host, folder.id, anchor)
+    expect(find(items, 'Open All').enabled).toBe(true)
+    find(items, 'Open All').run?.()
+    expect(
+      store
+        .snapshot()
+        .tabs.filter((x) => x.section === 'today')
+        .map((x) => x.url),
+    ).toEqual(['https://a.test/'])
   })
 
   it('opens the icon card from the folder row', () => {
@@ -181,7 +266,7 @@ describe('folderMenu', () => {
 describe('spaceMenu', () => {
   const anchor = { x: 10, y: 20, width: 24, height: 24 }
 
-  it('lists the filter, the space actions and Delete Space…, disabled for the last space', () => {
+  it('lists the filter, the space actions with icons, and Delete Space… disabled for the last space', () => {
     const { host, spaceId } = setup()
     const items = spaceMenu(host, spaceId, anchor)
     expect(labels(items)).toEqual([
@@ -194,6 +279,9 @@ describe('spaceMenu', () => {
       'separator',
       'Delete Space…',
     ])
+    for (const item of allItems(items)) {
+      expect(item.icon).toMatch(/^[A-Z][A-Za-z0-9]*$/)
+    }
     expect(find(items, 'Delete Space…')).toMatchObject({ shortcut: '⌘⌫', enabled: false })
   })
 

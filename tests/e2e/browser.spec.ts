@@ -327,6 +327,42 @@ test('switching spaces recolours the frame gradient', async () => {
   })
 })
 
+test('switching spaces stacks a crossfade backdrop layer and settles back to one', async () => {
+  await withBrowser(async ({ page }) => {
+    const layers = page.getByTestId('frame-backdrop-layer')
+    await expect(layers).toHaveCount(1)
+
+    const peakLayers = await page.evaluate(async () => {
+      const backdrop = document.querySelector('[data-testid="frame-backdrop"]')
+      if (!backdrop) throw new Error('frame-backdrop not found')
+      let peak = backdrop.querySelectorAll('[data-testid="frame-backdrop-layer"]').length
+      const observer = new MutationObserver(() => {
+        peak = Math.max(
+          peak,
+          backdrop.querySelectorAll('[data-testid="frame-backdrop-layer"]').length,
+        )
+      })
+      observer.observe(backdrop, { childList: true })
+      const space = await window.bigBrowser.invoke('browser.createSpace', {
+        name: 'Work',
+        color: '#2BB673',
+      })
+      await window.bigBrowser.invoke('browser.activateSpace', { spaceId: space.id })
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      observer.disconnect()
+      return peak
+    })
+
+    expect(peakLayers).toBeGreaterThanOrEqual(2)
+    await expect(layers).toHaveCount(1)
+    // Derived root tokens follow the active space color (not the default app accent).
+    const dockSelected = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--bg-dock-selected'),
+    )
+    expect(dockSelected).toContain('#2BB673')
+  })
+})
+
 test('the + menu opens over the page in liquid glass', async () => {
   await withBrowser(async ({ app, page }) => {
     await page.evaluate(() => window.bigBrowser.invoke('settings.update', { transparency: 1 }))
@@ -633,7 +669,16 @@ test('the page menu is drawn', async () => {
     await rightClickPage(app, page, at)
     const overlay = await overlayPage(app)
     const menu = overlay.getByTestId('menu')
-    await expect(menu.getByRole('menuitem')).toHaveText(['Back', 'Forward', 'Reload', 'Inspect'])
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Back',
+      'Forward',
+      'Reload',
+      'Copy Page URL',
+      'Save Page As…',
+      'Print…',
+      'View Page Source',
+      'Inspect Element',
+    ])
     await expect(menu.getByRole('menuitem', { name: 'Forward' })).toHaveAttribute(
       'aria-disabled',
       'true',
@@ -650,6 +695,75 @@ test('the page menu is drawn', async () => {
     await menu.getByRole('menuitem', { name: 'Reload' }).click()
     await expect(menu).toHaveCount(0)
     await expect.poll(marked).toBe(false)
+  })
+})
+
+test('the page menu fits what was clicked', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    await openTab(app, page, site.url('/a'))
+    await expect(page.getByTestId('tab')).toHaveText(['Page A'])
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+
+    // Right-click a link: link items with icons, including Open Link in Split View.
+    const linkPoint = await app.evaluate(({ webContents }) =>
+      webContents
+        .getAllWebContents()
+        .find((w) => w.getURL().endsWith('/a'))
+        ?.executeJavaScript(
+          '(() => { const r = document.getElementById("b").getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) } })()',
+        ),
+    )
+    if (!linkPoint) throw new Error('Link rect not found')
+    await rightClickPage(app, page, linkPoint)
+    const items = menu.getByRole('menuitem')
+    await expect(items).toHaveText([
+      'Open Link in New Tab',
+      'Open Link in Split View',
+      'Open Link Here',
+      'Download Linked File',
+      'Copy Link',
+      ...(process.platform === 'darwin' ? ['Share…'] : []),
+      'Inspect Element',
+    ])
+    const linkCount = await items.count()
+    for (let i = 0; i < linkCount; i++) {
+      await expect(items.nth(i).locator('svg, img')).toHaveCount(1)
+    }
+    await menu.getByRole('menuitem', { name: 'Open Link in Split View' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect(page.getByTestId('split-row')).toHaveCount(1)
+    await expect(page.getByTestId('split-row').getByTestId('split-half')).toHaveText([
+      'Page A',
+      'Page B',
+    ])
+    await expect(page.getByTestId('url-rest')).toHaveText('/b')
+
+    // Right-click a blank spot on the active half (/b): Copy Page URL copies its URL.
+    await app.evaluate(({ clipboard }) => clipboard.writeText(''))
+    await expect(async () => {
+      if (!(await menu.isVisible())) await rightClickPage(app, page, { x: 100, y: 120 })
+      await expect(menu).toBeVisible({ timeout: 1_000 })
+    }).toPass()
+    await expect(items).toHaveText([
+      'Back',
+      'Forward',
+      'Reload',
+      'Copy Page URL',
+      'Save Page As…',
+      'Print…',
+      'View Page Source',
+      'Inspect Element',
+    ])
+    const blankCount = await items.count()
+    for (let i = 0; i < blankCount; i++) {
+      await expect(items.nth(i).locator('svg, img')).toHaveCount(1)
+    }
+    await menu.getByRole('menuitem', { name: 'Copy Page URL' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect
+      .poll(() => app.evaluate(({ clipboard }) => clipboard.readText()))
+      .toBe(site.url('/b'))
   })
 })
 
@@ -806,7 +920,8 @@ test('a split shows two pages', async () => {
     // A real click into the right page makes it the active tab: the address bar follows.
     await clickPage(app, page, b.id)
     await expect(page.getByTestId('url-rest')).toHaveText('/b')
-    await clickPage(app, page, a.id)
+    // Clicking the unfocused half's header activates it and moves the address bar back to it.
+    await page.getByTestId('split-inactive-bar').click()
     await expect(page.getByTestId('url-rest')).toHaveText('/a')
     await expect(page.getByTestId('split-divider')).toBeVisible()
   })

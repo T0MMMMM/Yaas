@@ -1,10 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
+import { SIDEBAR_DEFAULT } from '@shared/ipc/contract'
 import { openDatabase } from '../store/database'
 import { DEFAULT_SETTINGS, SettingsStore } from './settingsStore'
 
 describe('SettingsStore', () => {
   it('starts from defaults without a database', () => {
     expect(new SettingsStore().get()).toEqual(DEFAULT_SETTINGS)
+    expect(DEFAULT_SETTINGS.sidebarWidth).toBe(228)
+    expect(DEFAULT_SETTINGS.sidebarExpandedWidth).toBe(SIDEBAR_DEFAULT)
   })
 
   it('merges patches and notifies subscribers until they unsubscribe', () => {
@@ -45,5 +48,17 @@ describe('SettingsStore', () => {
       JSON.stringify({ accent: '#2BB673' }),
     )
     expect(new SettingsStore(db).get().magneticButtons).toBe(true)
+  })
+
+  it('preserves an existing user saved sidebarWidth when default changes', () => {
+    const db = openDatabase(':memory:')
+    db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run(
+      'app',
+      JSON.stringify({ sidebarWidth: 248, sidebarExpandedWidth: 248 }),
+    )
+    expect(new SettingsStore(db).get()).toMatchObject({
+      sidebarWidth: 248,
+      sidebarExpandedWidth: 248,
+    })
   })
 })

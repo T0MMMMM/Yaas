@@ -653,6 +653,11 @@ describe('BrowserStore splits', () => {
     expect(store.closeTab(a.id)).toEqual({ unloaded: [a.id] })
     expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'favorites' })
     expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
+    // Closing the non-active second half of a shown favourite split also unloads both and moves focus off.
+    store.activateTab(a.id)
+    expect(store.closeTab(b.id)).toEqual({ unloaded: [a.id, b.id] })
+    expect(tab(store, b.id)).toMatchObject({ splitOf: a.id, section: 'favorites' })
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(c.id)
   })
 
   it('closeSplit unloads both halves of a pinned split, deletes both of a today split', () => {
@@ -746,5 +751,80 @@ describe('BrowserStore splits', () => {
       ['c', 1, null],
       ['a', 2, null],
     ])
+  })
+})
+
+describe('BrowserStore closeTabsBelow and openFolderTabs', () => {
+  it('tabsBelow lists today tabs drawn after a tab (its subtree first), none for pinned or last', () => {
+    const { store, spaceId } = setup()
+    const pinned = store.openTab(spaceId, 'https://p.test/')
+    store.moveTab(pinned.id, { section: 'pinned', index: 0 })
+    const a = store.openTab(spaceId, 'https://a.test/')
+    const a1 = store.openTab(spaceId, 'https://a1.test/', { parentId: a.id })
+    const a2 = store.openTab(spaceId, 'https://a2.test/', { parentId: a.id })
+    const b = store.openTab(spaceId, 'https://b.test/')
+    const b1 = store.openTab(spaceId, 'https://b1.test/', { parentId: b.id })
+    const c = store.openTab(spaceId, 'https://c.test/')
+
+    expect(store.tabsBelow(pinned.id)).toEqual([])
+    expect(store.tabsBelow(c.id)).toEqual([])
+    expect(store.tabsBelow(a.id)).toEqual([a1.id, a2.id, b.id, b1.id, c.id])
+    expect(store.tabsBelow(a1.id)).toEqual([a2.id, b.id, b1.id, c.id])
+    expect(store.tabsBelow(b.id)).toEqual([b1.id, c.id])
+  })
+
+  it('closeTabsBelow closes today tabs drawn after a tab in one batch (one emit, one undo)', () => {
+    const { store, spaceId } = setup()
+    const a = store.openTab(spaceId, 'https://a.test/')
+    const a1 = store.openTab(spaceId, 'https://a1.test/', { parentId: a.id })
+    const b = store.openTab(spaceId, 'https://b.test/')
+    const b2 = store.openTab(spaceId, 'https://b2.test/')
+    store.splitTabs(b.id, b2.id)
+    const c = store.openTab(spaceId, 'https://c.test/')
+    store.activateTab(c.id)
+
+    let emits = 0
+    store.subscribe(() => {
+      emits += 1
+    })
+
+    expect(store.closeTabsBelow(a.id)).toBe(4)
+    expect(emits).toBe(1)
+    expect(store.snapshot().tabs.map((t) => t.id)).toEqual([a.id])
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(a.id)
+    // Nothing left below: a second call is a no-op with no emit.
+    expect(store.closeTabsBelow(a.id)).toBe(0)
+    expect(emits).toBe(1)
+    // One reopenClosed brings the entire batch back in order (a1 still under a).
+    expect(store.reopenClosed()?.url).toBe(a1.url)
+    expect(store.snapshot().tabs.map((t) => t.url)).toEqual([a.url, a1.url, b.url, b2.url, c.url])
+    expect(store.snapshot().tabs.find((t) => t.url === a1.url)?.parentId).toBe(a.id)
+    expect(store.reopenClosed()).toBeNull()
+  })
+
+  it('openFolderTabs opens every tab in a folder and its child folders in drawn order', () => {
+    const { store, spaceId } = setup()
+    const outer = store.createFolder(spaceId, 'Outer')
+    const inner = store.createFolder(spaceId, 'Inner', outer.id)
+    const empty = store.createFolder(spaceId, 'Empty')
+
+    const t1 = store.openTab(spaceId, 'https://one.test/')
+    const t2 = store.openTab(spaceId, 'https://two.test/')
+    const t3 = store.openTab(spaceId, 'https://three.test/')
+    store.moveTab(t1.id, { section: 'pinned', folderId: outer.id, index: 0 })
+    store.moveTab(t2.id, { section: 'pinned', folderId: inner.id, index: 0 })
+    store.moveTab(t3.id, { section: 'pinned', folderId: outer.id, index: 2 })
+
+    expect(store.folderTabs(empty.id)).toEqual([])
+    expect(store.openFolderTabs(empty.id)).toEqual([])
+
+    const opened = store.openFolderTabs(outer.id)
+    expect(opened.map((t) => t.url)).toEqual([
+      'https://one.test/',
+      'https://two.test/',
+      'https://three.test/',
+    ])
+    expect(opened.every((t) => t.section === 'today')).toBe(true)
+    expect(store.snapshot().activeTabIds[spaceId]).toBe(opened[0]?.id)
   })
 })

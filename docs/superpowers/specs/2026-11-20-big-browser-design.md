@@ -90,8 +90,9 @@ The repo is renamed to Big Browser in step 1; the YAAS docs stay as the referenc
 
 Plans for this step: 1 browser core, 2 extensions and site menu, 3 organisation, **3b sidebar
 finish** (done: 3b-A look and motion, 3b-B structure, including downloads, which moved here from
-plan 4; spec `2026-11-20-big-browser-sidebar-finish-design.md`), 4 window features (split view,
-several windows, default browser), then 5 settings and 6 onboarding.
+plan 4; spec `2026-11-20-big-browser-sidebar-finish-design.md`), **4 split screen, richer menus,
+default browser** (done; several windows dropped by the owner; spec
+`2026-11-21-big-browser-split-menus-default-design.md`), then 5 settings and 6 onboarding.
 
 Goal: the owner can leave Arc the next day without missing anything. Day-one list [Claude's
 proposal, accepted by the owner 2026-11-20]:
@@ -289,7 +290,8 @@ the ADRs.
 Calls Claude made while checking this document as a builder [Claude's call — correct if wrong]:
 - **Default browser**: step 1 lets Big Browser register as the system's default browser, so links from
   other apps open in it — needed to be a daily driver.
-- **Several windows**: ⌘N opens another window, like Arc; tabs belong to a space, not a window.
+- ~~**Several windows**: ⌘N opens another window, like Arc; tabs belong to a space, not a window.~~
+  Dropped by the owner (2026-11-21).
 - **⌘T search**: Google by default, changeable in settings.
 - **Site colour for the address bar**: the page's `theme-color` first, else sampled from the top
   of the page; text colour picked for contrast.

@@ -1,9 +1,22 @@
 // One WebContentsView per tab, laid over the UI. The model lives in BrowserStore; this class only
 // mirrors it: creates views lazily, shows the active one, and reports what the pages do.
-import { clipboard, WebContentsView, type BrowserWindow, type WebContents } from 'electron'
+import {
+  clipboard,
+  dialog,
+  ShareMenu,
+  WebContentsView,
+  type BrowserWindow,
+  type WebContents,
+} from 'electron'
 import type { HistoryStore } from '@core/browser/historyStore'
 import { FAVICON_MAX_BYTES, faviconDataUrl } from '@core/browser/favicon'
-import { pageMenu, type PageMenuId } from '@core/browser/pageMenu'
+import {
+  clipSelection,
+  emailFromMailto,
+  pageMenu,
+  selectionUrl,
+  type PageMenuId,
+} from '@core/browser/pageMenu'
 import type { BrowserStore } from '@core/browser/browserStore'
 import { activatesHalf, shownSplit, splitBounds, splitRatioAt } from '@core/browser/splitBounds'
 import type { PageBounds, TabRuntime } from '@shared/ipc/contract'
@@ -26,22 +39,93 @@ interface TabView {
 
 type FixedPageMenuId = Exclude<PageMenuId, `suggestion:${number}`>
 
-const PAGE_MENU_LABELS: Record<FixedPageMenuId, string> = {
-  noSuggestions: 'No Suggestions',
-  openLinkInNewTab: 'Open Link in New Tab',
-  copyLink: 'Copy Link',
-  openImageInNewTab: 'Open Image in New Tab',
-  copyImage: 'Copy Image',
-  copyImageAddress: 'Copy Image Address',
-  cut: 'Cut',
-  copy: 'Copy',
-  paste: 'Paste',
-  selectAll: 'Select All',
-  searchSelection: 'Search Google',
-  back: 'Back',
-  forward: 'Forward',
-  reload: 'Reload',
-  inspect: 'Inspect',
+/** Runs a toggle on the video/audio element under `(x, y)` in the page. */
+function mediaScript(x: number, y: number, op: 'loop' | 'controls' | 'pip'): string {
+  const action =
+    op === 'loop'
+      ? 'm.loop = !m.loop'
+      : op === 'controls'
+        ? 'm.controls = !m.controls'
+        : 'if (document.pictureInPictureElement === m) document.exitPictureInPicture(); else m.requestPictureInPicture?.()'
+  return `(() => { const el = document.elementFromPoint(${Math.round(x)}, ${Math.round(y)}); const m = el && el.closest('video, audio'); if (m) { ${action}; } })()`
+}
+
+function pageMenuLabel(
+  id: FixedPageMenuId,
+  params: Electron.ContextMenuParams,
+  mediaControls: boolean,
+): string {
+  const isVideo = params.mediaType === 'video'
+  switch (id) {
+    case 'noSuggestions':
+      return 'No Suggestions'
+    case 'addToDictionary':
+      return 'Add to Dictionary'
+    case 'openLinkInNewTab':
+      return 'Open Link in New Tab'
+    case 'openLinkInSplitView':
+      return 'Open Link in Split View'
+    case 'openLinkHere':
+      return 'Open Link Here'
+    case 'downloadLink':
+      return 'Download Linked File'
+    case 'copyLink':
+      return 'Copy Link'
+    case 'shareLink':
+      return 'Share…'
+    case 'copyEmailAddress':
+      return 'Copy Email Address'
+    case 'openImageInNewTab':
+      return 'Open Image in New Tab'
+    case 'downloadImage':
+      return 'Download Image'
+    case 'copyImage':
+      return 'Copy Image'
+    case 'copyImageAddress':
+      return 'Copy Image Address'
+    case 'openMediaInNewTab':
+      return isVideo ? 'Open Video in New Tab' : 'Open Audio in New Tab'
+    case 'downloadMedia':
+      return isVideo ? 'Download Video' : 'Download Audio'
+    case 'copyMediaAddress':
+      return isVideo ? 'Copy Video Address' : 'Copy Audio Address'
+    case 'toggleMediaLoop':
+      return 'Loop'
+    case 'toggleMediaControls':
+      return mediaControls ? 'Hide Controls' : 'Show Controls'
+    case 'pictureInPicture':
+      return 'Picture in Picture'
+    case 'goToSelection':
+      return `Go to “${clipSelection(params.selectionText)}”`
+    case 'searchSelection':
+      return `Search Google for “${clipSelection(params.selectionText)}”`
+    case 'cut':
+      return 'Cut'
+    case 'copy':
+      return 'Copy'
+    case 'paste':
+      return 'Paste'
+    case 'pasteAndMatchStyle':
+      return 'Paste and Match Style'
+    case 'selectAll':
+      return 'Select All'
+    case 'back':
+      return 'Back'
+    case 'forward':
+      return 'Forward'
+    case 'reload':
+      return 'Reload'
+    case 'copyPageUrl':
+      return 'Copy Page URL'
+    case 'savePageAs':
+      return 'Save Page As…'
+    case 'print':
+      return 'Print…'
+    case 'viewPageSource':
+      return 'View Page Source'
+    case 'inspect':
+      return 'Inspect Element'
+  }
 }
 
 /** Live state of a tab without a view. */
@@ -120,8 +204,6 @@ export class TabViews {
   private split: { firstId: string; secondId: string; ratio: number } | null = null
   /** The ratio a divider drag shows before it is stored, or null. */
   private previewRatio: number | null = null
-  /** Corner radius applied to page views: 0 when the address bar is attached, else PAGE_RADIUS. */
-  private borderRadius = PAGE_RADIUS
 
   constructor(
     private readonly win: BrowserWindow,
@@ -230,32 +312,43 @@ export class TabViews {
   }
 
   goBack(tabId: string): void {
-    const history = this.views.get(tabId)?.view.webContents.navigationHistory
-    if (history?.canGoBack()) history.goBack()
+    const contents = this.views.get(tabId)?.view.webContents
+    if (contents && !contents.isDestroyed() && contents.navigationHistory.canGoBack()) {
+      contents.navigationHistory.goBack()
+    }
   }
 
   goForward(tabId: string): void {
-    const history = this.views.get(tabId)?.view.webContents.navigationHistory
-    if (history?.canGoForward()) history.goForward()
+    const contents = this.views.get(tabId)?.view.webContents
+    if (contents && !contents.isDestroyed() && contents.navigationHistory.canGoForward()) {
+      contents.navigationHistory.goForward()
+    }
   }
 
   reload(tabId: string): void {
-    this.views.get(tabId)?.view.webContents.reload()
+    const contents = this.views.get(tabId)?.view.webContents
+    if (contents && !contents.isDestroyed()) contents.reload()
+  }
+
+  /** Whether the tab's view is muted, or null when the tab has no view (unloaded). */
+  isMuted(tabId: string): boolean | null {
+    const contents = this.views.get(tabId)?.view.webContents
+    if (!contents || contents.isDestroyed()) return null
+    return contents.isAudioMuted()
+  }
+
+  setMuted(tabId: string, muted: boolean): void {
+    const contents = this.views.get(tabId)?.view.webContents
+    if (contents && !contents.isDestroyed()) contents.setAudioMuted(muted)
   }
 
   /** Opens the page's developer tools in their own window, or closes them. */
   toggleDevTools(tabId: string): void {
     const contents = this.views.get(tabId)?.view.webContents
-    if (!contents) return
+    if (!contents || contents.isDestroyed()) return
     // Docked tools need a BrowserWindow's own page; a tab is a view, so they open detached.
     if (contents.isDevToolsOpened()) contents.closeDevTools()
     else contents.openDevTools({ mode: 'detach' })
-  }
-
-  /** Updates the corner radius of every tab view (0 when the address bar is attached). */
-  setBorderRadius(radius: number): void {
-    this.borderRadius = radius
-    for (const { view } of this.views.values()) view.setBorderRadius(radius)
   }
 
   /** Runtime state of each of `tabIds`, keyed by tab id (plain, serializable). */
@@ -296,7 +389,7 @@ export class TabViews {
         nodeIntegration: false,
       },
     })
-    view.setBorderRadius(this.borderRadius)
+    view.setBorderRadius(PAGE_RADIUS)
     view.setVisible(false)
     this.views.set(tabId, { view, spaceId })
     this.state.set(tabId, {
@@ -421,36 +514,125 @@ export class TabViews {
     contents: WebContents,
     params: Electron.ContextMenuParams,
   ): void {
+    const pageURL = params.pageURL || contents.getURL()
+    const { isLooping: mediaLoop, isControlsVisible: mediaControls } = params.mediaFlags
+    const targetFrame = params.frame
+    const canShare = process.platform === 'darwin'
+    const canSplit = shownSplit(this.store.snapshot().tabs, tabId) === null
     const openInTab = (url: string): void => {
       const entry = this.views.get(tabId)
       if (entry && isWebUrl(url)) this.store.openTab(entry.spaceId, url, { parentId: tabId })
+    }
+    const openInSplit = (url: string): void => {
+      const entry = this.views.get(tabId)
+      if (!entry || !isWebUrl(url)) return
+      const snap = this.store.snapshot()
+      if (!snap.tabs.some((t) => t.id === tabId) || shownSplit(snap.tabs, tabId) !== null) return
+      const opened = this.store.openTab(entry.spaceId, url, { activate: false })
+      this.store.splitTabs(tabId, opened.id)
+      this.store.activateTab(opened.id)
     }
     // The page may be gone by the time an item is chosen.
     const live = (run: () => void) => (): void => {
       if (!contents.isDestroyed()) run()
     }
+    const runMedia = (op: 'loop' | 'controls' | 'pip') =>
+      live(() => {
+        const zoom = contents.getZoomFactor() || 1
+        const script = mediaScript(params.x / zoom, params.y / zoom, op)
+        const frame = targetFrame && !targetFrame.isDestroyed() ? targetFrame : null
+        if (frame) {
+          void frame.executeJavaScript(script, true).catch(() => undefined)
+        } else {
+          void contents.executeJavaScript(script, true).catch(() => undefined)
+        }
+      })
     const run: Record<FixedPageMenuId, () => void> = {
       noSuggestions: () => undefined,
+      addToDictionary: live(() =>
+        contents.session.addWordToSpellCheckerDictionary(params.misspelledWord),
+      ),
       openLinkInNewTab: () => openInTab(params.linkURL),
+      openLinkInSplitView: () => openInSplit(params.linkURL),
+      openLinkHere: () => {
+        if (isWebUrl(params.linkURL) && this.views.has(tabId)) this.navigate(tabId, params.linkURL)
+      },
+      downloadLink: live(() => {
+        if (isWebUrl(params.linkURL)) contents.downloadURL(params.linkURL)
+      }),
       copyLink: () => clipboard.writeText(params.linkURL),
+      shareLink: () => {
+        if (process.platform === 'darwin' && !this.win.isDestroyed()) {
+          new ShareMenu({ urls: [params.linkURL] }).popup({ window: this.win })
+        }
+      },
+      copyEmailAddress: () => {
+        const email = emailFromMailto(params.linkURL)
+        if (email) clipboard.writeText(email)
+      },
       openImageInNewTab: () => openInTab(params.srcURL),
+      downloadImage: live(() => {
+        if (isWebUrl(params.srcURL)) contents.downloadURL(params.srcURL)
+      }),
       copyImage: live(() => contents.copyImageAt(params.x, params.y)),
       copyImageAddress: () => clipboard.writeText(params.srcURL),
+      openMediaInNewTab: () => openInTab(params.srcURL),
+      downloadMedia: live(() => {
+        if (isWebUrl(params.srcURL)) contents.downloadURL(params.srcURL)
+      }),
+      copyMediaAddress: () => clipboard.writeText(params.srcURL),
+      toggleMediaLoop: runMedia('loop'),
+      toggleMediaControls: runMedia('controls'),
+      pictureInPicture: runMedia('pip'),
+      goToSelection: () => {
+        const url = selectionUrl(params.selectionText)
+        if (url) openInTab(url)
+      },
+      searchSelection: () =>
+        openInTab(DEFAULT_SEARCH.replace('%s', encodeURIComponent(params.selectionText.trim()))),
       cut: live(() => contents.cut()),
       copy: live(() => contents.copy()),
       paste: live(() => contents.paste()),
+      pasteAndMatchStyle: live(() => contents.pasteAndMatchStyle()),
       selectAll: live(() => contents.selectAll()),
-      searchSelection: () =>
-        openInTab(DEFAULT_SEARCH.replace('%s', encodeURIComponent(params.selectionText.trim()))),
       back: () => this.goBack(tabId),
       forward: () => this.goForward(tabId),
       reload: () => this.reload(tabId),
+      copyPageUrl: () => {
+        if (pageURL) clipboard.writeText(pageURL)
+      },
+      savePageAs: live(() => {
+        if (!isWebUrl(pageURL) || this.win.isDestroyed()) return
+        const baseName = (contents.getTitle() || 'page').replace(/[<>:"/\\|?*]+/g, '_')
+        void dialog
+          .showSaveDialog(this.win, { defaultPath: `${baseName}.html` })
+          .then(({ canceled, filePath }) => {
+            if (!canceled && filePath && !contents.isDestroyed()) {
+              void contents.savePage(filePath, 'HTMLComplete').catch(() => undefined)
+            }
+          })
+      }),
+      print: live(() => contents.print()),
+      viewPageSource: () => {
+        const entry = this.views.get(tabId)
+        if (entry && isWebUrl(pageURL)) {
+          this.store.openTab(entry.spaceId, `view-source:${pageURL}`, { parentId: tabId })
+        }
+      },
       inspect: live(() => contents.inspectElement(params.x, params.y)),
     }
     const entries = pageMenu({
       linkURL: params.linkURL,
       srcURL: params.srcURL,
       mediaType: params.mediaType,
+      mediaLoop,
+      mediaControls,
+      mediaCanLoop: params.mediaFlags.canLoop,
+      mediaCanToggleControls: params.mediaFlags.canToggleControls,
+      mediaCanPip: params.mediaFlags.canShowPictureInPicture,
+      canShare,
+      pageURL,
+      canSplit,
       selectionText: params.selectionText,
       isEditable: params.isEditable,
       canCut: params.editFlags.canCut,
@@ -463,19 +645,28 @@ export class TabViews {
     })
     const items = entries.map((entry): MenuItemDef => {
       if (entry === 'separator') return { kind: 'separator' }
-      const { id, enabled } = entry
+      const { id, enabled, icon, checked } = entry
       if (id.startsWith('suggestion:')) {
         const word = params.dictionarySuggestions[Number(id.slice('suggestion:'.length))] ?? ''
         return {
           kind: 'item',
           id,
           label: word,
+          icon,
           enabled,
           run: live(() => contents.replaceMisspelling(word)),
         }
       }
       const fixed = id as FixedPageMenuId
-      return { kind: 'item', id, label: PAGE_MENU_LABELS[fixed], enabled, run: run[fixed] }
+      return {
+        kind: 'item',
+        id,
+        label: pageMenuLabel(fixed, params, mediaControls),
+        icon,
+        enabled,
+        ...(checked !== undefined ? { checked } : {}),
+        run: run[fixed],
+      }
     })
     // `chrome.contextMenus` items of the space's extensions, in their own group before Inspect
     // (always the last entry, after a separator).
@@ -483,7 +674,12 @@ export class TabViews {
     const extensionItems = spaceId
       ? (this.sessions.extensionsFor(spaceId)?.getContextMenuItems(contents, params) ?? [])
       : []
-    const defs = toMenuItemDefs(extensionItems, clickLikeElectron(this.win, contents), 'extension')
+    const defs = toMenuItemDefs(
+      extensionItems,
+      clickLikeElectron(this.win, contents),
+      'extension',
+      'PuzzlePiece',
+    )
     // Only when one of them is visible: else two separators would meet before Inspect.
     if (defs.length > 0) items.splice(items.length - 1, 0, ...defs, { kind: 'separator' })
     // `params` are relative to the page; the overlay draws in window coordinates.

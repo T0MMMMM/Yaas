@@ -31,6 +31,14 @@
   border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
 }
 
+.bar[data-compact='true'] {
+  margin-bottom: 0;
+}
+
+.bar[data-compact='true'] .nav {
+  width: auto;
+}
+
 .nav {
   flex: none;
   /* three 28 px buttons + gaps; the right-hand twin keeps the URL centred */

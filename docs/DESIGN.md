@@ -68,7 +68,8 @@ frame by its fill and rounded corners alone. The window buttons wait in the top 
 - Hovering a session shows a **⋯** button on the right (session actions) in place of its status dot.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
-- **Resizable**: drag its right edge (200–440 px, default 248, saved in settings); double-click the
+- **Resizable**: drag its right edge (48–72 px icon-only or 120–440 px normal, default 228
+  `SIDEBAR_DEFAULT`, saved in settings; existing users keep their saved width); double-click the
   edge to reset.
 - **Environments** (= project folders) as **folders** that open and close (folder / open-folder
   icon; a closed folder shows its session count), sorted by last activity, each listing its
@@ -141,9 +142,12 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half
   of the shown tab's row pairs them (the row gets the `--accent-soft` fill; not onto or from a
   split or a favourite tile).
-- Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
-  move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
-  (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
+- Every row and tile: right-click opens its menu, drawn at the pointer with a Phosphor icon on
+  every row (tab: Reload, Duplicate, Mute/Unmute, Open in Split View or Separate, Copy Link |
+  Pin/Unpin, Add to/Remove from Favourites, Move to Folder ▸ | Close Tabs Below, Close/Remove;
+  folder: Rename, Change Icon…, Move to Folder ▸, Open All | Delete Folder). A tab whose page is
+  not loaded is dimmed (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the
+  setting is off.
 - **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to
   reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before
   it, the lower half after it; the middle half of a pinned folder's row files into it; the tiles
@@ -203,10 +207,17 @@ pointer reaches its first row), Enter or Space chooses, Escape or a click outsid
 card. Hovering a row moves the keyboard to it, except while a filter field has it: typing still
 goes to the field.
 
-**Page menu** — right-clicking a page draws its menu at the pointer: spelling suggestions (at most
-5, or a disabled "No Suggestions") for a misspelled word, then the link, image, edit or selection
-entries, Back / Forward / Reload on a blank spot, the extensions' items (their icons, submenus and
-checks) in their own group, then Inspect. No Look Up / Services on macOS.
+**Page menu** — right-clicking a page draws its menu at the pointer, with a Phosphor icon on every
+row (extensions use their own 16 px icon or `PuzzlePiece`): spelling suggestions (at most 5, or a
+disabled "No Suggestions") and Add to Dictionary for a misspelled word; links (Open Link in New
+Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy Link, Share… on macOS,
+plus Copy Email Address for `mailto:`; non-web links hide Open/Download); images (Open Image in New Tab,
+Download Image, Copy Image, Copy Image Address); video/audio (Open in New Tab, Download, Copy
+Address, Loop, Show/Hide Controls, plus Picture in Picture for video); selection (Go to "…" when
+the text is a URL, Search Google for "…", Copy); editable (Cut, Copy, Paste, Paste and Match Style,
+Select All); blank spot (Back, Forward, Reload, Copy Page URL, Save Page As…, Print…, View Page
+Source); the extensions' items (their icons, submenus and checks) in their own group; then Inspect
+Element last. No Look Up / Services on macOS.
 
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
 `title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip
@@ -246,19 +257,28 @@ right. Typing puts "Go to <url>" (or "Search Google for "…"") first and matche
 tab is created until Enter.
 
 **Address bar buttons** — lives **inside the page card**, on the page's own colour (`theme-color`
-tint kept, height `--addressbar-h` 38 px): transparent URL field at rest, `--fill-subtle` (`ink 0.05`)
-fill on hover/edit, host bright (500) + path faint (400). Left: Back, Forward, Reload (28 px, radius
-`--radius-toolbar` 6 px, concentric with the 10 px page card). Right: Copy link (`browser.copyLink`;
-a check mark for 1.2 s) and the site menu (below; it holds the extensions) — hover-revealed (or
-visible on focus / while open / while copied). Both groups are three buttons wide so the URL stays
-centred.
+tint kept; opaque `#RRGGBB`, `#RGB`, `rgb()`/`rgba()` and CSS named colours are normalised while
+translucent or unsupported values skip tinting; foreground text picks black or white by higher
+WCAG contrast, guaranteed ≥ 4.5:1 for 13 px text; height `--addressbar-h` 38 px): transparent URL
+field at rest, `--fill-subtle` (`ink 0.05`) fill on hover/edit, host bright (500) + path faint
+(400). Left: Back, Forward, Reload (28 px, radius `--radius-toolbar` 6 px, concentric with the
+10 px page card). Right: Copy link (`browser.copyLink`; a check mark for 1.2 s) and the site menu
+(below; it holds the extensions) — hover-revealed (or visible on focus / while open / while
+copied). Both groups are three buttons wide so the URL stays centred (and shrink to content in
+split view).
 
 **Page card and split trough** — the floating page card sits inside an `--frame-gap` (8 px) bezel
 with `--radius-lg` (10 px, `= PAGE_RADIUS` in main), **no border and no shadow** (contrast with the
-tinted frame alone). In split view, the two cards are separated by an `--split-gap` (8 px,
-`= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through; the
-divider (`SplitDivider`) is invisible at rest and reveals a centred 3×28 px pill (`--split-handle-w`
-× `--split-handle-h`) on hover, keyboard focus or drag. Double-clicking the divider resets 50/50.
+tinted frame alone). Native `WebContentsView`s always receive `PAGE_RADIUS` (10 px) in both
+attached and card modes so all four corners of the page card stay rounded (in attached mode the
+card backing behind the view shares `--bg-surface`, seamlessly joining the address bar). In split
+view, each half is its own 10 px card separated from top to bottom by the `--split-gap` (8 px,
+`= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through:
+the focused half carries `AddressBar` at its top and the unfocused half carries a quiet 38 px
+click-to-focus header (`SplitInactiveBar`, tinted with its own `theme-color`) so both cards stay
+aligned and switching halves never reflows page height. The divider (`SplitDivider`) is invisible
+at rest and reveals a centred 3×28 px pill (`--split-handle-w` × `--split-handle-h`) on hover,
+keyboard focus or drag. Double-clicking the divider resets 50/50.
 
 **Sidebar title row** — the drag row at the top of the sidebar holds its own buttons: the icons-only
 switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Settings on the
@@ -309,17 +329,25 @@ Components only ever reference tokens — never raw colors or pixel values.
 
 ### 3.1 Color
 
-The user picks **one accent** (onboarding); each space has its own colour (`space.color`) that drives
-the window frame. The frame is a vertical gradient over a warm neutral (`theme/windowTint.ts`,
-`theme/FrameBackdrop.tsx`): light blends over `#FBFAF9` (`a = 0.27`, or `0.09` for neutral spaces),
-dark blends over `#29292A` (`a = 0.18`, or `0.06` for neutral spaces), with the bottom stop lifted
-`+0.25` in lightness. Switching spaces crossfades stacked gradient + grain layers in 400 ms `ease`
-(`--dur-space-switch`) while the page card stays still. Secondary/muted/faint chrome text uses
-alpha ink (`rgb(0 0 0 / α)` light, `rgb(255 255 255 / α)` dark) so it harmonises with any space tint.
+The user picks **one accent** (onboarding; default `DEFAULT_ACCENT = '#7C5CFF'`); each space has
+its own colour (`space.color`) that drives the window frame and space-tinted tokens (`applySpaceAccent`
+sets `--space-accent`, `--space-accent-soft`, `--bg-dock-selected`, and `--selection-bg` on
+`document.documentElement` so derived tokens resolve to the active space everywhere). The frame is
+a vertical gradient over a warm neutral (`theme/windowTint.ts`, `theme/FrameBackdrop.tsx`):
+chromatic space colours are normalised in HSL (`S = 0.36`, `L = 0.527`, bottom stop lifted `+0.25`
+in lightness) so every hue carries calm, uniform visual weight, then blended over `#FBFAF9` in
+light (`a = 0.27`, or `0.09` for neutral spaces) and `#29292A` in dark (`a = 0.18`, or `0.06` for
+neutral spaces). Neutral detection uses sRGB chroma `(max − min) / 255 < 0.06` (rather than HSL
+saturation) so near-white and near-black colours (`#F8F8FA`, `#0A0A0C`) stay neutral instead of
+getting an inflated chromatic tint. Switching spaces crossfades stacked gradient + grain layers in
+400 ms `ease` (`--dur-space-switch`, preserving the settled bottom layer when capping rapid
+switches) while colour-scheme changes flip in place with the rest of the tokens. Secondary, muted,
+faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.58 / 0.58` light `rgb(0 0 0 / α)`,
+`0.70 / 0.62 / 0.60 / 0.60` dark `rgb(255 255 255 / α)`) so it harmonises with any space tint.
 
 | Token | Role |
 |---|---|
-| `--accent` / `--space-accent` | Chosen app accent / active space colour (overridden on `Shell`) |
+| `--accent` / `--space-accent` | Chosen app accent / active space colour (set on `:root` via `applySpaceAccent`) |
 | `--accent-soft` / `--space-accent-soft` | `color-mix(in oklch, var(--accent) 16%, transparent)` / space colour at 12 % (`--bg-dock-selected`) |
 | `--on-accent` / `--on-danger` | Text/icon on accent (computed from luminance) / always white on `--danger` |
 | `--frame-base` | Warm neutral base behind the frame gradient (`#fbfaf9` light / `#29292a` dark) |
@@ -407,7 +435,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Layout | `--sidebar-w` 228 · `--sidebar-inset` 9 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 8 (bezel around the page card) · `--split-gap` 8 (frame trough between split cards `= SPLIT_GAP` in main) · `--split-handle-w` 3 / `--split-handle-h` 28 (invisible divider pill revealed on hover/focus/drag) · `--row-h` 34 · `--row-gap` 3 · `--space-header-h` 30 · `--folder-indent` 14 · `--footer-h` 36 · `--footer-btn-size` 28 · `--tile-h` 41 · `--tile-gap` 6 · `--tile-ring-w` 3 · `--tile-min-w` 64 · `--connector-w` 28 · `--tooltip-max-w` 280 · `--title-fade` 24 / `--title-fade-hover` 44 · `--folder-bar-w` 2 · `--folder-hue-s` 70% / `--folder-hue-l` 48% · `--window-controls-h` 32 (`= WINDOW_CONTROLS_H`) · `--window-control-w` 44 · `--finder-w` 652, `--finder-top` 20vh, `--finder-field-h` 44, `--dock-row-h` 36 · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 5 · `--border-menu-w` 0.5px · `--popover-pad` 12 · `--downloads-w` 300 · `--downloads-row-h` 40 · `--progress-h` 3 · `--settings-nav-w` 214 |
 | Controls | `--control-size` 30 · `--control-size-sm` 28 (address bar buttons and field) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 · `--space-dot` 6 · `--favicon-size` 16 · `--tile-icon-size` 20 · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
 | Motion curves | `--ease`: `ease` (fades, presses) · `--ease-out`: `cubic-bezier(0.2, 0.4, 0.1, 0.98)` (enters) · `--ease-in-out`: `cubic-bezier(0.4, 0.05, 0.2, 1)` (state moves, exits) · `--ease-morph`: `cubic-bezier(0.35, 0.05, 0, 0.95)` (folder/section morphs) · legacy aliases `--ease-in` / `--ease-bounce` kept for un-migrated consumers |
-| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-move` 450 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
+| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms, `--delay-tooltip` 500 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-move` 450 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform
@@ -425,7 +453,8 @@ How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
 **Window buttons in the top margin** (macOS and Windows; Linux keeps its native title bar). The
 window's top margin runs along the whole window, above the sidebar and the page, `--frame-gap`
 high, and the window buttons wait in it, hidden. When the pointer rests on it for 120 ms
-(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-fast`), pushing everything down, and
+(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-frequent-fade`, 150 ms; instant under
+reduced motion), pushing everything down, and
 the buttons come; it closes 250 ms (`HIDE_DELAY_MS`) after the pointer leaves. Passing over the
 margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
 - **Windows**: no native caption buttons. Minimize, maximize / restore and close are drawn at the
@@ -476,7 +505,8 @@ scope stays visible.
 
 | Section | Option | Values (default) | Stage |
 |---|---|---|---|
-| **General** | Open at login | Off | v1 |
+| **General** | Default browser | Make default / Default (Windows opens OS Default apps) | ✅ |
+| | Open at login | Off | v1 |
 | | Restore open sessions on launch | On | MVP |
 | | Default folder for new sessions | Last used · Ask every time · Fixed folder | MVP |
 | | Confirm before closing a running session | On | MVP |
@@ -544,8 +574,8 @@ Every option that spends tokens is absent by design (FEATURES.md principle 1).
 
 Shortcuts are bound in the main-process application menu (`src/main/menu.ts`), because a focused
 web page swallows renderer key events. `Mod+Z` is the exception: a keydown handler of the UI
-(`app/Shell.tsx`), so in a page or a field it stays the normal undo. New window (`Mod+N`) comes
-later.
+(`app/Shell.tsx`), so in a page or a field it stays the normal undo. Several windows (`Mod+N`) were
+dropped by the owner.
 
 Shortcuts are defined in one registry (renderer) that also feeds the palette, so they can be
 remapped later.

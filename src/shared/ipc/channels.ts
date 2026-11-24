@@ -3,6 +3,8 @@
 
 export const COMMAND_CHANNELS = [
   'app.info',
+  'app.defaultBrowser',
+  'app.makeDefaultBrowser',
   'settings.get',
   'settings.update',
   'claude.detect',

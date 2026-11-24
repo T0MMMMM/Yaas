@@ -41,12 +41,22 @@
 5. ~~Plan 3b-A (sidebar look and motion)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-sidebar-finish-look.md`.
 6. ~~Plan 3b-B (sidebar structure, with downloads)~~ — done: `docs/superpowers/plans/2026-11-20-big-browser-sidebar-finish-structure.md`.
    Plan 3b (A and B) is finished.
-7. Next: write and follow **plan 4** (window features: split view, several windows, default
-   browser; downloads moved into 3b) in `docs/superpowers/plans/` (superpowers:writing-plans),
+7. ~~Plan 4 (split screen, richer menus, default browser; several windows dropped by the owner)~~ — done: `docs/superpowers/plans/2026-11-21-big-browser-split-menus-default.md`.
+8. Next: write and follow **plan 5** (settings) in `docs/superpowers/plans/` (superpowers:writing-plans),
    from the design spec's roadmap.
 
 ## To check by hand
 
+- Split view with a real mouse: drag the divider between two live pages smoothly across both views
+  (including Escape to cancel), click into each half to switch the active half and address bar, and
+  drag a tab onto the middle of the active tab's row to split.
+- Default browser on macOS and Windows: click "Make default" in Settings → General (macOS system
+  prompt; Windows opens `ms-settings:defaultapps`), then open an `https://` link from another app
+  while Big Browser is closed and while it is already running — verify it opens once as a today tab
+  in the active space and focuses the window.
+- Page right-click menu on real pages: Save Page As…, Print…, View Page Source, video Loop /
+  Show–Hide Controls / Picture in Picture, and spelling suggestions + Add to Dictionary on a
+  misspelled word.
 - Hover a tab, move straight right onto the page and click a link at once: the first click must
   land (the tooltip overlay hides on entry). Playwright cannot drive real cross-view input. Check
   on macOS and Windows.
@@ -54,7 +64,6 @@
   sidebar icons-only at 48, 56 and 72 px).
 - Both platforms, real mouse: the top margin opens after 120 ms of rest, drags the window once
   open, and closes 250 ms after the pointer leaves.
-- Page right-click: spelling suggestions on a misspelled word.
 - An extension's context-menu item with an icon shows in the page menu and runs.
 - Delete a space while a download runs: the download finishes and stays in the list.
 

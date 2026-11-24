@@ -53,7 +53,9 @@ gradient (and its grain) in one 400 ms ease fade, while the page card stays stil
 - Command dock (⌘T) / finder (⌘K): Ardia command bar — width **652**, radius **20**, input
   **15 px**, rows 36 px radius 10, selected row tinted with the space colour at 12 %.
 - Split: two 10 px cards with the 8 px frame trough between; divider invisible, a 3×28 px pill
-  on hover.
+  on hover. Each half is its own 10 px card separated by the full-height 8 px trough: the active
+  half holds the address bar at its top and the unfocused half holds a quiet 38 px click-to-focus
+  header (same height so both cards stay aligned and switching halves never reflows page height).
 
 ## 5. Motion (improve-ux-motion rules win over the references)
 

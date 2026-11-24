@@ -1,13 +1,14 @@
 import { useEffect, useSyncExternalStore, type CSSProperties } from 'react'
+import { DEFAULT_ACCENT } from '@shared/ipc/contract'
 import { AddressBar } from '../features/browser/AddressBar'
 import { PageSlot } from '../features/browser/PageSlot'
+import { SplitInactiveBar } from '../features/browser/SplitInactiveBar'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { useWorkspace } from '../features/workspace/useWorkspace'
-import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
-import { onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
+import { applySpaceAccent, onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
 import { FrameBackdrop } from '../theme/FrameBackdrop'
 import { useSidebarResize } from './useSidebarResize'
 import { WindowControls } from './WindowControls'
@@ -24,17 +25,14 @@ function isTextField(el: Element | null): boolean {
 /** Main layout: space-tinted frame wrapping sidebar | address bar inside the page card. */
 export function Shell() {
   const view = useUi((s) => s.view)
-  const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
   const platform = useSettings((s) => s.info?.platform)
   const colorScheme = useSettings((s) => s.settings?.colorScheme ?? 'system')
-  const defaultAccent = useSettings((s) => s.settings?.accent ?? '#7C5CFF')
+  const defaultAccent = useSettings((s) => s.settings?.accent ?? DEFAULT_ACCENT)
   const workspace = useWorkspace()
 
   const systemScheme = useSyncExternalStore(onSystemSchemeChange, getSystemScheme)
   const scheme = colorScheme === 'system' ? systemScheme : colorScheme
-
-  useEffect(() => initBrowser(), [initBrowser])
 
   // Shortcuts pressed while a page has focus arrive from main's menu.
   useEffect(
@@ -65,20 +63,25 @@ export function Shell() {
 
   const activeSpace = workspace?.space ?? null
   const spaceColor = activeSpace?.color ?? defaultAccent
-  const isSplit = Boolean(workspace?.activeSplit)
+  const split = workspace?.activeSplit ?? null
+
+  // Propagate the active space accent onto :root so derived tokens (--space-accent-soft,
+  // --bg-dock-selected, --selection-bg) resolve to the space colour instead of the app accent.
+  useEffect(() => {
+    applySpaceAccent(spaceColor)
+  }, [spaceColor])
 
   return (
     <div
       className={styles.shell}
       data-resizing={resize.resizing}
-      style={
-        {
-          '--sidebar-w': `${resize.width}px`,
-          '--space-accent': spaceColor,
-        } as CSSProperties
-      }
+      style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
-      <FrameBackdrop spaceId={activeSpace?.id ?? null} color={spaceColor} scheme={scheme} />
+      <FrameBackdrop
+        spaceId={activeSpace?.id ?? null}
+        color={activeSpace?.color ?? null}
+        scheme={scheme}
+      />
 
       {/* The window buttons wait in the top margin (Linux keeps its native title bar). */}
       {(platform === 'mac' || platform === 'windows') && <WindowControls platform={platform} />}
@@ -100,8 +103,31 @@ export function Shell() {
         </div>
 
         <div className={styles.column}>
-          <div className={styles.page} data-split={isSplit || undefined}>
-            <AddressBar />
+          <div
+            className={styles.page}
+            data-split={split ? true : undefined}
+            style={split ? ({ '--split-ratio': split.ratio } as CSSProperties) : undefined}
+          >
+            {split ? (
+              <div className={styles.splitBars}>
+                <div className={`${styles.splitBarSlot} ${styles.splitFirst}`}>
+                  {split.activeHalf === 'first' ? (
+                    <AddressBar compact />
+                  ) : (
+                    <SplitInactiveBar tab={split.first} />
+                  )}
+                </div>
+                <div className={`${styles.splitBarSlot} ${styles.splitSecond}`}>
+                  {split.activeHalf === 'second' ? (
+                    <AddressBar compact />
+                  ) : (
+                    <SplitInactiveBar tab={split.second} />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <AddressBar />
+            )}
             <main className={styles.card}>
               <PageSlot />
             </main>

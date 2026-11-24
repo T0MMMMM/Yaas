@@ -21,7 +21,9 @@ export const SIDEBAR_COMPACT_MAX = 72
 export const SIDEBAR_COMPACT = 56
 export const SIDEBAR_COMPACT_FROM = 120
 export const SIDEBAR_MAX = 440
-export const SIDEBAR_DEFAULT = 248
+export const SIDEBAR_DEFAULT = 228
+/** Default app and initial space accent color. */
+export const DEFAULT_ACCENT = '#7C5CFF'
 /** Height of the window's top margin once open, with the window buttons (= `--window-controls-h`). */
 export const WINDOW_CONTROLS_H = 32
 
@@ -71,6 +73,9 @@ export const appInfoSchema = z.object({
   glassSupported: z.boolean(),
 })
 export type AppInfo = z.infer<typeof appInfoSchema>
+
+export const defaultBrowserSchema = z.object({ isDefault: z.boolean() }).strict()
+export type DefaultBrowserStatus = z.infer<typeof defaultBrowserSchema>
 
 export const accountSchema = z.object({
   id: z.string(),
@@ -318,6 +323,10 @@ const folderName = z.string().min(1).max(80)
 
 export const commands = {
   'app.info': { input: z.void(), output: appInfoSchema },
+  /** Whether Big Browser is registered as the system's default browser (`https`). */
+  'app.defaultBrowser': { input: z.void(), output: defaultBrowserSchema },
+  /** Registers for `http`/`https`; on Windows also opens `ms-settings:defaultapps`. */
+  'app.makeDefaultBrowser': { input: z.void(), output: defaultBrowserSchema },
   'settings.get': { input: z.void(), output: settingsSchema },
   'settings.update': { input: settingsSchema.partial().strict(), output: settingsSchema },
   'claude.detect': { input: z.void(), output: cliInfoSchema },

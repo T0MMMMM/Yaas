@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { IconContext } from '@phosphor-icons/react'
 import { useAccounts } from '../stores/accounts'
+import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { applyTheme, onSystemSchemeChange } from '../theme/applyTheme'
 import { Onboarding } from '../features/onboarding/Onboarding'
@@ -15,9 +16,11 @@ export function App() {
   const { info, settings, init } = useSettings()
 
   const initAccounts = useAccounts((s) => s.init)
+  const initBrowser = useBrowser((s) => s.init)
 
   useEffect(() => init(), [init])
   useEffect(() => (isOverlay ? undefined : initAccounts()), [initAccounts])
+  useEffect(() => (isOverlay ? undefined : initBrowser()), [initBrowser])
 
   useEffect(() => {
     if (!settings) return
