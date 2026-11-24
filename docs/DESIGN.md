@@ -326,7 +326,7 @@ saturation) so near-white and near-black colours (`#F8F8FA`, `#0A0A0C`) stay neu
 getting an inflated chromatic tint. Switching spaces crossfades stacked gradient + grain layers in
 400 ms `ease` (`--dur-space-switch`, preserving the settled bottom layer when capping rapid
 switches) while colour-scheme changes flip in place with the rest of the tokens. Secondary, muted,
-faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.56 / 0.56` light `rgb(0 0 0 / α)`,
+faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.58 / 0.58` light `rgb(0 0 0 / α)`,
 `0.70 / 0.62 / 0.60 / 0.60` dark `rgb(255 255 255 / α)`) so it harmonises with any space tint.
 
 | Token | Role |

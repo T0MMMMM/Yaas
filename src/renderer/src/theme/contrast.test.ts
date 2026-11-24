@@ -36,8 +36,8 @@ const SCHEME_TOKENS: Record<
     text: '#1c1c1e',
     textMuted: 'rgb(0 0 0 / 0.65)',
     textSecondary: 'rgb(0 0 0 / 0.58)',
-    textFaint: 'rgb(0 0 0 / 0.56)',
-    textPlaceholder: 'rgb(0 0 0 / 0.56)',
+    textFaint: 'rgb(0 0 0 / 0.58)',
+    textPlaceholder: 'rgb(0 0 0 / 0.58)',
     neutralSurface: '#ffffff',
     bgMenu: '#ffffff',
   },
@@ -87,11 +87,12 @@ describe('theme text contrast (WCAG AA >= 4.5:1)', () => {
   for (const scheme of ['light', 'dark'] as const) {
     const tokens = SCHEME_TOKENS[scheme]
 
-    it(`meets AA for --text, --text-muted, and --text-secondary across all presets in ${scheme} mode`, () => {
+    it(`meets AA for --text, --text-muted, --text-secondary and --text-faint across all presets in ${scheme} mode`, () => {
       const checks: ReadonlyArray<readonly [string, string]> = [
         ['--text', tokens.text],
         ['--text-muted', tokens.textMuted],
         ['--text-secondary', tokens.textSecondary],
+        ['--text-faint', tokens.textFaint],
       ]
       for (const preset of SPACE_PRESETS) {
         const { top, bottom } = frameGradient(preset, scheme)

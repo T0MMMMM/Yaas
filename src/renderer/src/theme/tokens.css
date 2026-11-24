@@ -219,8 +219,8 @@
   --text: #1c1c1e;
   --text-muted: rgb(0 0 0 / 0.65);
   --text-secondary: rgb(0 0 0 / 0.58);
-  --text-faint: rgb(0 0 0 / 0.56);
-  --text-placeholder: rgb(0 0 0 / 0.56);
+  --text-faint: rgb(0 0 0 / 0.58);
+  --text-placeholder: rgb(0 0 0 / 0.58);
 
   /* semantic */
   --ok: #1f9d5c;
