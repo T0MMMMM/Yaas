@@ -451,6 +451,15 @@ function activeSplitOf(
   return null
 }
 
+/**
+ * The view with its active split at a divider drag's `preview` ratio (main lays the pages out at it
+ * before storing it); unchanged without a preview or a split.
+ */
+export function withSplitPreview(view: BrowserView, preview: number | null): BrowserView {
+  if (preview === null || !view.activeSplit) return view
+  return { ...view, activeSplit: { ...view.activeSplit, ratio: preview } }
+}
+
 /** The browser as the chrome shows it: the active space, its sidebar and the active tab. */
 export function browserView(
   state: BrowserState,

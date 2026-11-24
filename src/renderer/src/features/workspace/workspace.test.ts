@@ -12,6 +12,7 @@ import {
   todayCloseOrder,
   todaySubtree,
   usageView,
+  withSplitPreview,
   MAX_FOLDER_INDENT,
   type SidebarNode,
 } from './workspace'
@@ -581,6 +582,19 @@ describe('splits', () => {
     const onFirst = browserView({ ...state, activeTabIds: { s1: 'b', s2: 'x' } })
     expect(onFirst.activeSplit?.activeHalf).toBe('first')
     expect(browserView({ ...state, activeTabIds: { s1: 'a', s2: 'x' } }).activeSplit).toBeNull()
+  })
+
+  it('a divider drag preview moves the active split until it ends', () => {
+    const view = browserView({ ...stateOf(pair), activeTabIds: { s1: 'c', s2: 'x' } })
+    expect(withSplitPreview(view, 0.3).activeSplit).toMatchObject({
+      ratio: 0.3,
+      activeHalf: 'second',
+    })
+    // The sidebar's split row keeps the stored ratio; no preview gives the view back as is.
+    expect(withSplitPreview(view, 0.3).sections).toBe(view.sections)
+    expect(withSplitPreview(view, null)).toBe(view)
+    const alone = browserView({ ...stateOf(pair), activeTabIds: { s1: 'a', s2: 'x' } })
+    expect(withSplitPreview(alone, 0.3).activeSplit).toBeNull()
   })
 
   it('a favourite split is one tile, its second half kept beside it', () => {

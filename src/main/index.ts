@@ -147,6 +147,12 @@ let splitDrag: { tabId: string } | null = null
 /** Whether `tabId` is (still) a half of a split. */
 const inSplit = (tabId: string): boolean => shownSplit(browser.snapshot().tabs, tabId) !== null
 
+/** Lays the split out at a drag's `ratio` (null: the stored one) and tells the UI, so its bars follow. */
+function previewSplit(ratio: number | null): void {
+  tabViews?.previewSplitRatio(ratio)
+  if (mainWindow) emit(mainWindow.webContents, 'browser.splitPreview', ratio)
+}
+
 /**
  * Ends a divider drag: stores the ratio under `x`, or (no `x`) goes back to the stored one. Runs
  * once per drag (the UI and the overlay may both report the release); the capture layer always goes,
@@ -161,7 +167,7 @@ function endSplitDrag(x: number | null): void {
       browser.setSplitRatio(drag.tabId, tabViews.splitRatioAt(x))
     }
   } finally {
-    tabViews?.previewSplitRatio(null)
+    previewSplit(null)
     overlay?.close()
   }
 }
@@ -472,7 +478,7 @@ registerCommands(
         splitDrag = { tabId: drag.tabId }
         overlayView().open({ kind: 'split-drag' })
       } else if (drag.phase === 'move') {
-        if (splitDrag) tabViews?.previewSplitRatio(tabViews.splitRatioAt(drag.x))
+        if (splitDrag && tabViews) previewSplit(tabViews.splitRatioAt(drag.x))
       } else endSplitDrag(drag.phase === 'end' ? drag.x : null)
     },
     'browser.createFolder': ({ spaceId, name, parentId }) =>

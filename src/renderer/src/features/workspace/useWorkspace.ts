@@ -7,6 +7,7 @@ import {
   browserView,
   sidebarTree,
   usageView,
+  withSplitPreview,
   type BrowserView,
   type OpenSessionView,
   type SidebarTree,
@@ -16,13 +17,19 @@ import {
 /**
  * The single entry point for workspace data in the renderer: the spaces, the active space's tabs,
  * its sidebar (favourites, pinned, today) and the active tab. null until the first browser state
- * arrives from main.
+ * arrives from main. During a split divider drag, the active split's ratio is the one main shows.
  */
 export function useWorkspace(): BrowserView | null {
   const state = useBrowser((s) => s.state)
+  const splitPreview = useBrowser((s) => s.splitPreview)
   // Before the settings load (and in the overlay, which never loads them): the default, on.
   const autoFolders = useSettings((s) => s.settings?.autoFolders ?? true)
-  return useMemo(() => (state ? browserView(state, { autoFolders }) : null), [state, autoFolders])
+  const view = useMemo(
+    () => (state ? browserView(state, { autoFolders }) : null),
+    [state, autoFolders],
+  )
+  // A divider drag only moves the active split: the rest of the view is not rebuilt per move.
+  return useMemo(() => view && withSplitPreview(view, splitPreview), [view, splitPreview])
 }
 
 // ---------- sessions: hidden until AI tabs (step 3) ----------

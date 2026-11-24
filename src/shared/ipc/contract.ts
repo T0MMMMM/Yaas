@@ -549,6 +549,11 @@ export const events = {
   'settings.changed': settingsSchema,
   'accounts.changed': z.array(accountSchema),
   'browser.changed': browserStateSchema,
+  /**
+   * To the UI, during a split divider drag: the ratio main lays the pages out at before it is
+   * stored, so the header bars follow the pages; `null` once the drag ends or is cancelled.
+   */
+  'browser.splitPreview': z.number().min(0.25).max(0.75).nullable(),
   /** Something main asks the UI to do (see shortcutSchema). */
   'browser.shortcut': shortcutSchema,
   /** To the UI and the overlay: the downloads list changed (progress, a finish, Clear). */

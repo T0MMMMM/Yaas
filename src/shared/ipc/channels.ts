@@ -73,6 +73,7 @@ export const EVENT_CHANNELS = [
   'settings.changed',
   'accounts.changed',
   'browser.changed',
+  'browser.splitPreview',
   'browser.shortcut',
   'downloads.changed',
   'overlay.opened',

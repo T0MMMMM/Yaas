@@ -1,4 +1,11 @@
-import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react'
 import styles from './SplitDivider.module.css'
 
 const MIN_RATIO = 0.25
@@ -19,35 +26,47 @@ interface Props {
  * Invisible divider in the 8 px frame trough between a split's two pages, revealing a 3×28 px pill
  * on hover, focus or drag (redesign direction §4). A drag is run by main (`browser.splitDrag`):
  * the pointer soon leaves this strip for a page, so the overlay catches it while main moves the
- * pages. Double-click resets to 50/50; arrow keys adjust by 5 %.
+ * pages and tells the UI the ratio (`browser.splitPreview`), so the header bars follow too.
+ * Double-click resets to 50/50; arrow keys adjust by 5 %.
  */
 export function SplitDivider({ tabId, ratio }: Props) {
-  const draggingRef = useRef(false)
+  /** Ends the drag in progress (drops its window listeners), or null. */
+  const stopRef = useRef<(() => void) | null>(null)
   const [dragging, setDragging] = useState(false)
 
+  // A split that goes away mid-drag (its tab closed) lets go of the window.
+  useEffect(() => () => stopRef.current?.(), [])
+
+  // The UI's own pointer events are followed on the window rather than through pointer capture
+  // alone: the bars and the divider move under the pointer as main previews the ratio, and a
+  // reflow under a pointer may drop the capture.
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return
+    if (event.button !== 0 || stopRef.current) return
     event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
-    draggingRef.current = true
-    setDragging(true)
-    void window.bigBrowser.invoke('browser.splitDrag', { phase: 'start', tabId })
-  }
-
-  const forward = (phase: 'move' | 'end', event: PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return
-    if (phase === 'end') {
-      draggingRef.current = false
+    const onMove = (e: globalThis.PointerEvent) =>
+      void window.bigBrowser.invoke('browser.splitDrag', { phase: 'move', x: e.clientX })
+    const onUp = (e: globalThis.PointerEvent) => {
+      stop()
+      void window.bigBrowser.invoke('browser.splitDrag', { phase: 'end', x: e.clientX })
+    }
+    const onCancel = () => {
+      stop()
+      void window.bigBrowser.invoke('browser.splitDrag', { phase: 'cancel' })
+    }
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onCancel)
+      stopRef.current = null
       setDragging(false)
     }
-    void window.bigBrowser.invoke('browser.splitDrag', { phase, x: event.clientX })
-  }
-
-  const cancel = () => {
-    if (!draggingRef.current) return
-    draggingRef.current = false
-    setDragging(false)
-    void window.bigBrowser.invoke('browser.splitDrag', { phase: 'cancel' })
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onCancel)
+    stopRef.current = stop
+    setDragging(true)
+    void window.bigBrowser.invoke('browser.splitDrag', { phase: 'start', tabId })
   }
 
   const reset = () => {
@@ -75,9 +94,6 @@ export function SplitDivider({ tabId, ratio }: Props) {
       data-dragging={dragging || undefined}
       data-testid="split-divider"
       onPointerDown={onPointerDown}
-      onPointerMove={(event) => forward('move', event)}
-      onPointerUp={(event) => forward('end', event)}
-      onPointerCancel={cancel}
       onDoubleClick={reset}
       onKeyDown={onKeyDown}
     />
