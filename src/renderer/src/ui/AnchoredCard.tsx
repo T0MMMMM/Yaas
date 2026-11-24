@@ -8,7 +8,7 @@ import popover from './Popover.module.css'
 import styles from './AnchoredCard.module.css'
 
 interface AnchoredCardProps {
-  /** Rect of the button it opens from (window DIP): the card opens below it, joined by the funnel. */
+  /** Rect of the button it opens from (window DIP): the card opens below or above it, joined by the funnel. */
   anchor: PageBounds
   label: string
   testId: string
@@ -16,14 +16,18 @@ interface AnchoredCardProps {
   closing: boolean
   /** Which side of the button the card opens on (default below; the footer's buttons open above). */
   placement?: 'above' | 'below'
+  /** Motion frequency tier: frequent by default; occasional for downloads and confirmations. */
+  tier?: 'frequent' | 'occasional'
+  /** Card width preset: default compact card or wider downloads list. */
+  size?: 'default' | 'downloads'
   onClose(): void
   children: ReactNode
 }
 
 /**
  * A card of the overlay opened from a sidebar button (a space's icon, its colour, a confirmation,
- * the downloads): the shared opaque popover below or above the button, grown out of the funnel. Escape or a press outside
- * closes it.
+ * the downloads): the shared opaque popover below or above the button, grown out of the funnel.
+ * Escape or a press outside closes it.
  */
 export function AnchoredCard({
   anchor,
@@ -31,6 +35,8 @@ export function AnchoredCard({
   testId,
   closing,
   placement = 'below',
+  tier = 'frequent',
+  size = 'default',
   onClose,
   children,
 }: AnchoredCardProps) {
@@ -46,9 +52,10 @@ export function AnchoredCard({
   return (
     <div
       ref={ref}
-      className={`${styles.card} ${popover.alignLeft} no-drag`}
+      className={`${styles.card} ${size === 'downloads' ? styles.downloads : ''} ${popover.alignLeft} no-drag`}
       style={place}
       data-placement={placement}
+      data-tier={tier}
       data-state={closing ? 'closing' : 'open'}
       // While it animates out it takes no focus, keys or clicks.
       inert={closing}

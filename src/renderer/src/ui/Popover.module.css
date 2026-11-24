@@ -1,26 +1,52 @@
-/* The opaque card every yab-shaped popover is drawn on (ui/Menu, the site menu, the tab finder and
-   the command field): compose it with `composes: card from '…/ui/Popover.module.css'`, then add the
-   popover's own layout. */
+/* Shared opaque card for overlay surfaces (Menu, SiteMenu, AnchoredCard, Picker): Ardia surface
+   metrics (radius 10, 0.5 px hairline, soft depth) with our funnel connector and improve-ux-motion
+   tier timing. Compose with `composes: card from '…/ui/Popover.module.css'`, and set the `--card-*`
+   custom properties on the composing class when overriding surface or motion tier (fallbacks live
+   in `var(...)` so bundle ordering between composed CSS Modules never clobbers overrides). */
 .card {
   position: fixed;
   z-index: 20;
-  --card-border: 1px;
-  --card-radius: var(--radius-popover);
-  --card-bg: var(--bg-popover);
-  --neck-half: calc(var(--connector-w) / 2);
-  border: var(--card-border) solid var(--border-menu);
-  border-radius: var(--card-radius);
-  background: var(--card-bg);
-  box-shadow: var(--shadow-menu);
+  border: var(--card-border, var(--border-menu-w)) solid var(--border-menu);
+  border-radius: var(--card-radius, var(--radius-popover));
+  background: var(--card-bg, var(--bg-popover));
+  box-shadow: var(--card-shadow, var(--shadow-menu));
+  opacity: 1;
+  transform: none;
   transform-origin: top center;
-  /* Grows out of the funnel tip (yab §4.5: 180 ms ease-out from scale 0.96). */
-  animation: open var(--dur-popover-in) var(--ease-out);
+  transition:
+    opacity var(--card-enter-fade, var(--dur-frequent-fade)) var(--ease),
+    transform var(--card-enter-move, var(--dur-frequent-move)) var(--ease-out);
 }
 
-/* The exit: opacity-only ease-in, faster than open, while the overlay waits to hide. */
+@starting-style {
+  .card {
+    opacity: 0;
+    transform: scale(var(--card-enter-scale, var(--scale-enter)));
+  }
+}
+
+/* Occasional tier (downloads, confirm): enter fade 400 ms + move 450 ms ease-out; exit retraces
+   scale back toward the trigger in 300 ms ease-in-out alongside a 300 ms fade. */
+.card[data-tier='occasional'] {
+  --card-enter-fade: var(--dur-occasional-fade);
+  --card-enter-move: var(--dur-occasional-move);
+  --card-enter-scale: var(--scale-enter);
+  --card-exit-fade: var(--dur-occasional-exit);
+  --card-exit-move: var(--dur-occasional-exit);
+  --card-exit-scale: var(--scale-enter);
+}
+
+/* Exit: retargets smoothly from any in-flight enter value (interruption keeps intent). */
 .card[data-state='closing'] {
   pointer-events: none;
-  animation: close var(--dur-popover-out) var(--ease-in) forwards;
+  opacity: 0;
+  transition:
+    opacity var(--card-exit-fade, var(--dur-frequent-exit)) var(--ease),
+    transform var(--card-exit-move, var(--dur-frequent-move)) var(--ease-in-out);
+}
+
+.card[data-tier='occasional'][data-state='closing'] {
+  transform: scale(var(--card-exit-scale, var(--scale-enter)));
 }
 
 /* Where a card sits so the neck can be centred on the button: `--anchor-mid` (the button's centre
@@ -28,12 +54,19 @@
    inside the card's edge, so the neck clears the rounded corner (ui/connector.ts). Bounded to the
    window's edge. */
 .alignLeft {
+  --neck-half: calc(var(--connector-w) / 2);
   left: max(
     0px,
-    calc(var(--anchor-mid) - var(--card-radius) - var(--neck-half) - var(--card-border))
+    calc(
+      var(--anchor-mid) - var(--card-radius, var(--radius-popover)) - var(--neck-half) -
+        var(--card-border, var(--border-menu-w))
+    )
   );
   /* Grows from the funnel, which sits that far inside the card's left edge. */
-  --grow-x: calc(var(--card-radius) + var(--neck-half) + var(--card-border));
+  --grow-x: calc(
+    var(--card-radius, var(--radius-popover)) + var(--neck-half) +
+      var(--card-border, var(--border-menu-w))
+  );
   transform-origin: var(--grow-x) bottom;
 }
 
@@ -42,11 +75,18 @@
 }
 
 .alignRight {
+  --neck-half: calc(var(--connector-w) / 2);
   right: max(
     0px,
-    calc(100vw - var(--anchor-mid) - var(--card-radius) - var(--neck-half) - var(--card-border))
+    calc(
+      100vw - var(--anchor-mid) - var(--card-radius, var(--radius-popover)) - var(--neck-half) -
+        var(--card-border, var(--border-menu-w))
+    )
   );
-  --grow-x: calc(100% - var(--card-radius) - var(--neck-half) - var(--card-border));
+  --grow-x: calc(
+    100% - var(--card-radius, var(--radius-popover)) - var(--neck-half) -
+      var(--card-border, var(--border-menu-w))
+  );
   transform-origin: var(--grow-x) top;
 }
 
@@ -54,35 +94,10 @@
   transform-origin: var(--grow-x) bottom;
 }
 
-@keyframes open {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-}
-
-@keyframes close {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes open-reduced {
-  from {
-    opacity: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    animation-name: open-reduced;
-  }
-}
-
 /* The funnel joining a card to the button it opens from (ui/PopoverNeck): the card's fill, a
-   triangle with round corners leaving the card's border and resting its tip on the button. It
-   covers that stretch of the card's border. Its left is set at runtime (ui/connector.ts); its
-   height is the gap plus the card's border. */
+   smooth bell curve leaving the card's border and cresting short of the button. It covers that
+   stretch of the card's border. Its left is set at runtime (ui/connector.ts); its height is the
+   gap minus clearance plus the card's border. */
 .connector {
   position: absolute;
   width: var(--connector-w);
@@ -109,11 +124,11 @@
 }
 
 .neckFill {
-  fill: var(--card-bg);
+  fill: var(--card-bg, var(--bg-popover));
 }
 
 .neckEdge {
   fill: none;
   stroke: var(--border-menu);
-  stroke-width: 1;
+  stroke-width: var(--border-menu-w);
 }

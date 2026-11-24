@@ -1,5 +1,6 @@
-/* yab-shaped popover in the visual-pass look: a rounded opaque card of rows. A submenu is a second
-   card of the same look beside its row. */
+/* Menus and context menus (redesign direction §4): opaque card (radius 10, padding 5, 0.5 px
+   border), 28 px rows (radius 6), 16 px leading icons, neutral ink hover (never blue), hairline
+   separators with 5 px margin. A submenu is a second card of the same look beside its row. */
 
 /* Holds the menu's cards (the menu and its open submenus) without boxing them: each is fixed. */
 .layer {
@@ -10,12 +11,13 @@
   composes: card from './Popover.module.css';
   --card-radius: var(--radius-menu);
   --card-bg: var(--bg-menu);
-  min-width: 0;
+  min-width: calc(var(--control-size) * 6);
   width: max-content;
   display: flex;
   flex-direction: column;
   gap: 1px;
   padding: var(--menu-inset);
+  user-select: none;
 }
 
 /* A menu opened at the pointer takes the keyboard on its card (↓ reaches the first row): no ring. */
@@ -31,34 +33,47 @@
   min-width: 0;
   padding: 0 var(--menu-row-pad);
   border: none;
-  border-radius: var(--radius-row);
+  border-radius: var(--radius-menu-row);
   background: transparent;
   color: var(--text);
   font-size: var(--text-menu);
-  font-weight: 500;
+  font-weight: var(--weight-regular);
+  line-height: 1.25;
   text-align: left;
+  user-select: none;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-hover) var(--ease);
 }
 
 .item:focus {
   outline: none;
 }
 
-.item:hover,
-.item:focus-visible,
-.item[data-open] {
-  background: var(--fill-neutral-hover);
+@media (hover: hover) {
+  .item:hover:not([aria-disabled='true']) {
+    background: var(--bg-menu-hover);
+  }
+}
+
+.item[data-open],
+.item:focus-visible {
+  background: var(--bg-menu-hover);
+}
+
+.layer[data-keyboard='true'] .item:focus-visible {
+  outline: 1.5px solid var(--space-accent);
+  outline-offset: -1.5px;
+}
+
+.item:active:not([aria-disabled='true']) {
+  background: var(--fill-pressed);
+  transition-duration: var(--dur-press);
 }
 
 /* Disabled (e.g. the folder a tab already sits in): drawn faint, takes no hover. */
 .item[aria-disabled='true'] {
   color: var(--text-faint);
   cursor: default;
-}
-
-.item[aria-disabled='true']:hover {
-  background: transparent;
 }
 
 /* The leading slot: an icon, a check, or empty so the labels line up. */
@@ -72,6 +87,10 @@
   color: var(--text-muted);
 }
 
+.checked {
+  color: var(--text);
+}
+
 .item[aria-disabled='true'] .icon {
   color: var(--text-faint);
 }
@@ -83,7 +102,7 @@
   object-fit: contain;
 }
 
-/* A submenu's row ends with a caret. */
+/* A submenu's row ends with a chevron. */
 .caret {
   flex: none;
   margin-left: var(--space-4);
@@ -107,19 +126,19 @@
 }
 
 .separator {
-  margin: var(--space-1) var(--menu-inset);
+  margin: var(--menu-inset);
   border: none;
-  border-top: 1px solid var(--border-menu);
+  border-top: var(--border-menu-w) solid var(--border-separator);
 }
 
-/* The filter field: a borderless row at the top or bottom of the menu (yab §4.6). */
+/* The filter field: a borderless row at the top or bottom of the menu. */
 .filter {
   min-height: var(--menu-row-h);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--menu-inset);
   padding: 0 var(--menu-row-pad);
   border: none;
-  border-bottom: 1px solid var(--border-menu);
-  border-radius: var(--radius-row) var(--radius-row) 0 0;
+  border-bottom: var(--border-menu-w) solid var(--border-separator);
+  border-radius: var(--radius-menu-row) var(--radius-menu-row) 0 0;
   background: transparent;
   color: var(--text);
   caret-color: var(--caret);
@@ -128,11 +147,11 @@
 }
 
 .filter[data-position='bottom'] {
-  margin-top: var(--space-1);
+  margin-top: var(--menu-inset);
   margin-bottom: 0;
-  border-top: 1px solid var(--border-menu);
+  border-top: var(--border-menu-w) solid var(--border-separator);
   border-bottom: none;
-  border-radius: 0 0 var(--radius-row) var(--radius-row);
+  border-radius: 0 0 var(--radius-menu-row) var(--radius-menu-row);
 }
 
 .filter::placeholder {
