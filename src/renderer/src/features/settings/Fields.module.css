@@ -129,7 +129,7 @@
 }
 
 .liquid[aria-pressed='true'] {
-  border-color: color-mix(in srgb, var(--space-accent) 55%, var(--on-danger));
+  border-color: color-mix(in srgb, var(--space-accent) 55%, var(--knob));
   color: var(--text);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.9),

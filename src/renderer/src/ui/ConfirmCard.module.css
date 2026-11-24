@@ -57,6 +57,6 @@
 
 @media (hover: hover) {
   .danger:hover {
-    background: color-mix(in srgb, var(--danger) 88%, var(--text));
+    background: var(--danger-hover);
   }
 }

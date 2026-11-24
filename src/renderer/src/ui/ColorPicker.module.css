@@ -24,7 +24,7 @@
 
 @media (hover: hover) {
   .preset:hover {
-    transform: scale(1.14);
+    transform: scale(var(--scale-hover-swatch));
   }
 }
 
@@ -71,7 +71,7 @@
   width: var(--control-size);
   height: var(--control-size);
   border-radius: var(--radius-pill);
-  border: var(--tile-ring-w) solid var(--on-danger);
+  border: var(--tile-ring-w) solid var(--knob);
   box-shadow:
     0 0 0 1px var(--border),
     0 4px 14px rgb(0 0 0 / 0.28);

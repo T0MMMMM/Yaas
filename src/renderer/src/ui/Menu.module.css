@@ -61,8 +61,8 @@
 }
 
 .layer[data-keyboard='true'] .item:focus-visible {
-  outline: 1.5px solid var(--space-accent);
-  outline-offset: -1.5px;
+  outline: var(--focus-ring-inset-w) solid var(--space-accent);
+  outline-offset: calc(-1 * var(--focus-ring-inset-w));
 }
 
 .item:active:not([aria-disabled='true']) {

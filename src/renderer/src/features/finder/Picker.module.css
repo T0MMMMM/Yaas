@@ -5,13 +5,11 @@
   composes: card from '../../ui/Popover.module.css';
   --card-radius: var(--radius-command);
   --card-shadow: var(--shadow-command);
-  /* Constant tier: fade 100 ms only, no scale or translation on enter or exit. */
+  /* Constant tier: fade 100 ms only. Entering at scale 1 leaves the transform nothing to move,
+     and exits never move (ui/Popover.module.css). */
   --card-enter-fade: var(--dur-constant);
-  --card-enter-move: 0ms;
   --card-enter-scale: 1;
   --card-exit-fade: var(--dur-constant);
-  --card-exit-move: 0ms;
-  --card-exit-scale: 1;
   top: var(--finder-top);
   left: var(--content-left, 0px);
   right: var(--frame-gap);
@@ -264,11 +262,11 @@
 .key {
   display: inline-grid;
   place-items: center;
-  min-width: 18px;
-  height: 18px;
+  min-width: var(--key-size);
+  height: var(--key-size);
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, currentColor 16%, transparent);
+  background: var(--key-bg);
   color: inherit;
   font-family: var(--font-sans);
   font-size: var(--text-sm);

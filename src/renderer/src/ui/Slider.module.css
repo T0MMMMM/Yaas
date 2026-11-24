@@ -81,19 +81,19 @@
 }
 
 .thumb path {
-  fill: var(--on-danger);
+  fill: var(--knob);
   stroke: var(--border-menu);
   stroke-width: 1;
 }
 
 @media (hover: hover) {
   .track:hover .thumb {
-    transform: translate(-50%, -50%) scale(1.08);
+    transform: translate(-50%, -50%) scale(var(--scale-hover-thumb));
   }
 }
 
 .track:has(input:focus-visible) .thumb {
-  transform: translate(-50%, -50%) scale(1.08);
+  transform: translate(-50%, -50%) scale(var(--scale-hover-thumb));
 }
 
 .track:has(input:focus-visible) .thumb path {
