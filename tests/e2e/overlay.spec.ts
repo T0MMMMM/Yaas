@@ -179,11 +179,14 @@ test('the tab menu is drawn', async () => {
     const menu = overlay.getByTestId('menu')
     await expect(menu).toBeVisible()
     await expect(menu.getByRole('menuitem')).toHaveText([
+      'Reload',
+      'Duplicate',
+      'Mute',
+      'Copy Link',
       'Pin',
       'Add to Favourites',
       'Move to Folder',
-      'Copy Link',
-      'Duplicate',
+      'Close Tabs Below',
       'Close',
     ])
     // Opened at the pointer, with no neck: its corner sits on the click (once grown).
@@ -240,6 +243,8 @@ test('the tab menu works from the keyboard', async () => {
     const menu = overlay.getByTestId('menu')
     await expect(menu).toBeVisible()
     await overlay.keyboard.press('ArrowDown')
+    await expect(menu.getByRole('menuitem', { name: 'Reload' })).toBeFocused()
+    for (let i = 0; i < 4; i++) await overlay.keyboard.press('ArrowDown')
     await expect(menu.getByRole('menuitem', { name: 'Pin' })).toBeFocused()
     await overlay.keyboard.press('ArrowDown')
     await overlay.keyboard.press('ArrowDown')
