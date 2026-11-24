@@ -5,7 +5,6 @@ import { Favicon } from './Favicon'
 import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
-import { tilt } from './tilt'
 import { useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import rowStyles from './TabRow.module.css'
@@ -25,12 +24,15 @@ export function SplitRow({
   second,
   depth,
   activeId,
+  entering = false,
   exiting = false,
 }: {
   first: TabView
   second: TabView
   depth: number
   activeId: string | null
+  /** Newly opened in the current space: plays the two-phase enter (height + fade). */
+  entering?: boolean
   /** Both tabs are closed: the row plays its exit animation, inert. */
   exiting?: boolean
 }) {
@@ -55,6 +57,7 @@ export function SplitRow({
       className={styles.half}
       data-half={half}
       data-active={shown && tab.id === activeId}
+      data-inactive-half={shown && tab.id !== activeId ? true : undefined}
       data-testid="split-half"
       onClick={(e) => {
         e.stopPropagation()
@@ -67,9 +70,10 @@ export function SplitRow({
   return (
     <li
       className={rowStyles.item}
-      style={{ ...tilt(first.id), '--depth': depth } as CSSProperties}
+      style={{ '--depth': depth } as CSSProperties}
       data-testid={exiting ? 'split-exiting' : 'split-row'}
       data-depth={depth}
+      data-entering={entering || undefined}
       data-exiting={exiting || undefined}
       inert={exiting}
       aria-hidden={exiting || undefined}
@@ -122,7 +126,7 @@ export function SplitRow({
         title="Close both tabs"
         onClick={close}
       >
-        <X size={13} weight="bold" />
+        <X size={12} weight="bold" />
       </button>
     </li>
   )

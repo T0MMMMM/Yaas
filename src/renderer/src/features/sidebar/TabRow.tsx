@@ -5,7 +5,6 @@ import { Favicon } from './Favicon'
 import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
-import { tilt } from './tilt'
 import { TabDragContext, useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './TabRow.module.css'
@@ -18,11 +17,14 @@ export function TabRow({
   tab,
   depth,
   active,
+  entering = false,
   exiting = false,
 }: {
   tab: TabView
   depth: number
   active: boolean
+  /** Newly opened in the current space: plays the two-phase enter (height + fade). */
+  entering?: boolean
   /** The tab is closed: the row plays its exit animation, inert and not counted as a tab. */
   exiting?: boolean
 }) {
@@ -35,9 +37,10 @@ export function TabRow({
   return (
     <li
       className={styles.item}
-      style={{ ...tilt(tab.id), '--depth': depth } as CSSProperties}
+      style={{ '--depth': depth } as CSSProperties}
       data-testid={exiting ? 'tab-exiting' : 'tab'}
       data-depth={depth}
+      data-entering={entering || undefined}
       data-exiting={exiting || undefined}
       inert={exiting}
       aria-hidden={exiting || undefined}
@@ -82,7 +85,7 @@ export function TabRow({
         title="Close tab (⌘W)"
         onClick={() => void window.bigBrowser.invoke('browser.closeTab', { tabId: tab.id })}
       >
-        <X size={13} weight="bold" />
+        <X size={12} weight="bold" />
       </button>
     </li>
   )

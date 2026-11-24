@@ -1,65 +1,106 @@
-/* A tab row: a card layer behind the text tilts on hover and when active (askew cards). The
-   hover / selected fills come from the sidebar (Sidebar.module.css). */
+/* Tab row (redesign direction §3, §5): 34 px tall, 8 px radius, regular 13 px text (never bold
+   when active), elevated translucent active card with hairline top rim and soft shadow, hover-only
+   close button, right-edge title fade, and separate move/fade enter and exit animations. */
 
 .item {
   position: relative;
   min-width: 0;
   /* Nested under its parent tab (depth 0…3, from the workspace). */
-  margin-left: calc(var(--depth, 0) * var(--space-3));
-  transition: margin-left var(--dur-base) var(--ease-out);
+  margin-left: calc(var(--depth, 0) * var(--folder-indent));
+  transition: margin-left var(--dur-frequent-move) var(--ease-out);
 }
 
-/* A new row fades and slides in; a closed one (Rows, Sidebar.tsx) shrinks and fades out before
-   it leaves the DOM. */
-.item {
-  animation: row-in var(--dur-base) var(--ease-out);
+/* Newly opened tab: enter 250 ms height + 150 ms fade (move and fade timed separately). */
+.item[data-entering] {
+  overflow-y: clip;
+  animation:
+    row-enter-move var(--dur-row-enter) var(--ease-out),
+    row-enter-fade var(--dur-row-fade) var(--ease);
 }
 
+/* Closed tab: fade out 180 ms, then height collapse 250 ms ease-in-out. */
 .item[data-exiting] {
-  overflow: hidden;
+  overflow-y: clip;
   pointer-events: none;
-  animation: row-out var(--dur-fast) var(--ease-in) forwards;
+  animation:
+    row-exit-fade var(--dur-row-exit) var(--ease) forwards,
+    row-exit-collapse var(--dur-row-collapse) var(--ease-in-out) var(--dur-row-exit) forwards;
 }
 
-@keyframes row-in {
+@keyframes row-enter-move {
   from {
-    opacity: 0;
+    max-height: 0;
+    margin-bottom: calc(var(--row-gap) * -1);
     transform: translateY(calc(var(--space-1) * -1));
+  }
+
+  to {
+    max-height: var(--row-h);
+    margin-bottom: 0;
+    transform: translateY(0);
   }
 }
 
-@keyframes row-out {
+@keyframes row-enter-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes row-exit-fade {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes row-exit-collapse {
   from {
     max-height: var(--row-h);
+    margin-bottom: 0;
   }
 
   to {
     max-height: 0;
-    opacity: 0;
+    margin-bottom: calc(var(--row-gap) * -1);
   }
 }
 
+/* Static hit layer: never transforms on press so the pointer cannot jitter across the boundary. */
 .row {
   position: relative;
   isolation: isolate;
   width: 100%;
   min-width: 0;
+  height: var(--row-h);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: var(--row-h);
-  padding: 7px var(--control-size) 7px var(--space-2);
+  padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-row);
   background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: 1.25;
   text-align: left;
   cursor: pointer;
+  user-select: none;
   transition:
-    padding var(--dur-base) var(--ease-out),
-    gap var(--dur-base) var(--ease-out);
+    color var(--dur-hover) var(--ease),
+    padding var(--dur-frequent-move) var(--ease-out),
+    gap var(--dur-frequent-move) var(--ease-out);
 }
 
-/* The card is a layer behind the text: only it tilts (angle per item, see tilt()). */
+/* Visual card layer behind the row's content: carries fill, shadow and press scale. */
 .row::before {
   content: '';
   position: absolute;
@@ -68,39 +109,77 @@
   border-radius: inherit;
   background: transparent;
   transition:
-    background var(--dur-fast) var(--ease),
-    box-shadow var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    background-color var(--dur-hover) var(--ease),
+    box-shadow var(--dur-constant) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.row:hover::before,
-.item:hover .row::before {
-  background: var(--hover-fill);
-  transform: rotate(var(--tilt-hover));
+@media (hover: hover) {
+  .item:hover .row {
+    color: var(--text);
+  }
+
+  .item:hover .row::before {
+    background: var(--bg-row-hover);
+  }
+}
+
+.row:active::before {
+  transform: scale(var(--scale-press));
+  transition:
+    background-color var(--dur-press) var(--ease),
+    box-shadow var(--dur-constant) var(--ease),
+    transform var(--dur-press) var(--ease);
+}
+
+/* Active tab card: elevated translucent surface + hairline top rim + soft shadow, regular weight,
+   constant-tier 100 ms fade with no move. */
+.row[data-active='true'] {
+  color: var(--text);
+  transition:
+    color var(--dur-constant) var(--ease),
+    padding var(--dur-frequent-move) var(--ease-out),
+    gap var(--dur-frequent-move) var(--ease-out);
 }
 
 .row[data-active='true']::before,
 .item:hover .row[data-active='true']::before {
-  background: var(--selected-fill);
+  background: var(--bg-row-active);
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.06),
-    0 4px 14px rgb(0 0 0 / 0.06);
-  transform: rotate(var(--tilt-selected));
+    inset 0 1px 0 var(--border-row-active),
+    var(--shadow-row-active);
+  transition:
+    background-color var(--dur-constant) var(--ease),
+    box-shadow var(--dur-constant) var(--ease),
+    transform var(--dur-release) var(--ease-out);
+}
+
+.row[data-active='true']:active::before {
+  transform: scale(var(--scale-press));
+  transition:
+    background-color var(--dur-press) var(--ease),
+    box-shadow var(--dur-constant) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 .row[data-loaded='false'] {
   opacity: var(--opacity-unloaded);
-  transition: opacity var(--dur-fast) var(--ease);
+  transition:
+    opacity var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease),
+    padding var(--dur-frequent-move) var(--ease-out),
+    gap var(--dur-frequent-move) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .item:hover .row[data-loaded='false'] {
+    opacity: 1;
+  }
 }
 
 .row[data-loaded='false'][data-active='true'],
-.item:hover .row[data-loaded='false'],
 .row[data-loaded='false']:focus-visible {
   opacity: 1;
-}
-
-.row[data-active='true'] .title {
-  font-weight: 600;
 }
 
 .title {
@@ -109,16 +188,22 @@
   max-width: var(--sidebar-w);
   overflow: hidden;
   white-space: nowrap;
-  /* The end of a long title fades out; on hover the fade widens to make room for the ×. */
+  font-weight: var(--weight-regular);
+  /* The end of a long title dissolves; on hover the fade widens to clear the × button. */
   text-overflow: clip;
   mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade)), transparent);
   transition:
-    opacity var(--dur-fast) var(--ease),
-    max-width var(--dur-base) var(--ease-out),
+    opacity var(--dur-frequent-fade) var(--ease),
+    max-width var(--dur-frequent-move) var(--ease-out),
     visibility 0s;
 }
 
-.item:hover .title,
+@media (hover: hover) {
+  .item:hover .title {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade-hover)), transparent);
+  }
+}
+
 .item:focus-within .title {
   mask-image: linear-gradient(to right, #000 calc(100% - var(--title-fade-hover)), transparent);
 }
@@ -127,10 +212,15 @@
   flex: none;
   width: var(--favicon-size);
   height: var(--favicon-size);
+  border-radius: var(--space-hair);
   color: var(--text-muted);
 }
 
-/* × on hover, on keyboard focus in the row, and nothing otherwise (even on the active tab). */
+.row[data-active='true'] .favicon {
+  color: var(--text);
+}
+
+/* × on hover or keyboard focus inside the row, never at rest (even on the active tab). */
 .close {
   position: absolute;
   top: calc((var(--row-h) - var(--control-size-xs)) / 2);
@@ -139,27 +229,43 @@
   place-items: center;
   width: var(--control-size-xs);
   height: var(--control-size-xs);
+  padding: 0;
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
   color: var(--text-muted);
   opacity: 0;
-  transform: scale(0.8);
   cursor: pointer;
+  user-select: none;
   transition:
-    opacity var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    opacity var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease),
+    background-color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.item:hover .close,
+@media (hover: hover) {
+  .item:hover .close {
+    opacity: 1;
+  }
+
+  .close:hover {
+    color: var(--text);
+    background: var(--fill-neutral-hover);
+  }
+}
+
 .item:focus-within .close {
   opacity: 1;
-  transform: scale(1);
 }
 
-.close:hover {
-  color: var(--text);
-  background: var(--hover-fill);
+.close:active {
+  transform: scale(var(--scale-press));
+  transition:
+    opacity var(--dur-press) var(--ease),
+    color var(--dur-press) var(--ease),
+    background-color var(--dur-press) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 /* Being dragged (useTabDrag): its lifted clone follows the pointer; the row keeps its slot. */
@@ -174,7 +280,7 @@
 
 :global([data-compact='true']) .row {
   gap: 0;
-  padding: 7px 0 7px calc((100% - var(--favicon-size)) / 2);
+  padding: 0 0 0 calc((100% - var(--favicon-size)) / 2);
 }
 
 :global([data-compact='true']) .title {
@@ -183,9 +289,9 @@
   visibility: hidden;
   pointer-events: none;
   transition:
-    opacity var(--dur-fast) var(--ease),
-    max-width var(--dur-base) var(--ease-out),
-    visibility 0s linear var(--dur-fast);
+    opacity var(--dur-frequent-fade) var(--ease),
+    max-width var(--dur-frequent-move) var(--ease-out),
+    visibility 0s linear var(--dur-frequent-fade);
 }
 
 :global([data-compact='true']) .close {
@@ -205,5 +311,5 @@
 
 /* A tab dropped on the middle of the shown tab's row splits with it (useTabDrag). */
 .item[data-drop-target] .row::before {
-  background: var(--accent-soft);
+  background: var(--space-accent-soft);
 }
