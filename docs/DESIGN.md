@@ -166,35 +166,47 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   and the clone flies back to the row. Under reduced motion the clone still follows the pointer;
   nothing else animates.
 
-**Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
-opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-popover`
-`#ffffff` or `--bg-menu` `#f7f7f8`, `--border-menu`, `--shadow-menu`, rows hovered with
-`--fill-neutral-hover`). A smooth bell-curve bump (`ui/PopoverNeck`, an SVG) leaves the card's
-border tangentially in the card's fill (`--card-bg`) and border and crests 4 px short of the
-opener button (never touching it). It is centred on the button and kept clear of the card's
-rounded corners (`ui/connector.ts`; `.alignLeft`/`.alignRight` in `Popover.module.css` use
+**Popovers** (the + menu, the site menu, anchored cards) float over the page in the overlay view
+and share one opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module:
+`--bg-popover` / `--bg-menu` `#ffffff` light or `#2c2c2e` dark, `--border-menu-w` `0.5 px` hairline
+`--border-menu`, `--radius-popover` / `--radius-menu` `10 px`, `--shadow-menu`, rows hovered with
+neutral `--bg-menu-hover` `ink 0.08`). A smooth bell-curve bump (`ui/PopoverNeck`, an SVG) leaves
+the card's border tangentially in the card's fill (`--card-bg`) and hairline border and crests 4 px
+short of the opener button (never touching it). It is centred on the button and kept clear of the
+card's rounded corners (`ui/connector.ts`; `.alignLeft`/`.alignRight` in `Popover.module.css` use
 `--card-radius`). The opener stays visibly pressed as a rounded card while open (`--fill-pressed`
-on the toolbar button; `--bg-menu` with `×` on the + button). Opening runs in 180 ms
-(`--dur-popover-in`, `--ease-out`) from scale 0.96 and opacity 0; closing fades out in 100 ms
-(`--dur-popover-out`, `--ease-in`, opacity only; the card gets `data-state="closing"`) before the
-overlay hides; a chosen item's action runs first, never after the animation. Under
-`prefers-reduced-motion`, opening becomes a fade too. The + menu puts its filter field at the
-bottom (Enter picks the first match) and orders its items as New space, New folder | Split View
-(`⌃⌘\`), New tab (`⌘T`) | Settings (`⌘,`).
+on the toolbar button; `--bg-menu` with `×` on the + button). Frequent popovers enter with split
+phase timing — opacity `150 ms ease` (`--dur-frequent-fade`) and scale from `0.97` (`--scale-enter`)
+at the trigger-facing origin over `250 ms` `--ease-out` (`--dur-frequent-move`) — and exit with an
+opacity-only `180 ms ease` fade (`--dur-frequent-exit`, `data-state="closing"`, `inert`) before the
+overlay hides; Occasional cards (`downloads`, `confirm`) enter in `400 ms` fade / `450 ms` move and
+exit with the same `180 ms` fade, no move. Input never waits for an exit: the keyboard goes back as
+the exit starts (`overlay.closing`), and since the overlay view takes every click until it hides (a
+`WebContentsView` cannot let clicks through), no overlay exit lasts longer than
+`--dur-frequent-exit`; a second press during the fade hides it at once. Because enters
+and exits are driven by `@starting-style` transitions, interrupting mid-flight retargets smoothly
+from the on-screen value. A chosen item's action always runs first, never after the animation. Under
+`prefers-reduced-motion`, move/scale tokens zero out while fades keep their duration. The + menu
+puts its filter field at the bottom (Enter picks the first match) and orders its items as New space,
+New folder | Split View (`⌃⌘\`), New tab (`⌘T`) | Settings (`⌘,`).
 
 **Menus** (`ui/Menu`) — every menu is drawn by Big Browser, never a native one (except macOS
-Share and the menu bar). Rows: a leading `--icon-size` slot (the item's icon, a check for the
-checked item, or empty so labels line up; only when some row of the card has one), the label, then
-the shortcut or a submenu's caret. A disabled row is `--text-faint` and takes no hover. A menu
-opened from a button keeps the funnel and grows from it; a menu opened at the pointer (a
-right-click) has no neck: its top-left corner sits on the pointer and it grows from there, flipped
-left of / above the pointer where there is no room (`placeCard`, kept `POPOVER_GAP` inside the
-window; taller than the window, it scrolls). A **submenu** is a second card of the same look
-beside its row (4 px from the card, its first row level with the row; flipped to the left side
-when there is no room), opened by hovering the row, → or Enter, closed by ← or by resting on another
-row for 250 ms (`SUBMENU_GRACE_MS`: the pointer can cross rows on its way into the submenu); its
-row keeps the hover fill while open. Keyboard: ↓/↑ within a card (↓ from a menu opened at
-the pointer reaches its first row), Enter or Space chooses, Escape or a click outside closes every
+Share and the menu bar). Outer padding `--menu-inset` (`5 px`), rows `--menu-row-h` (`28 px`) tall
+with `--radius-menu-row` (`6 px`), `13 px` regular text, a leading `--icon-size` (`16 px`) slot
+(the item's icon, a check for the checked item, or empty so labels line up; only when some row of
+the card has one), the label, then the shortcut (`12 px`) or a submenu's caret. Hover and open
+states use neutral ink (`--bg-menu-hover`, never blue); keyboard focus adds a visible
+`--space-accent` ring; separators are `0.5 px` hairlines with `5 px` margin. A disabled row is
+`--text-faint` and takes no hover. A menu opened from a button keeps the funnel and grows from it;
+a menu opened at the pointer (a right-click) has no neck: its top-left corner sits on the pointer
+and it grows from there, flipped left of / above the pointer where there is no room (`placeCard`,
+kept `POPOVER_GAP` inside the window; taller than the window, it scrolls). A **submenu** is a
+second card of the same look beside its row (4 px from the card, its first row level with the row;
+flipped to the left side when there is no room), opened by hovering the row, → or Enter, closed by
+← or by resting on another row for 250 ms (`SUBMENU_GRACE_MS`: the pointer can cross rows on its
+way into the submenu); its row keeps the hover fill while open, and moving between sibling submenus
+swaps content in place (warm state). Keyboard: ↓/↑ within a card (↓ from a menu opened at the
+pointer reaches its first row), Enter or Space chooses, Escape or a click outside closes every
 card. Hovering a row moves the keyboard to it, except while a filter field has it: typing still
 goes to the field.
 
@@ -211,34 +223,41 @@ Source); the extensions' items (their icons, submenus and checks) in their own g
 Element last. No Look Up / Services on macOS.
 
 **Tooltips** — tab rows, pinned rows and favourite tiles (both sidebar modes) have no native
-`title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on
-the row, on the popovers' opaque card (`--bg-menu`, `--border-menu`, `--shadow-menu`,
-`--radius-menu`, at most `--tooltip-max-w` wide; no blur): the row's favicon in a small `--bg-tile`
-tile (a globe without an inline one), then the title (semibold, two lines at most) over the host
-in `--text-secondary`. Once shown, hovering another row glides the same card there (`top`,
-`--dur-base`, `--ease-out`) with no new delay. It opens from scale 0.96 (`--dur-popover-in`,
-`--ease-out`) and fades out in 100 ms (`--dur-popover-out`, `--ease-in`, opacity only); leaving the
-sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a button,
-a gap), fades it out (the overlay's strip hides 100 ms later), moving onto it hides it at once so
-the page gets the click, and a press or a drag start clears it. A menu always wins: opening one
-drops the tooltip, and none shows while a menu is open. Folder rows and buttons keep their native
-`title` (`app/OverlayTooltip`, `features/sidebar/useTooltip`).
+`title`: resting on one for 500 ms shows a tooltip over the page, beside the sidebar (its strip
+starts at the sidebar's right edge; rows send an anchor spanning to that edge) and centred on the
+row, on the popovers' opaque card (`--bg-menu`, `0.5 px` `--border-menu`, `--shadow-menu`,
+`--radius-tooltip` `8 px`, at most `--tooltip-max-w` wide; no blur): the row's favicon in a small
+`--bg-tile` tile (a globe without an inline one), then the title (`13 px` medium, two lines at
+most) over the host (`12 px` in `--text-secondary`). Frequent tier motion: enters with a `150 ms`
+fade + `250 ms` `--ease-out` scale from `0.97` at the left (sidebar-facing) edge, and fades out in
+`180 ms` (`--dur-frequent-exit`, opacity only). Once shown, hovering another row swaps the card's
+position and content in place instantly (warm state, same DOM element, no enter replay). Leaving
+the sidebar, or resting 80 ms (`TOOLTIP_GRACE_MS`) off the tab rows and tiles (a folder row, a
+button, a gap), fades it out, moving onto it hides it at once so the page gets the click, and a
+press or a drag start clears it. A menu always wins: opening one drops the tooltip, and none shows
+while a menu is open. Folder rows and buttons keep their native `title` (`app/OverlayTooltip`,
+`features/sidebar/useTooltip`).
 
-**Tab finder and command field** (`features/finder`) — the same opaque card (and exit), `--finder-w`
-560 wide, radius `--radius-command` (24 px), `--shadow-command`, centred horizontally over the web
-window (offset by the sidebar width) and `--finder-top` (20 % of the window) from the top, in the
-overlay, opening with a 100 ms fade (`--dur-command`, no scale), with no internal dividers: a search
-row (`--finder-field-h` 44 px, symmetrical top/bottom margin) over a list, ↑/↓ move, Enter runs,
+**Tab finder and command field** (`features/finder`) — Ardia command bar geometry on the shared
+opaque card: `--finder-w` `652 px` wide, radius `--radius-command` (`20 px`), `--shadow-command`,
+centred horizontally over the web window (offset by the sidebar width) and `--finder-top` (20 % of
+the window) from the top, in the overlay. Constant tier motion: `100 ms ease` fade only
+(`--dur-constant`) on both enter and exit, with no scale or translation and instant arrow-key
+selection. No internal dividers: a search row (`--finder-field-h` `44 px`, `15 px` `--text-lg`
+input) over a list of `36 px` (`--dock-row-h`) rows with `10 px` (`--radius-dock-row`) concentric
+corners whose selected row is tinted with the active space colour at 12 % (`--bg-dock-selected`;
+`Overlay.tsx` calls `applySpaceAccent` on the overlay document's `:root` too). ↑/↓ move, Enter runs,
 Escape or a click outside closes. The finder (`Mod+K`) ranks the tabs of every space — every word
 must be in the title or the host and path; a title that starts with the query first, then title
 matches, then URL matches — and activates the one picked, switching space; an empty query lists the
 space's tabs. The command field (`Mod+T`) is the **new-tab dock** (`dock.ts`): **Recent Tabs** (this
 space's open tabs, most recently active first, up to three, with "In <folder>" or the address beside
 the title) and a floating pill footer holding **Quick Actions** (`Docs`, `Meet`, `Sheets`, `GitHub`
-→ `docs.new`, `meet.new`, `sheets.new`, `github.com/new`) on the left and the Enter pill ("Switch to
-Tab ↵" or "Open in New Tab ↵") on the right. Typing puts "Go to <url>" (or "Search Google for "…"")
-first and matches open tabs across **all spaces** (picking another space's tab switches space). The
-list scrolls inside the window; no tab is created until Enter.
+→ `docs.new`, `meet.new`, `sheets.new`, `github.com/new`) on the left and a high-contrast Enter
+capsule (`--status-on-bg` / `--status-on-fg`, "Switch to Tab ↵" or "Open in New Tab ↵") on the
+right. Typing puts "Go to <url>" (or "Search Google for "…"") first and matches open tabs across
+**all spaces** (picking another space's tab switches space). The list scrolls inside the window; no
+tab is created until Enter.
 
 **Address bar buttons** — lives **inside the page card**, on the page's own colour (`theme-color`
 tint kept; opaque `#RRGGBB`, `#RGB`, `rgb()`/`rgba()` and CSS named colours are normalised while
@@ -335,6 +354,9 @@ faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.58 / 0.58` li
 | `--accent` / `--space-accent` | Chosen app accent / active space colour (set on `:root` via `applySpaceAccent`) |
 | `--accent-soft` / `--space-accent-soft` | `color-mix(in oklch, var(--accent) 16%, transparent)` / space colour at 12 % (`--bg-dock-selected`) |
 | `--on-accent` / `--on-danger` | Text/icon on accent (computed from luminance) / always white on `--danger` |
+| `--knob` | Control knobs and thumbs (switch, slider, colour picker ring, pressed liquid-glass cell rim): `#ffffff` in both schemes |
+| `--danger-hover` | Destructive button hover: `--danger` mixed 88 % with `--text` |
+| `--key-bg` | Keycap fill in the command dock's Enter pill: the surrounding text colour at 16 % |
 | `--frame-base` | Warm neutral base behind the frame gradient (`#fbfaf9` light / `#29292a` dark) |
 | `--frame-top` / `--frame-bottom` | Vertical frame gradient stops computed from the space colour (`windowTint.ts`) |
 | `--frame-alpha` | Frame opacity (`1` opaque, fades with `--transparency`, `0.3` in liquid glass) |
@@ -342,7 +364,7 @@ faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.58 / 0.58` li
 | `--bg-sidebar` | Frame vertical gradient derived from `--frame-top`/`--frame-bottom` and `--frame-alpha` (used by onboarding) |
 | `--bg-surface` / `--neutral-surface` | Page card surface (`#ffffff` light / `#1c1c1e` dark) |
 | `--bg-raised` / `--bg-popover` / `--bg-menu` | Opaque overlay cards (`#ffffff` light / `#2c2c2e` dark) |
-| `--bg-menu-hover` | Neutral menu hover/selected row (`ink 0.08`) |
+| `--bg-menu-hover` / `--bg-backdrop` / `--bg-settings-group` | Neutral menu hover/selected row (`ink 0.08`), Settings modal backdrop scrim, and Settings grouped section card fill (`ink 0.028` light / `white 0.045` dark) |
 | `--bg-dock-selected` | Command dock selected row (`--space-accent` at 12 %) |
 | `--bg-row-hover` / `--bg-row-active` / `--border-row-active` / `--shadow-row-active` | Sidebar row hover (`ink 0.05`) and active elevated card (`rgba(255,255,255,0.70)` light + hairline rim + soft shadow / `rgba(255,255,255,0.10)` dark) |
 | `--bg-pill` / `--bg-pill-hover` / `--shadow-pill` | Floating pill buttons inside popovers and the command dock |
@@ -417,10 +439,10 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Radius (concentric) | `--radius-sm` 4 · `--radius-md` 6 · `--radius-toolbar` 6 (address bar nav buttons) · `--radius-menu-row` 6 · `--radius-footer-btn` 7 · `--radius-row` 8 (sidebar rows) · `--radius-tooltip` 8 · `--radius-lg` 10 (page card `= PAGE_RADIUS`) · `--radius-tile` 10 · `--radius-dock-row` 10 · `--radius-control` 10 · `--radius-menu` 10 · `--radius-popover` 10 · `--radius-command` 20 (dock / finder) · `--radius-pill` 999 |
 | Font | `--font-sans`: `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", sans-serif` · `--font-mono`: `ui-monospace, "SF Mono", "Cascadia Code", monospace` |
 | Type scale & weights | `--text-xs` 11 · `--text-status` 11.5 · `--text-sm` 12 · `--text-menu` 13 · `--text-md` 13 (body, rows, address bar) · `--text-lg` 15 (dock input) · `--text-xl` 20 · `--weight-regular` 400 · `--weight-medium` 500 · `--weight-semibold` 600 |
-| Layout | `--sidebar-w` 228 · `--sidebar-inset` 9 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 8 (bezel around the page card) · `--split-gap` 8 (frame trough between split cards `= SPLIT_GAP` in main) · `--split-handle-w` 3 / `--split-handle-h` 28 (invisible divider pill revealed on hover/focus/drag) · `--row-h` 34 · `--row-gap` 3 · `--space-header-h` 30 · `--folder-indent` 14 · `--footer-h` 36 · `--footer-btn-size` 28 · `--tile-h` 41 · `--tile-gap` 6 · `--tile-ring-w` 3 · `--tile-min-w` 64 · `--connector-w` 28 · `--tooltip-max-w` 280 · `--title-fade` 24 / `--title-fade-hover` 44 · `--folder-bar-w` 2 · `--folder-hue-s` 70% / `--folder-hue-l` 48% · `--window-controls-h` 32 (`= WINDOW_CONTROLS_H`) · `--window-control-w` 44 · `--finder-w` 652, `--finder-top` 20vh, `--finder-field-h` 44, `--dock-row-h` 36 · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 5 · `--border-menu-w` 0.5px · `--popover-pad` 12 |
-| Controls | `--control-size` 30 · `--control-size-sm` 28 (address bar buttons and field) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 · `--space-dot` 6 · `--favicon-size` 16 · `--tile-icon-size` 20 · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
+| Layout | `--sidebar-w` 228 · `--sidebar-inset` 9 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 8 (bezel around the page card) · `--split-gap` 8 (frame trough between split cards `= SPLIT_GAP` in main) · `--split-handle-w` 3 / `--split-handle-h` 28 (invisible divider pill revealed on hover/focus/drag) · `--row-h` 34 · `--row-gap` 3 · `--space-header-h` 30 · `--folder-indent` 14 · `--footer-h` 36 · `--footer-btn-size` 28 · `--tile-h` 41 · `--tile-gap` 6 · `--tile-ring-w` 3 · `--tile-min-w` 64 · `--connector-w` 28 · `--tooltip-max-w` 280 · `--title-fade` 24 / `--title-fade-hover` 44 · `--folder-bar-w` 2 · `--folder-hue-s` 70% / `--folder-hue-l` 48% · `--window-controls-h` 32 (`= WINDOW_CONTROLS_H`) · `--window-control-w` 44 · `--finder-w` 652, `--finder-top` 20vh, `--finder-field-h` 44, `--dock-row-h` 36 · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 5 · `--border-menu-w` 0.5px · `--popover-pad` 12 · `--downloads-w` 300 · `--downloads-row-h` 40 · `--progress-h` 3 · `--settings-nav-w` 214 · `--settings-header-h` 52 (Settings pane header) |
+| Controls | `--control-size` 30 · `--control-size-sm` 28 (address bar buttons and field) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 · `--space-dot` 6 · `--favicon-size` 16 · `--tile-icon-size` 20 · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 · Switch: `--switch-w` 30 × `--switch-h` 17, `--switch-thumb` 13, `--switch-travel` (track − thumb − 2 × `--space-hair`) · `--key-size` 18 (keycap) · `--focus-ring-inset-w` 1.5 (keyboard ring inside menu rows) |
 | Motion curves | `--ease`: `ease` (fades, presses) · `--ease-out`: `cubic-bezier(0.2, 0.4, 0.1, 0.98)` (enters) · `--ease-in-out`: `cubic-bezier(0.4, 0.05, 0.2, 1)` (state moves, exits) · `--ease-morph`: `cubic-bezier(0.35, 0.05, 0, 0.95)` (folder/section morphs) · legacy aliases `--ease-in` / `--ease-bounce` kept for un-migrated consumers |
-| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms, `--delay-tooltip` 500 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-move` 400 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
+| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms, `--delay-tooltip` 500 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-move` 450 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97, `--scale-hover-swatch` 1.14 (colour preset), `--scale-hover-thumb` 1.08 (slider thumb) · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform
@@ -477,11 +499,17 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 
 ## 7. Settings
 
-A **modal dialog** (centered panel, 880 × up to 640 px, over a dimmed backdrop), opened from the
-gear at the bottom right of the sidebar or `Mod+,`; `Esc`, the close button or a click on the
-backdrop closes it. **Left navigation** lists the sections; the right pane shows one section.
-Each option is a row: label + one-line description on the left, control on the right. Options not
-built yet are shown disabled with a "Soon" tag so the full scope stays visible.
+A **modal dialog** (centered panel, 880 × up to 640 px, radius `--radius-command` `20 px`, hairline
+`--border-menu`, `--shadow-command`, over `--bg-backdrop`), opened from the gear at the top right
+of the sidebar (hidden in icons-only mode), the + menu's Settings, a space menu's Space Settings…,
+the app menu's Settings… or `Mod+,`; `Esc`, the close button or a click on the backdrop closes
+it. Occasional tier motion: enters with a `400 ms ease` fade + `450 ms --ease-out` scale from `0.97`
+and fades out in `300 ms` with no move (`--dur-occasional-exit`, `inert` while closing). **Left
+navigation** (`--settings-nav-w` `214 px`, warm neutral `--neutral-sidebar`) lists the sections
+with offset-ink icons; the right pane shows grouped section cards (`--bg-settings-group`, `10 px`
+radius, `12 px`-inset hairline dividers). Each option is a row: label + one-line description on the
+left, control on the right. Options not built yet are shown disabled with a "Soon" tag so the full
+scope stays visible.
 
 | Section | Option | Values (default) | Stage |
 |---|---|---|---|
@@ -569,11 +597,13 @@ forgotten there. Deleting a space deletes its history.
 ### Downloads
 
 The sidebar footer's left button (aria-label "Downloads") opens the downloads card (overlay kind
-`downloads`, an `AnchoredCard` opening upward on the funnel). It lists every space's downloads,
-newest first: the saved file name, a progress bar while downloading (it pulses when the size is
-unknown), then size and "Show in Finder" (macOS) / "Show in Explorer" (Windows). Clear forgets the
-finished rows, never the files. Files go straight to the system Downloads folder with no dialog.
-Downloads are personal data: kept only in the local database.
+`downloads`, a `300 px`-wide `--downloads-w` `AnchoredCard` opening upward on the funnel with
+Occasional tier motion). It lists every space's downloads, newest first, in `40 px`
+(`--downloads-row-h`) rows with a `24 px` leading icon tile, the saved file name, a `3 px`
+(`--progress-h`) progress bar while downloading (pulsing when size is unknown), and tabular-numeral
+size + "Show in Finder" (macOS) / "Show in Explorer" (Windows). Clear forgets the finished rows,
+never the files. Files go straight to the system Downloads folder with no dialog. Downloads are
+personal data: kept only in the local database.
 
 ## 9. Accessibility
 

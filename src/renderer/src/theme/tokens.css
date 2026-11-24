@@ -8,6 +8,7 @@
   --space-accent: var(--accent);
   --on-accent: #ffffff;
   --on-danger: #ffffff;
+  --knob: #ffffff; /* control knobs and thumbs (switch, slider, colour picker), both schemes */
   --accent-soft: color-mix(in oklch, var(--accent) 16%, transparent);
   --space-accent-soft: color-mix(in srgb, var(--space-accent) 12%, transparent);
   --bg-dock-selected: var(--space-accent-soft);
@@ -106,10 +107,21 @@
   --menu-inset: 5px; /* outer padding of menus and separator margin */
   --border-menu-w: 0.5px; /* crisp hairline border width on overlay cards */
   --popover-pad: 12px; /* inner padding of popovers and command dock */
+  --downloads-w: 300px; /* downloads popover width */
+  --downloads-row-h: 40px; /* downloads row height */
+  --progress-h: 3px; /* downloads progress track height */
+  --settings-nav-w: 214px; /* Settings left navigation sidebar width */
   --status-icon-size: 28px; /* site-menu row status circle */
   --quick-action-h: 32px; /* site-menu quick actions and extension tiles */
   --ext-tile-w: 52px; /* site-menu extension tile width */
   --pill-h: 28px; /* footer status pill */
+  --switch-w: 30px; /* Settings switch track */
+  --switch-h: 17px;
+  --switch-thumb: 13px; /* switch knob; inset --space-hair inside the track */
+  --switch-travel: calc(var(--switch-w) - var(--switch-thumb) - 2 * var(--space-hair));
+  --key-size: 18px; /* keycap in the command dock's Enter pill */
+  --settings-header-h: 52px; /* Settings pane header */
+  --focus-ring-inset-w: 1.5px; /* keyboard focus ring drawn inside menu rows */
 
   /* motion — curves (redesign direction §5, improve-ux-motion) */
   --ease: ease; /* fades, presses */
@@ -129,8 +141,8 @@
   --dur-frequent-move: 250ms; /* frequent enter move */
   --dur-frequent-exit: 180ms; /* frequent exit fade (no move) */
   --dur-occasional-fade: 400ms; /* occasional enter fade (settings, confirm, downloads) */
-  --dur-occasional-move: 400ms; /* occasional enter move */
-  --dur-occasional-exit: 300ms; /* occasional exit fade */
+  --dur-occasional-move: 450ms; /* occasional enter move (finishes just past fade climax) */
+  --dur-occasional-exit: 300ms; /* occasional exit fade, no move (Settings; overlay cards use frequent-exit) */
   --delay-tooltip: 500ms; /* tooltip hover rest delay before reveal */
   --dur-row-fade: 150ms; /* tab open fade */
   --dur-row-enter: 250ms; /* tab open height/move */
@@ -146,6 +158,8 @@
   /* motion — press & enter scale targets */
   --scale-press: 0.97;
   --scale-enter: 0.97;
+  --scale-hover-swatch: 1.14; /* colour picker preset swatch on hover */
+  --scale-hover-thumb: 1.08; /* slider thumb on hover / keyboard focus */
 
   /* motion — existing durations kept for un-migrated consumers */
   --dur-popover-out: 100ms;
@@ -198,6 +212,8 @@
   --fill-neutral-hover: rgb(0 0 0 / 0.08);
   --fill-pressed: rgb(0 0 0 / 0.12);
   --bg-menu-hover: rgb(0 0 0 / 0.08);
+  --bg-backdrop: rgb(0 0 0 / 0.35);
+  --bg-settings-group: rgb(0 0 0 / 0.028);
 
   /* sidebar row & favourite tile tokens (redesign direction §3) */
   --bg-row-hover: rgb(0 0 0 / 0.05);
@@ -277,6 +293,8 @@
   --fill-neutral-hover: rgb(255 255 255 / 0.08);
   --fill-pressed: rgb(255 255 255 / 0.14);
   --bg-menu-hover: rgb(255 255 255 / 0.08);
+  --bg-backdrop: rgb(0 0 0 / 0.5);
+  --bg-settings-group: rgb(255 255 255 / 0.045);
 
   /* sidebar row & favourite tile tokens (redesign direction §3) */
   --bg-row-hover: rgb(255 255 255 / 0.05);
@@ -339,6 +357,10 @@
      (default 0.35 → 1× target; 0 → off). */
   --grain-opacity: calc(var(--grain-base) * var(--grain) / 0.35);
   --bg-window: var(--frame-base);
+  /* Destructive button hover: the danger colour nudged toward the ink. */
+  --danger-hover: color-mix(in srgb, var(--danger) 88%, var(--text));
+  /* Keycap fill: a light wash of the text colour it sits in (resolved where it is used). */
+  --key-bg: color-mix(in srgb, currentColor 16%, transparent);
   --bg-sidebar: linear-gradient(
     to bottom,
     color-mix(in srgb, var(--frame-top) calc(var(--frame-alpha) * 100%), transparent),
@@ -412,5 +434,7 @@
     --dur-drag-settle: 0ms;
     --scale-press: 1;
     --scale-enter: 1;
+    --scale-hover-swatch: 1;
+    --scale-hover-thumb: 1;
   }
 }

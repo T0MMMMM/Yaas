@@ -32,7 +32,9 @@ export function useConnector(anchor: PageBounds): RefObject<HTMLSpanElement | nu
     const neck = connector.current
     const card = neck?.parentElement
     if (!neck || !card) return
-    const radius = parseFloat(getComputedStyle(card).borderTopLeftRadius) || 0
+    const style = getComputedStyle(card)
+    const radius = parseFloat(style.borderTopLeftRadius) || 0
+    const borderTop = parseFloat(style.borderTopWidth) || 0
     const left = connectorLeft(
       anchor,
       card.offsetLeft + card.clientLeft,
@@ -41,7 +43,7 @@ export function useConnector(anchor: PageBounds): RefObject<HTMLSpanElement | nu
       neck.offsetWidth,
     )
     neck.style.left = `${left}px`
-    neck.style.height = `${Math.max(4, POPOVER_GAP - NECK_CLEARANCE) + card.clientTop}px`
+    neck.style.height = `${Math.max(4, POPOVER_GAP - NECK_CLEARANCE) + borderTop}px`
   })
   return connector
 }

@@ -1,4 +1,4 @@
-import { CheckCircle, WarningCircle } from '@phosphor-icons/react'
+import { CheckCircle, FileArrowDown, WarningCircle } from '@phosphor-icons/react'
 import type { Download } from '@shared/model'
 import { useDownloads } from '../../stores/downloads'
 import { useSettings } from '../../stores/settings'
@@ -20,44 +20,49 @@ function Row({ download, showLabel }: { download: Download; showLabel: string })
   const share = fraction(receivedBytes, totalBytes)
   return (
     <li className={styles.row} data-testid="download" data-state={state}>
-      <span className={styles.name} title={download.path}>
-        {download.filename}
+      <span className={styles.icon} aria-hidden="true">
+        {state === 'completed' ? (
+          <CheckCircle size={16} weight="fill" className={styles.ok} />
+        ) : state === 'interrupted' ? (
+          <WarningCircle size={16} weight="fill" className={styles.warn} />
+        ) : (
+          <FileArrowDown size={16} weight="regular" />
+        )}
       </span>
-      {state === 'progressing' && (
-        <>
-          <span
-            className={styles.bar}
-            role="progressbar"
-            aria-label={`Downloading ${download.filename}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={share === null ? undefined : Math.round(share * 100)}
-            data-indeterminate={share === null || undefined}
-          >
-            <span className={styles.fill} style={{ width: `${(share ?? 0) * 100}%` }} />
-          </span>
+      <div className={styles.body}>
+        <span className={styles.name} title={download.path}>
+          {download.filename}
+        </span>
+        {state === 'progressing' && (
+          <>
+            <span
+              className={styles.bar}
+              role="progressbar"
+              aria-label={`Downloading ${download.filename}`}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={share === null ? undefined : Math.round(share * 100)}
+              data-indeterminate={share === null || undefined}
+            >
+              <span className={styles.fill} style={{ width: `${(share ?? 0) * 100}%` }} />
+            </span>
+            <span className={styles.detail}>
+              {share === null
+                ? formatBytes(receivedBytes)
+                : `${formatBytes(receivedBytes)} of ${formatBytes(totalBytes)}`}
+            </span>
+          </>
+        )}
+        {state === 'completed' && (
           <span className={styles.detail}>
-            {share === null
-              ? formatBytes(receivedBytes)
-              : `${formatBytes(receivedBytes)} of ${formatBytes(totalBytes)}`}
+            <span>{formatBytes(totalBytes || receivedBytes)}</span>
+            <button type="button" className={styles.link} onClick={() => show(download.id)}>
+              {showLabel}
+            </button>
           </span>
-        </>
-      )}
-      {state === 'completed' && (
-        <span className={styles.detail}>
-          <CheckCircle size={14} weight="fill" className={styles.ok} />
-          <span>{formatBytes(totalBytes || receivedBytes)}</span>
-          <button className={styles.link} onClick={() => show(download.id)}>
-            {showLabel}
-          </button>
-        </span>
-      )}
-      {state === 'interrupted' && (
-        <span className={styles.detail}>
-          <WarningCircle size={14} weight="fill" className={styles.warn} />
-          <span>Interrupted</span>
-        </span>
-      )}
+        )}
+        {state === 'interrupted' && <span className={styles.detail}>Interrupted</span>}
+      </div>
     </li>
   )
 }
@@ -72,7 +77,7 @@ export function DownloadsMenu() {
     <div className={styles.menu}>
       <div className={styles.header}>
         <h2 className={styles.title}>Downloads</h2>
-        <button className={styles.clear} disabled={!finished} onClick={clear}>
+        <button type="button" className={styles.clear} disabled={!finished} onClick={clear}>
           Clear
         </button>
       </div>

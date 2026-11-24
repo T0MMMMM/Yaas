@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SIDEBAR_DEFAULT, type OverlayRequest, type Tooltip } from '@shared/ipc/contract'
+import {
+  DEFAULT_ACCENT,
+  SIDEBAR_DEFAULT,
+  TOOLTIP_FADE_MS,
+  type OverlayRequest,
+  type Tooltip,
+} from '@shared/ipc/contract'
 import type { MenuSpecItem } from '@shared/menuSpec'
 import { DownloadsMenu } from '../features/downloads/DownloadsMenu'
 import { SiteMenu } from '../features/browser/SiteMenu'
@@ -12,6 +18,7 @@ import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useDownloads } from '../stores/downloads'
 import { useSettings } from '../stores/settings'
+import { applySpaceAccent } from '../theme/applyTheme'
 import { AnchoredCard } from '../ui/AnchoredCard'
 import { ColorPicker } from '../ui/ColorPicker'
 import { ConfirmCard } from '../ui/ConfirmCard'
@@ -48,15 +55,25 @@ const NEW_MENU: MenuSpecItem[] = [
   },
 ]
 
-/** Length of a card's exit animation (`--dur-popover-out`): the view is hidden once it has played. */
-const EXIT_MS = 100
-/** How long a hidden tooltip stays mounted to fade out: main hides the strip after as long. */
-const TOOLTIP_FADE_MS = 100
+/**
+ * Exit fade durations by frequency tier, kept equal to the CSS tokens (`tokens.css`). The view
+ * takes every click over the window until it hides (a `WebContentsView` cannot let them through,
+ * and shrinking it would re-lay out the card mid-fade), so no exit outlasts the frequent one: the
+ * occasional cards (downloads, confirm) fade out in `--dur-frequent-exit` too, not the 300 ms of the
+ * Settings modal. The keyboard does not wait at all (`overlay.closing`).
+ */
+const CONSTANT_EXIT_MS = 100 // --dur-constant (⌘T, ⌘K)
+const FREQUENT_EXIT_MS = 180 // --dur-frequent-exit (menus, popovers, every anchored card)
+
+function exitMsFor(kind: OverlayRequest['kind'] | undefined): number {
+  return kind === 'command' || kind === 'tab-finder' ? CONSTANT_EXIT_MS : FREQUENT_EXIT_MS
+}
 
 /**
  * What the overlay view renders (`#overlay`): one popover or card at a time, floating over the page.
- * Main shows the view and says which popover with `overlay.opened`; a dismissal plays the card's
- * exit animation, then hides the view with `overlay.close`. Otherwise it may draw a sidebar
+ * Main shows the view and says which popover with `overlay.opened`; a dismissal hands the keyboard
+ * back at once (`overlay.closing`), plays the card's exit animation, then hides the view with
+ * `overlay.close`. Otherwise it may draw a sidebar
  * tooltip (`overlay.tooltip`), never focused; a popover replaces it.
  */
 export function Overlay() {
@@ -69,12 +86,21 @@ export function Overlay() {
   const tooltipFade = useRef<number | null>(null)
   /** The pending `overlay.close`, while the exit animation plays. */
   const exit = useRef<number | null>(null)
+  /** Tracks the active request kind so `close` uses the right tier exit duration without changing identity. */
+  const requestKind = useRef<OverlayRequest['kind'] | undefined>(undefined)
+  /** `overlay.opened` events received, so main can tell a stale `overlay.closing` from the current one. */
+  const openedCount = useRef(0)
   const initBrowser = useBrowser((s) => s.init)
   const initDownloads = useDownloads((s) => s.init)
   const workspace = useWorkspace()
   const accent = useSettings((s) => s.settings?.accent)
   const sidebarWidth = useSettings((s) => s.settings?.sidebarWidth)
   const contentLeft = snapWidth(sidebarWidth ?? SIDEBAR_DEFAULT)
+  const spaceColor = workspace?.space.color ?? accent ?? DEFAULT_ACCENT
+
+  // The overlay runs in its own document (separate from Shell): set the active space colour on its
+  // :root too, so the space-tinted tokens (selected dock row, selection) follow the space.
+  useEffect(() => applySpaceAccent(spaceColor), [spaceColor])
 
   useEffect(() => initBrowser(), [initBrowser])
   useEffect(() => initDownloads(), [initDownloads])
@@ -99,6 +125,8 @@ export function Overlay() {
         clearTooltipFade()
         setTooltip(null)
         setOpenId((id) => id + 1)
+        openedCount.current += 1
+        requestKind.current = next.kind
         setRequest(next)
       }),
     [cancelExit, clearTooltipFade],
@@ -135,6 +163,7 @@ export function Overlay() {
     () =>
       window.bigBrowser.on('overlay.closed', () => {
         cancelExit()
+        requestKind.current = undefined
         setRequest(null)
       }),
     [cancelExit],
@@ -147,14 +176,22 @@ export function Overlay() {
   }, [])
 
   const close = useCallback(() => {
-    if (exit.current !== null) return
-    setClosing(true)
-    exit.current = window.setTimeout(() => {
+    const finish = (): void => {
       exit.current = null
       setClosing(false)
+      requestKind.current = undefined
       setRequest(null)
       void window.bigBrowser.invoke('overlay.close')
-    }, EXIT_MS)
+    }
+    // Dismissed again mid-exit (a press during the fade): hide now rather than hold the input.
+    if (exit.current !== null) {
+      window.clearTimeout(exit.current)
+      finish()
+      return
+    }
+    setClosing(true)
+    void window.bigBrowser.invoke('overlay.closing', { opened: openedCount.current })
+    exit.current = window.setTimeout(finish, exitMsFor(requestKind.current))
   }, [])
 
   if (!request) {
@@ -283,6 +320,8 @@ export function Overlay() {
           label="Downloads"
           testId="downloads"
           placement="above"
+          tier="occasional"
+          size="downloads"
           closing={closing}
           onClose={close}
         >

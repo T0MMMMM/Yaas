@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserWindow } from 'electron'
-import type { Tooltip } from '@shared/ipc/contract'
+import { TOOLTIP_FADE_MS, type Tooltip } from '@shared/ipc/contract'
 
 /** The one fake view the OverlayView under test creates. */
 const fake = vi.hoisted(() => ({
@@ -40,7 +40,7 @@ vi.mock('electron', () => {
   return { WebContentsView, ipcMain: {} }
 })
 
-import { OverlayView, TOOLTIP_FADE_MS, TOOLTIP_STRIP_W, tooltipBounds } from './overlayView'
+import { OverlayView, TOOLTIP_STRIP_W, tooltipBounds } from './overlayView'
 
 const WINDOW = { width: 1000, height: 700 }
 
@@ -118,7 +118,10 @@ describe('OverlayView.tooltip', () => {
     overlay.tooltip(null)
     expect(sent(view, 'overlay.tooltip')).toEqual([tip, null])
     expect(lastVisible(view)).toBe(true)
-    vi.advanceTimersByTime(TOOLTIP_FADE_MS)
+    // Still shown until the overlay's card has played its whole fade.
+    vi.advanceTimersByTime(TOOLTIP_FADE_MS - 1)
+    expect(lastVisible(view)).toBe(true)
+    vi.advanceTimersByTime(1)
     expect(lastVisible(view)).toBe(false)
   })
 
@@ -188,6 +191,53 @@ describe('OverlayView.close', () => {
     overlay.open({ kind: 'command' })
     overlay.close()
     expect(contents.focus).toHaveBeenCalledTimes(1)
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('OverlayView.closing', () => {
+  it('hands the keyboard back at once while the view stays for the exit fade', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    overlay.open({ kind: 'command' })
+    overlay.closing(1)
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
+    expect(lastVisible(view)).toBe(true)
+    // The keyboard left: hiding the view afterwards does not move it again.
+    view.webContents.isFocused.mockReturnValue(false)
+    overlay.close()
+    expect(lastVisible(view)).toBe(false)
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
+  })
+
+  it('gives it to the page a page menu was opened on', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    const contents = { focus: vi.fn(), isDestroyed: () => false }
+    overlay.open({ kind: 'command' }, contents as never)
+    overlay.closing(1)
+    expect(contents.focus).toHaveBeenCalled()
+    expect(win.webContents.focus).not.toHaveBeenCalled()
+  })
+
+  it('ignores a stale closing: a newer popover opened meanwhile keeps the keyboard', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    overlay.open({ kind: 'new-menu', anchor: { x: 0, y: 0, width: 10, height: 10 } })
+    // The + menu's New tab: `overlay.open` reaches main before the menu's own closing.
+    overlay.open({ kind: 'command' })
+    overlay.closing(1)
+    expect(win.webContents.focus).not.toHaveBeenCalled()
+    overlay.closing(2)
+    expect(win.webContents.focus).toHaveBeenCalledTimes(1)
+  })
+
+  it('does nothing once closed', () => {
+    const { overlay, view, win } = setup()
+    view.webContents.isFocused.mockReturnValue(true)
+    overlay.open({ kind: 'command' })
+    overlay.close()
+    overlay.closing(1)
     expect(win.webContents.focus).toHaveBeenCalledTimes(1)
   })
 })

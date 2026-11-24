@@ -183,6 +183,14 @@ describe('IPC contract', () => {
     expect(input.safeParse(withIcon('javascript:alert(1)')).success).toBe(false)
   })
 
+  it('takes a count of opened popovers on overlay.closing', () => {
+    const input = commands['overlay.closing'].input
+    expect(input.safeParse({ opened: 3 }).success).toBe(true)
+    expect(input.safeParse({ opened: -1 }).success).toBe(false)
+    expect(input.safeParse({ opened: 1.5 }).success).toBe(false)
+    expect(input.safeParse({}).success).toBe(false)
+  })
+
   it('takes a menu id and an item id on overlay.choose', () => {
     const input = commands['overlay.choose'].input
     expect(input.safeParse({ menuId: 'm', itemId: 'pin' }).success).toBe(true)

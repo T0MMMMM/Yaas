@@ -285,6 +285,12 @@ export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 /** Longest tooltip title or detail; the sidebar clips longer ones before sending (clipTooltip). */
 export const TOOLTIP_TEXT_MAX = 500
 
+/**
+ * How long a hidden tooltip takes to fade out (`--dur-frequent-exit`): the overlay keeps its card
+ * mounted and main keeps its strip shown that long, so neither cuts the other's fade.
+ */
+export const TOOLTIP_FADE_MS = 180
+
 /** Longest favicon URL a tooltip carries (a data: URL can be long; longer ones are dropped). */
 export const TOOLTIP_ICON_MAX = 4096
 
@@ -526,6 +532,16 @@ export const commands = {
   'browser.openWebStore': { input: z.void(), output: z.void() },
   /** Shows the overlay view over the whole window with a popover anchored to a UI button. */
   'overlay.open': { input: overlayRequestSchema, output: z.void() },
+  /**
+   * From the overlay, as a dismissal starts (before its exit animation): main hands the keyboard
+   * back at once, so typing never waits for the fade. `opened` counts the `overlay.opened` events
+   * the overlay received; main ignores a stale one (a newer popover opened meanwhile).
+   */
+  'overlay.closing': {
+    input: z.object({ opened: z.number().int().nonnegative() }).strict(),
+    output: z.void(),
+  },
+  /** From the overlay, once its exit animation played: hides the view. */
   'overlay.close': { input: z.void(), output: z.void() },
   /** From the overlay: the item chosen in main's menu (a stale or unknown menu does nothing). */
   'overlay.choose': {

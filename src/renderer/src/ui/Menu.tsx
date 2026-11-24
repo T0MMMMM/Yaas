@@ -85,6 +85,8 @@ export function Menu(props: MenuProps) {
   const layer = useRef<HTMLDivElement>(null)
   const [query, setQuery] = useState('')
   const [path, setPath] = useState<OpenSubmenu[]>([])
+  /** True while the user navigates by keyboard so focus rings show for keys, never mouse hover. */
+  const [keyboard, setKeyboard] = useState(false)
   /** The row to focus once the next render is laid out (`null`: the card's first row). */
   const pendingFocus = useRef<{ level: number; id: string | null } | null>(null)
   /** A submenu switch waiting out the grace (the pointer may be on its way into the submenu). */
@@ -170,6 +172,7 @@ export function Menu(props: MenuProps) {
     const active = document.activeElement as HTMLElement | null
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
+      setKeyboard(true)
       const rows = rowsOf(e.currentTarget)
       const index = active ? rows.indexOf(active) : -1
       const step = e.key === 'ArrowDown' ? 1 : -1
@@ -182,10 +185,12 @@ export function Menu(props: MenuProps) {
       )
       if (!active || !entry?.submenu || !entry.enabled) return
       e.preventDefault()
+      setKeyboard(true)
       openSubmenu(level, entry, active)
       pendingFocus.current = { level: level + 1, id: null }
     } else if (e.key === 'ArrowLeft' && level > 0) {
       e.preventDefault()
+      setKeyboard(true)
       const parent = path[level - 1]
       setPath((current) => current.slice(0, level - 1))
       if (parent) pendingFocus.current = { level: level - 1, id: parent.id }
@@ -195,6 +200,7 @@ export function Menu(props: MenuProps) {
   const onRowEnter = (level: number, entry: Entry, e: MouseEvent<HTMLButtonElement>) => {
     if (closing) return
     cancelGrace()
+    setKeyboard(false)
     const row = e.currentTarget
     // Hover follows the keyboard's row, except while the filter field has it: what is typed next
     // must still reach the field (the row shows its hover fill anyway).
@@ -223,10 +229,12 @@ export function Menu(props: MenuProps) {
 
   return createPortal(
     // One layer for all the cards: a press on any of them is inside the menu (useDismiss).
-    <div ref={layer} className={styles.layer}>
+    <div ref={layer} className={styles.layer} data-keyboard={keyboard || undefined}>
       {levels.map((rows, level) => (
         <MenuCard
-          key={level === 0 ? 'root' : `${level}:${path[level - 1]?.id}`}
+          // Warm state: keep the same submenu card mounted across sibling rows so content swaps
+          // in place without replaying the enter animation.
+          key={level === 0 ? 'root' : `level-${level}`}
           level={level}
           rows={rows}
           open={path[level]?.id ?? null}
@@ -315,8 +323,10 @@ function MenuCard({
     const viewport = { width: window.innerWidth, height: window.innerHeight }
     let place
     if (from) {
-      const inset =
-        (card.querySelector<HTMLElement>('[role="menuitem"]')?.offsetTop ?? 0) + card.clientTop
+      // The card's own border width, fractional like the funnel's (connector.ts): `clientTop`
+      // rounds the 0.5 px hairline.
+      const border = parseFloat(getComputedStyle(card).borderTopWidth) || 0
+      const inset = (card.querySelector<HTMLElement>('[role="menuitem"]')?.offsetTop ?? 0) + border
       place = placeCard({ x: from.right + SUBMENU_GAP, y: from.top - inset }, size, viewport, {
         x: from.left - SUBMENU_GAP,
         y: from.bottom + inset,
@@ -381,7 +391,7 @@ function MenuCard({
             onClick={(e) => onRowClick(row, e)}
           >
             {withIcons && (
-              <span className={styles.icon} aria-hidden>
+              <span className={`${styles.icon} ${row.checked ? styles.checked : ''}`} aria-hidden>
                 {row.checked ? (
                   <Check size={16} weight="bold" />
                 ) : Icon ? (

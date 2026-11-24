@@ -145,6 +145,55 @@ test('the dock shows up to 3 recent tabs, quick action pills in the footer, and 
   })
 })
 
+test('the dock selected row tints with the active space colour, not the app accent', async () => {
+  await withTabs(async ({ app, page, overlay, site }) => {
+    // Create and activate a space with a colour distinct from the default #7C5CFF app accent.
+    const work = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.createSpace', { name: 'Work', color: '#2D9CDB' }),
+    )
+    await page.evaluate(
+      ({ spaceId, input }) => window.bigBrowser.invoke('browser.openTab', { spaceId, input }),
+      { spaceId: work.id, input: site.url('/c') },
+    )
+    await page.evaluate(
+      (spaceId) => window.bigBrowser.invoke('browser.activateSpace', { spaceId }),
+      work.id,
+    )
+    await expect(page.getByTestId('space-header')).toContainText('Work')
+
+    await clickMenu(app, 'newTab')
+    const dock = overlay.getByTestId('command-field')
+    const selected = dock.locator('[role="option"][aria-selected="true"]')
+    await expect(selected).toBeVisible()
+
+    // Overlay :root --space-accent matches #2D9CDB and the selected row background reflects it at 12%.
+    await expect
+      .poll(() =>
+        overlay.evaluate(() =>
+          getComputedStyle(document.documentElement).getPropertyValue('--space-accent').trim(),
+        ),
+      )
+      .toBe('#2D9CDB')
+    const bg = await selected.evaluate((el) => getComputedStyle(el).backgroundColor)
+    // color-mix(in srgb, #2D9CDB 12%, transparent) -> rgba(45, 156, 219, 0.12)
+    expect(bg).toMatch(/45,\s*156,\s*219,\s*0\.12|0\.176.*0\.61.*0\.858.*0\.12/)
+
+    // Ardia command dock metrics: 652 px width (or viewport-bounded), 36 px row, 15 px input.
+    const metrics = await dock.evaluate((el) => {
+      const input = el.querySelector('input')
+      const row = el.querySelector('[role="option"]')
+      return {
+        radius: parseFloat(getComputedStyle(el).borderTopLeftRadius),
+        inputSize: input ? parseFloat(getComputedStyle(input).fontSize) : 0,
+        rowHeight: row ? Math.round(row.getBoundingClientRect().height) : 0,
+      }
+    })
+    expect(metrics.radius).toBe(20)
+    expect(metrics.inputSize).toBe(15)
+    expect(metrics.rowHeight).toBe(36)
+  })
+})
+
 test('⌘Z reopens a closed tab from the UI, never from a text field', async () => {
   await withTabs(async ({ app, page }) => {
     await clickMenu(app, 'closeTab')
