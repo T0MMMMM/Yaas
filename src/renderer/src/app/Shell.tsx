@@ -8,7 +8,7 @@ import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
-import { onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
+import { applySpaceAccent, onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
 import { FrameBackdrop } from '../theme/FrameBackdrop'
 import { useSidebarResize } from './useSidebarResize'
 import { WindowControls } from './WindowControls'
@@ -68,16 +68,17 @@ export function Shell() {
   const spaceColor = activeSpace?.color ?? defaultAccent
   const isSplit = Boolean(workspace?.activeSplit)
 
+  // Propagate the active space accent onto :root so derived tokens (--space-accent-soft,
+  // --bg-dock-selected, --selection-bg) resolve to the space colour instead of the app accent.
+  useEffect(() => {
+    applySpaceAccent(spaceColor)
+  }, [spaceColor])
+
   return (
     <div
       className={styles.shell}
       data-resizing={resize.resizing}
-      style={
-        {
-          '--sidebar-w': `${resize.width}px`,
-          '--space-accent': spaceColor,
-        } as CSSProperties
-      }
+      style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
       <FrameBackdrop spaceId={activeSpace?.id ?? null} color={spaceColor} scheme={scheme} />
 
