@@ -459,8 +459,8 @@ kbd {
   background: transparent;
   cursor: pointer;
   user-select: none;
-  opacity: 0.4;
-  transform: scale(0.94);
+  opacity: var(--opacity-space-idle);
+  transform: scale(var(--scale-space-idle));
   transition:
     opacity var(--dur-hover) var(--ease),
     transform var(--dur-release) var(--ease-out),
@@ -470,7 +470,7 @@ kbd {
 
 @media (hover: hover) {
   .space:hover {
-    opacity: 0.85;
+    opacity: var(--opacity-space-hover);
   }
 }
 
@@ -485,7 +485,7 @@ kbd {
 
 .space[aria-selected='true'] {
   opacity: 1;
-  transform: scale(1.12);
+  transform: scale(var(--scale-space-selected));
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -90,7 +90,7 @@
   color: var(--text-muted);
   font-size: var(--text-md);
   font-weight: var(--weight-regular);
-  line-height: 1.25;
+  line-height: var(--leading-row);
   text-align: left;
   cursor: pointer;
   user-select: none;

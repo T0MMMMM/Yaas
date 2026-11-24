@@ -150,7 +150,7 @@
   min-width: 0;
   font-size: var(--text-md);
   font-weight: var(--weight-semibold);
-  line-height: 1.25;
+  line-height: var(--leading-row);
   color: inherit;
 }
 
