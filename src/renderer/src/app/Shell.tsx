@@ -6,7 +6,6 @@ import { SplitInactiveBar } from '../features/browser/SplitInactiveBar'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { useWorkspace } from '../features/workspace/useWorkspace'
-import { useBrowser } from '../stores/browser'
 import { useSettings } from '../stores/settings'
 import { useUi } from '../stores/ui'
 import { applySpaceAccent, onSystemSchemeChange, resolveScheme } from '../theme/applyTheme'
@@ -26,7 +25,6 @@ function isTextField(el: Element | null): boolean {
 /** Main layout: space-tinted frame wrapping sidebar | address bar inside the page card. */
 export function Shell() {
   const view = useUi((s) => s.view)
-  const initBrowser = useBrowser((s) => s.init)
   const resize = useSidebarResize()
   const platform = useSettings((s) => s.info?.platform)
   const colorScheme = useSettings((s) => s.settings?.colorScheme ?? 'system')
@@ -35,8 +33,6 @@ export function Shell() {
 
   const systemScheme = useSyncExternalStore(onSystemSchemeChange, getSystemScheme)
   const scheme = colorScheme === 'system' ? systemScheme : colorScheme
-
-  useEffect(() => initBrowser(), [initBrowser])
 
   // Shortcuts pressed while a page has focus arrive from main's menu.
   useEffect(
@@ -72,9 +68,8 @@ export function Shell() {
   // Propagate the active space accent onto :root so derived tokens (--space-accent-soft,
   // --bg-dock-selected, --selection-bg) resolve to the space colour instead of the app accent.
   useEffect(() => {
-    if (activeSpace) applySpaceAccent(activeSpace.color)
-    else applySpaceAccent(spaceColor)
-  }, [activeSpace, spaceColor])
+    applySpaceAccent(spaceColor)
+  }, [spaceColor])
 
   return (
     <div

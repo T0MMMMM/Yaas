@@ -204,8 +204,6 @@ export class TabViews {
   private split: { firstId: string; secondId: string; ratio: number } | null = null
   /** The ratio a divider drag shows before it is stored, or null. */
   private previewRatio: number | null = null
-  /** Corner radius applied to page views: always PAGE_RADIUS so bottom corners stay rounded. */
-  private borderRadius = PAGE_RADIUS
 
   constructor(
     private readonly win: BrowserWindow,
@@ -353,12 +351,6 @@ export class TabViews {
     else contents.openDevTools({ mode: 'detach' })
   }
 
-  /** Updates the corner radius of every tab view (defaults to PAGE_RADIUS). */
-  setBorderRadius(radius: number): void {
-    this.borderRadius = radius
-    for (const { view } of this.views.values()) view.setBorderRadius(radius)
-  }
-
   /** Runtime state of each of `tabIds`, keyed by tab id (plain, serializable). */
   runtime(tabIds: readonly string[]): Record<string, TabRuntime> {
     return Object.fromEntries(tabIds.map((id) => [id, { ...(this.state.get(id) ?? UNLOADED) }]))
@@ -397,7 +389,7 @@ export class TabViews {
         nodeIntegration: false,
       },
     })
-    view.setBorderRadius(this.borderRadius)
+    view.setBorderRadius(PAGE_RADIUS)
     view.setVisible(false)
     this.views.set(tabId, { view, spaceId })
     this.state.set(tabId, {
