@@ -500,7 +500,8 @@ short fade. All choices are editable later in Settings. Onboarding state is stor
 
 A **modal dialog** (centered panel, 880 × up to 640 px, radius `--radius-command` `20 px`, hairline
 `--border-menu`, `--shadow-command`, over `--bg-backdrop`), opened from the gear at the top right
-of the sidebar, the + menu, or `Mod+,`; `Esc`, the close button or a click on the backdrop closes
+of the sidebar (hidden in icons-only mode), the + menu's Settings, a space menu's Space Settings…,
+the app menu's Settings… or `Mod+,`; `Esc`, the close button or a click on the backdrop closes
 it. Occasional tier motion: enters with a `400 ms ease` fade + `450 ms --ease-out` scale from `0.97`
 and retraces on a `300 ms` exit (`--dur-occasional-exit`, `inert` while closing). **Left
 navigation** (`--settings-nav-w` `214 px`, warm neutral `--neutral-sidebar`) lists the sections
