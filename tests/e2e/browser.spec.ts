@@ -920,7 +920,8 @@ test('a split shows two pages', async () => {
     // A real click into the right page makes it the active tab: the address bar follows.
     await clickPage(app, page, b.id)
     await expect(page.getByTestId('url-rest')).toHaveText('/b')
-    await clickPage(app, page, a.id)
+    // Clicking the unfocused half's header activates it and moves the address bar back to it.
+    await page.getByTestId('split-inactive-bar').click()
     await expect(page.getByTestId('url-rest')).toHaveText('/a')
     await expect(page.getByTestId('split-divider')).toBeVisible()
   })

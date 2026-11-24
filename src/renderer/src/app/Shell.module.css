@@ -157,11 +157,43 @@
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
 }
 
-/* Split view: let the tinted window frame show through the 8 px trough between the two pages. */
+/* Split view: each half is its own 10 px card with the 8 px frame trough running top to bottom. */
 :root[data-contextbar='attached'] .page[data-split='true'],
 .page[data-split='true'] .card {
+  border-radius: 0;
+  overflow: visible;
   background: transparent;
   backdrop-filter: none;
+}
+
+.splitBars {
+  flex: none;
+  display: flex;
+  gap: var(--split-gap);
+  margin-bottom: var(--frame-gap);
+}
+
+:root[data-contextbar='attached'] .splitBars {
+  margin-bottom: 0;
+}
+
+.splitBarSlot {
+  flex: none;
+  min-width: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+:root[data-contextbar='attached'] .splitBarSlot {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.splitFirst {
+  width: calc((100% - var(--split-gap)) * var(--split-ratio));
+}
+
+.splitSecond {
+  width: calc((100% - var(--split-gap)) * (1 - var(--split-ratio)));
 }
 
 :root[data-contextbar='attached'] .card,

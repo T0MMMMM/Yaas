@@ -1,0 +1,61 @@
+/* Quiet top header of the unfocused split half: matches --addressbar-h so both cards align. */
+.bar {
+  width: 100%;
+  height: var(--addressbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-md);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  transition:
+    background-color var(--dur-hover) var(--ease),
+    color var(--dur-hover) var(--ease);
+}
+
+:root[data-contextbar='attached'] .bar,
+:root[data-contextbar='attached'] .bar[data-tinted] {
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  backdrop-filter: none;
+}
+
+:root[data-contextbar='attached'] .bar[data-tinted] {
+  border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+@media (hover: hover) {
+  .bar:hover {
+    color: var(--text);
+  }
+}
+
+.host {
+  flex: none;
+  font-weight: var(--weight-medium);
+}
+
+.bar[data-tinted] .host {
+  opacity: 0.78;
+}
+
+.rest {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: var(--weight-regular);
+  color: var(--text-faint);
+}
+
+.bar[data-tinted] .rest {
+  color: inherit;
+  opacity: 0.56;
+}

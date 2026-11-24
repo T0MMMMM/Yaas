@@ -17,12 +17,17 @@ const BLANK = 'about:blank'
 /** How long Copy link shows its check mark. */
 const COPIED_MS = 1200
 
+interface AddressBarProps {
+  /** True when the bar sits inside one half of a split view (lets nav groups shrink cleanly). */
+  compact?: boolean
+}
+
 /**
  * Address bar inside the page card (redesign direction §2): back, forward, reload, and a centred
  * transparent URL field (ink 0.05 on hover/edit, host bright + path faint). Page-action icons on
  * the right (Copy link, Site menu) reveal on hover or focus. Inherits the page's theme-color.
  */
-export function AddressBar() {
+export function AddressBar({ compact = false }: AddressBarProps = {}) {
   const tab = useWorkspace()?.activeTab ?? null
   const addressFocus = useUi((s) => s.addressFocus)
   const [editing, setEditing] = useState(false)
@@ -79,6 +84,7 @@ export function AddressBar() {
       className={`${styles.bar} drag`}
       style={barTint}
       data-tinted={barTint ? true : undefined}
+      data-compact={compact || undefined}
       data-testid="address-bar"
     >
       <div className={`${styles.nav} no-drag`}>

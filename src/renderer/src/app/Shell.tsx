@@ -2,6 +2,7 @@ import { useEffect, useSyncExternalStore, type CSSProperties } from 'react'
 import { DEFAULT_ACCENT } from '@shared/ipc/contract'
 import { AddressBar } from '../features/browser/AddressBar'
 import { PageSlot } from '../features/browser/PageSlot'
+import { SplitInactiveBar } from '../features/browser/SplitInactiveBar'
 import { SettingsView } from '../features/settings/SettingsView'
 import { Sidebar } from '../features/sidebar/Sidebar'
 import { useWorkspace } from '../features/workspace/useWorkspace'
@@ -66,7 +67,7 @@ export function Shell() {
 
   const activeSpace = workspace?.space ?? null
   const spaceColor = activeSpace?.color ?? defaultAccent
-  const isSplit = Boolean(workspace?.activeSplit)
+  const split = workspace?.activeSplit ?? null
 
   // Propagate the active space accent onto :root so derived tokens (--space-accent-soft,
   // --bg-dock-selected, --selection-bg) resolve to the space colour instead of the app accent.
@@ -107,8 +108,31 @@ export function Shell() {
         </div>
 
         <div className={styles.column}>
-          <div className={styles.page} data-split={isSplit || undefined}>
-            <AddressBar />
+          <div
+            className={styles.page}
+            data-split={split ? true : undefined}
+            style={split ? ({ '--split-ratio': split.ratio } as CSSProperties) : undefined}
+          >
+            {split ? (
+              <div className={styles.splitBars}>
+                <div className={`${styles.splitBarSlot} ${styles.splitFirst}`}>
+                  {split.activeHalf === 'first' ? (
+                    <AddressBar compact />
+                  ) : (
+                    <SplitInactiveBar tab={split.first} />
+                  )}
+                </div>
+                <div className={`${styles.splitBarSlot} ${styles.splitSecond}`}>
+                  {split.activeHalf === 'second' ? (
+                    <AddressBar compact />
+                  ) : (
+                    <SplitInactiveBar tab={split.second} />
+                  )}
+                </div>
+              </div>
+            ) : (
+              <AddressBar />
+            )}
             <main className={styles.card}>
               <PageSlot />
             </main>
