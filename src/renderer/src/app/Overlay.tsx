@@ -48,10 +48,25 @@ const NEW_MENU: MenuSpecItem[] = [
   },
 ]
 
-/** Length of a card's exit animation (`--dur-popover-out`): the view is hidden once it has played. */
-const EXIT_MS = 100
-/** How long a hidden tooltip stays mounted to fade out: main hides the strip after as long. */
-const TOOLTIP_FADE_MS = 100
+/** Exit fade durations by frequency tier, kept equal to the CSS tokens (`tokens.css`). */
+const CONSTANT_EXIT_MS = 100 // --dur-constant (⌘T, ⌘K)
+const FREQUENT_EXIT_MS = 180 // --dur-frequent-exit (menus, popovers, anchored cards)
+const OCCASIONAL_EXIT_MS = 300 // --dur-occasional-exit (downloads, confirm)
+/** How long a hidden tooltip stays mounted to fade out (`--dur-frequent-exit`). */
+const TOOLTIP_FADE_MS = 180
+
+function exitMsFor(kind: OverlayRequest['kind'] | undefined): number {
+  switch (kind) {
+    case 'command':
+    case 'tab-finder':
+      return CONSTANT_EXIT_MS
+    case 'downloads':
+    case 'confirm':
+      return OCCASIONAL_EXIT_MS
+    default:
+      return FREQUENT_EXIT_MS
+  }
+}
 
 /**
  * What the overlay view renders (`#overlay`): one popover or card at a time, floating over the page.
@@ -69,12 +84,23 @@ export function Overlay() {
   const tooltipFade = useRef<number | null>(null)
   /** The pending `overlay.close`, while the exit animation plays. */
   const exit = useRef<number | null>(null)
+  /** Tracks the active request kind so `close` uses the right tier exit duration without changing identity. */
+  const requestKind = useRef<OverlayRequest['kind'] | undefined>(undefined)
   const initBrowser = useBrowser((s) => s.init)
   const initDownloads = useDownloads((s) => s.init)
   const workspace = useWorkspace()
   const accent = useSettings((s) => s.settings?.accent)
   const sidebarWidth = useSettings((s) => s.settings?.sidebarWidth)
   const contentLeft = snapWidth(sidebarWidth ?? SIDEBAR_DEFAULT)
+  const spaceColor = workspace?.space.color ?? accent
+
+  // The overlay runs in its own document (separate from Shell): mirror the active space colour
+  // onto :root so `--space-accent`, `--space-accent-soft`, `--bg-dock-selected` and `--selection-bg`
+  // resolve to the active space rather than the app accent.
+  useEffect(() => {
+    if (!spaceColor) return
+    document.documentElement.style.setProperty('--space-accent', spaceColor)
+  }, [spaceColor])
 
   useEffect(() => initBrowser(), [initBrowser])
   useEffect(() => initDownloads(), [initDownloads])
@@ -99,6 +125,7 @@ export function Overlay() {
         clearTooltipFade()
         setTooltip(null)
         setOpenId((id) => id + 1)
+        requestKind.current = next.kind
         setRequest(next)
       }),
     [cancelExit, clearTooltipFade],
@@ -135,6 +162,7 @@ export function Overlay() {
     () =>
       window.bigBrowser.on('overlay.closed', () => {
         cancelExit()
+        requestKind.current = undefined
         setRequest(null)
       }),
     [cancelExit],
@@ -152,9 +180,10 @@ export function Overlay() {
     exit.current = window.setTimeout(() => {
       exit.current = null
       setClosing(false)
+      requestKind.current = undefined
       setRequest(null)
       void window.bigBrowser.invoke('overlay.close')
-    }, EXIT_MS)
+    }, exitMsFor(requestKind.current))
   }, [])
 
   if (!request) {
@@ -283,6 +312,8 @@ export function Overlay() {
           label="Downloads"
           testId="downloads"
           placement="above"
+          tier="occasional"
+          size="downloads"
           closing={closing}
           onClose={close}
         >
