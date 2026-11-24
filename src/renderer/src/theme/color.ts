@@ -14,6 +14,11 @@ function contrast(a: number, b: number): number {
   return (hi + 0.05) / (lo + 0.05)
 }
 
+/** WCAG 2.1 contrast ratio (1..21) between two #RRGGBB colors. */
+export function contrastRatio(aHex: string, bHex: string): number {
+  return contrast(relativeLuminance(aHex), relativeLuminance(bHex))
+}
+
 /**
  * Text color on the accent (DESIGN.md §3.1 / §8): white whenever it reaches 3:1 (enough for the
  * short, bold labels that sit on accent — body text never does), otherwise black.
