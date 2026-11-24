@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMMON_EMOJIS, emojiGrapheme, firstGrapheme, spaceEmoji } from './emoji'
+import { COMMON_EMOJIS, emojiGrapheme, firstGrapheme } from './emoji'
 
 describe('firstGrapheme', () => {
   it('keeps the first character as the user sees it', () => {
@@ -40,19 +40,5 @@ describe('emojiGrapheme', () => {
     expect(emojiGrapheme('!')).toBeNull()
     expect(emojiGrapheme('a🚀')).toBeNull()
     expect(emojiGrapheme('')).toBeNull()
-  })
-})
-
-describe('spaceEmoji', () => {
-  it('keeps an explicit icon when present', () => {
-    expect(spaceEmoji('🚀', 'Personal')).toBe('🚀')
-  })
-
-  it('falls back to a deterministic emoji when icon is null', () => {
-    expect(spaceEmoji(null, 'Personal')).toBe('🏠')
-    expect(spaceEmoji(null, 'Work')).toBe('💼')
-    const picked = spaceEmoji(null, 'Space 2')
-    expect(COMMON_EMOJIS).toContain(picked)
-    expect(spaceEmoji(null, 'Space 2')).toBe(picked)
   })
 })

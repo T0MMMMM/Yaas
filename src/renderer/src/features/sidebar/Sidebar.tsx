@@ -8,7 +8,6 @@ import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
-import { spaceEmoji } from './emoji'
 import { FavoriteTiles } from './FavoriteTiles'
 import { enteringAfter, exitsWhenGone, newlyOpenedTabIds, ROW_ENTER_MS } from './rows'
 import { Rows } from './SidebarRows'
@@ -294,8 +293,10 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                       <span className={styles.letter}>
                         {s.label.trim().charAt(0).toUpperCase() || '·'}
                       </span>
+                    ) : s.icon ? (
+                      <span className={styles.emoji}>{s.icon}</span>
                     ) : (
-                      <span className={styles.emoji}>{spaceEmoji(s.icon, s.label)}</span>
+                      <span className={styles.dot} />
                     )}
                   </button>
                 ))}
