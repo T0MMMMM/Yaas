@@ -1,37 +1,43 @@
 .switch {
   position: relative;
   flex: none;
-  width: 32px;
-  height: 18px;
+  width: 30px;
+  height: 17px;
   padding: 0;
   border: none;
   border-radius: var(--radius-pill);
   background: var(--switch-off);
+  user-select: none;
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-frequent-fade) var(--ease);
 }
 
 .switch[aria-checked='true'] {
-  background: var(--accent);
+  background: var(--space-accent);
+}
+
+.switch:focus-visible {
+  outline: 2px solid var(--space-accent);
+  outline-offset: 2px;
 }
 
 .switch:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 14px;
-  height: 14px;
+  top: var(--space-hair);
+  left: var(--space-hair);
+  width: 13px;
+  height: 13px;
   border-radius: var(--radius-pill);
-  background: #fff;
+  background: var(--on-danger);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
-  transition: transform var(--dur-fast) var(--ease);
+  transition: transform var(--dur-frequent-move) var(--ease-out);
 }
 
 .switch[aria-checked='true'] .thumb {
-  transform: translateX(14px);
+  transform: translateX(13px);
 }

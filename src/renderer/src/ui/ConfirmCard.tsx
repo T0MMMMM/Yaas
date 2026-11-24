@@ -28,6 +28,7 @@ export function ConfirmCard({
       anchor={anchor}
       label="Confirm"
       testId="confirm"
+      tier="occasional"
       closing={closing}
       onClose={onClose}
     >

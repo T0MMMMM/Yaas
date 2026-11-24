@@ -1,38 +1,68 @@
-/* The downloads card's content (DownloadsMenu), on the shared opaque popover (ui/AnchoredCard). */
+/* Downloads card content (DownloadsMenu) inside AnchoredCard: Ardia 40 px rows with 24 px file
+   icon tiles, 3 px progress track, tabular numerals, neutral ink hover. */
 .menu {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--space-1);
+  min-height: var(--control-size-xs);
+  padding: 0 var(--space-2);
 }
 
 .title {
   margin: 0;
-  font-size: var(--text-menu);
-  font-weight: 700;
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
   color: var(--text);
 }
 
 .clear,
 .link {
   border: none;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  user-select: none;
   cursor: pointer;
-  transition: color var(--dur-fast) var(--ease);
+  transition:
+    color var(--dur-hover) var(--ease),
+    background var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
-.clear:hover:not(:disabled),
-.link:hover {
-  color: var(--text);
+.clear {
+  padding: var(--space-hair) var(--space-2);
+}
+
+.link {
+  padding: 0 var(--space-1);
+  font-size: var(--text-xs);
+}
+
+@media (hover: hover) {
+  .clear:hover:not(:disabled) {
+    background: var(--bg-menu-hover);
+    color: var(--text);
+  }
+
+  .link:hover {
+    color: var(--text);
+  }
+}
+
+.clear:active:not(:disabled),
+.link:active {
+  transform: scale(var(--scale-press));
+  transition-duration: var(--dur-press);
+  transition-timing-function: var(--ease);
 }
 
 .clear:disabled {
@@ -42,40 +72,65 @@
 
 .empty {
   margin: 0;
-  padding: var(--space-3) var(--space-1);
+  padding: var(--space-4) var(--space-2);
   color: var(--text-faint);
   font-size: var(--text-sm);
+  text-align: center;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-hair);
   margin: 0;
   padding: 0;
   list-style: none;
-  /* A long list scrolls inside the card. */
-  max-height: calc(var(--control-size) * 8);
+  /* Up to ~8 rows visible before scrolling inside the card. */
+  max-height: calc(var(--downloads-row-h) * 8);
   overflow-y: auto;
 }
 
 .row {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-hair);
-  padding: var(--space-1) var(--menu-row-pad);
-  border-radius: var(--radius-row);
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--downloads-row-h);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-menu-row);
+  transition: background var(--dur-hover) var(--ease);
 }
 
-.row:hover {
-  background: var(--fill-neutral-hover);
+@media (hover: hover) {
+  .row:hover {
+    background: var(--bg-menu-hover);
+  }
+}
+
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--control-size-xs);
+  height: var(--control-size-xs);
+  border-radius: var(--radius-md);
+  background: var(--fill-neutral);
+  color: var(--text-muted);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-hair);
 }
 
 .name {
   overflow: hidden;
   color: var(--text);
-  font-size: var(--text-menu);
-  font-weight: 500;
+  font-size: var(--text-md);
+  font-weight: var(--weight-regular);
+  line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -85,7 +140,9 @@
   align-items: center;
   gap: var(--space-1);
   color: var(--text-secondary);
-  font-size: var(--text-status);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 
 .detail .link {
@@ -102,7 +159,8 @@
 
 .bar {
   display: block;
-  height: var(--space-1);
+  height: var(--progress-h);
+  margin: var(--space-hair) 0;
   overflow: hidden;
   border-radius: var(--radius-pill);
   background: var(--border);
@@ -112,8 +170,8 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
-  transition: width var(--dur-base) var(--ease);
+  background: var(--space-accent);
+  transition: width var(--dur-frequent-move) var(--ease-out);
 }
 
 /* Size unknown: the bar pulses instead of filling. */
