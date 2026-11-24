@@ -92,13 +92,8 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   (tabs stay listed under them, unindented), spaces stack as dots (an emoji when the space has one), New tab is an icon.
   The overlay's tooltips carry the titles; drag and drop keeps working (it only measures vertically). Dragging
   past 120 px restores the normal layout.
-- **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 44, favicon
-  `--tile-icon-size` 22) on a `--bg-tile` card; the active tile is lifted and askew like a selected row.
-- **Space section** (`SpaceHeader`, then the pinned list): a header with the space's emoji (or its
-  `--space-dot` colour dot), its name and a "…" button (shown on hover, while its menu is open or
-  focused). Hovering the header turns the emoji into a chevron that folds the section like a
-  folder (`grid-template-rows` 1fr ↔ 0fr, rows kept mounted and `inert`; stored per space,
-  `sectionCollapsed`). "…" (or a right-click on the header) opens the **space menu** below it:
+- **Favourites**: no header. An auto-fit grid of tiles (at least `--tile-min-w` wide, stretched to fill the width, wrapping to more rows; `--tile-h` 41 px, `--radius-tile` 10 px, `--tile-gap` 6 px, favicon `--tile-icon-size` 20 px) on a `--bg-tile` (`ink 0.06`) card with a subtle hairline rim; the active tile lifts to `--bg-row-active` with a `--tile-ring-w` (3 px) ring in the favicon's dominant colour (falling back to `--space-accent`).
+- **Space section** (`SpaceHeader`, then the pinned list): a `--space-header-h` (30 px) header with the space's emoji (or its `--space-dot` 6 px colour dot when no emoji is set), its 13 px/600 name (right-edge fade mask) and a "…" button (shown on hover under `@media (hover: hover)`, while its menu is open or focused). Hovering the header swaps the emoji/dot into a chevron (150 ms out, chevron in after 75 ms) that morphs the section (`grid-template-rows` 1fr ↔ 0fr over 400 ms `--ease-morph` with separated content fade, rows kept mounted and `inert`; stored per space, `sectionCollapsed`). "…" (or a right-click on the header) opens the **space menu** below it:
   a filter field, Rename Space… (the name becomes an inline field: Enter or leaving it saves, Esc
   cancels), Change Space Icon… (a card: an emoji field keeping the first character typed, 16
   common emojis, No icon), Edit Look… (a card with the colour picker, applied live), New Folder
@@ -107,60 +102,14 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   tabs, sign-ins, cookies and extensions will be deleted." with Cancel (focused) and Delete
   (`--danger`). The cards open from the "…" button with the funnel. Icon-only, the header is only
   the emoji or dot, and Rename Space… (from a right-click) does nothing.
-- **Pinned**: pinned tabs and folders in one ordering. A folder row (the folder glyph, or an emoji)
-  opens and closes on click; opening swings the glyph's front flap up from its bottom edge and
-  lifts the paper (`--dur-base`, `--ease-bounce`; instant under reduced motion, where those tokens
-  are zeroed). "Change Icon…" opens a card from the row: the 7 folder hues, an emoji field
-  (letters are refused with a hint; choosing the current emoji closes the card) and Default (the
-  hue of the name). Icon-only, the filed-tab bars use the chosen hue (the name's hue for an
-  emoji); a closed folder shows its tab count on the right. Its tabs are listed one `--space-3`
-  indent below. "New Folder…" and "Rename" (its menus) put its name in an inline field: Enter or
-  leaving it saves, Esc cancels.
-- **Separator**: a hairline, with **Clear** on the right when today has tabs — shown only while
-  the separator is hovered or Clear has keyboard focus. It closes all of today's tabs (children
-  first), and ⌘⇧T reopens them one by one. **New tab** sits right under it, above today's rows.
-- **Tab titles** never ellipse: the end fades out (`--title-fade`, widening to `--title-fade-hover`
-  on hover or focus inside the row), and the × appears in that room (hover or focus only).
-  There is no Search button at the top of the sidebar (⌘K opens the finder).
-- **Today**: tabs opened from another tab are indented under it, `--space-3` per level (max 3).
-  **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a
-  folder named after the host, where the first of them was; open/closed per host for the session
-  (UI store), never stored. Settings → Appearance → Automatic folders turns them off.
-- **Split rows** (`SplitRow`, `data-testid="split-row"`): a split is one row in its first tab's
-  place — both favicons, then "Title A | Title B". A click on a half's title shows the split with
-  that half active (it is bold while the split is shown; elsewhere on the row, the half already
-  active or the first). Its tooltip names both; right-click opens the menu of the half under the
-  pointer (Separate instead of Open in Split View). Its × closes **both** tabs
-  (`browser.closeSplit`; to keep one, use Separate first). A pinned or favourite split is only
-  unloaded and stays a split: its ×, or closing either half while it is shown (⌘W, Close), unloads
-  both; closing a half of one not shown unloads that half. A today split's tabs are
-  deleted, and ⌘⇧T reopens them one by one as two plain tabs. Icon-only: the two favicons stacked. A favourite split is one
-  tile with both favicons. **Creating a split**: `⌃⌘\` (Windows: `Ctrl+Shift+\`) or the + menu's
-  Split View pairs the active tab with the next row of its list, else the previous (rows already
-  split are skipped; nothing with no such row); Open in Split View (a tab's menu, hidden on the
-  active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half
-  of the shown tab's row pairs them (the row gets the `--accent-soft` fill; not onto or from a
-  split or a favourite tile).
-- Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites,
-  move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed
-  (`--opacity-unloaded`). Cards tilt per item (askew cards), none when the setting is off.
-- **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to
-  reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before
-  it, the lower half after it; the middle half of a pinned folder's row files into it; the tiles
-  grid adds a tab to the end of the favourites, and a dragged tile moves among the tiles (the
-  left half of a tile is before it, the right half after). **Lifted drag**: the dragged row lifts
-  — a clone at `scale: 1.03` with `--shadow-lift` follows the pointer while the row keeps its
-  slot, hidden — and the other rows move aside (`translate`, `--dur-base`) to open a gap where it
-  will land (`flip.ts`: `gapOffsets` for rows, `slotShifts` for the wrapping tiles); a list it
-  comes into grows by its height. A folder or list the drop goes into gets the `--accent-soft`
-  fill instead. Empty favourites and pinned lists appear while a tab is dragged so it can be
-  dropped on them. A today tab moves with its subtree; a drop on a nested tab lands after its
-  top-level tab's subtree. For a tab of another site, an automatic folder is one block (before or
-  after it); a tab of its own site joins it. A folder moves with its rows, only within pinned
-  (`browser.moveFolder`); a drop on itself or one of its descendants is no move, like a drop on
-  the dragged tab itself. Esc (or a release outside the lists) cancels: the rows close the gap
-  and the clone flies back to the row. Under reduced motion the clone still follows the pointer;
-  nothing else animates.
+- **Pinned**: pinned tabs and folders in one ordering. A folder row uses the tab row's 34 px / 8 px / 3 px metrics with a 13 px/500 title and the 16 px folder glyph (or an emoji) that opens and closes on click; opening swings the glyph's front flap up from its bottom edge and lifts the paper in sync with the folder's 400 ms `--ease-morph` fold (and separated child fade; instant move, kept fade under reduced motion). "Change Icon…" opens a card from the row: the 7 folder hues, an emoji field (letters are refused with a hint; choosing the current emoji closes the card) and Default (the hue of the name). Icon-only, the filed-tab bars use the chosen hue (the name's hue for an emoji); a closed folder shows its tabular tab count on the right. Its tabs are listed one `--folder-indent` (14 px) indent below. "New Folder…" and "Rename" (its menus) put its name in an inline field: Enter or leaving it saves, Esc cancels.
+- **Separator**: a hairline (`--border-separator`, `ink 0.10`), with **Clear** on the right when today has tabs — shown only while the separator is hovered or Clear has keyboard focus. It closes all of today's tabs (children first), and ⌘⇧T reopens them one by one. **New tab** sits right under it, above today's rows, styled like a tab row with a 16 px plus.
+- **Tab rows & titles**: 34 px tall (`--row-h`), 8 px radius (`--radius-row`), 3 px gap (`--row-gap`), 13 px regular (400) text — **never bold when active** — with a 16 px favicon inside a `--sidebar-inset` (9 px) inner sidebar padding. The active row lifts as a translucent card (`--bg-row-active`, hairline top rim `--border-row-active`, soft shadow `--shadow-row-active`, constant-tier 100 ms fade); hovered rows get `--bg-row-hover` (`ink 0.05`, `@media (hover: hover)`); pressing scales the visual card layer to 0.97 in 75 ms and releases over 350 ms. Titles never ellipse: the end fades out (`--title-fade`, widening to `--title-fade-hover` on hover or focus inside the row), and the × appears in that room (hover or focus only). Opening a tab plays a two-phase enter (250 ms height + 150 ms fade, only for newly opened tabs in the active space); closing fades out over 180 ms then collapses height over 250 ms (`--ease-in-out`). Switching spaces plays a fast content swap (old out 150 ms, new in after 75 ms) aligned with the 400 ms frame gradient crossfade. There is no Search button at the top of the sidebar (⌘K opens the finder).
+- **Today**: tabs opened from another tab are indented under it, `--folder-indent` (14 px) per level (max 3). **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are drawn as a folder named after the host, where the first of them was; open/closed per host for the session (UI store), never stored. Settings → Appearance → Automatic folders turns them off.
+- **Split rows** (`SplitRow`, `data-testid="split-row"`): a split is one row in its first tab's place — both favicons, then "Title A | Title B". A click on a half's title shows the split with that half active (both halves stay regular 400 weight; the active half uses full `--text` ink while the inactive half recedes to `--text-secondary`; elsewhere on the row, the half already active or the first). Its tooltip names both; right-click opens the menu of the half under the pointer (Separate instead of Open in Split View). Its × closes **both** tabs (`browser.closeSplit`; to keep one, use Separate first). A pinned or favourite split is only unloaded and stays a split: its ×, or closing either half while it is shown (⌘W, Close), unloads both; closing a half of one not shown unloads that half. A today split's tabs are deleted, and ⌘⇧T reopens them one by one as two plain tabs. Icon-only: the two favicons stacked. A favourite split is one tile with both favicons. **Creating a split**: `⌃⌘\` (Windows: `Ctrl+Shift+\`) or the + menu's Split View pairs the active tab with the next row of its list, else the previous (rows already split are skipped; nothing with no such row); Open in Split View (a tab's menu, hidden on the active tab and on splits) pairs that tab with the active one; dropping a tab on the middle half of the shown tab's row pairs them (the row gets the `--space-accent-soft` fill; not onto or from a split or a favourite tile).
+- **Footer** (`--footer-h` 36 px): Downloads (left), space switcher dots (`--space-dot` 6 px) / emoji / letter (middle), and `+` button (right), using `--footer-btn-size` (28 px) icon buttons with `--radius-footer-btn` (7 px).
+- Every row and tile: right-click opens its menu, drawn at the pointer (tab: pin, favourites, move to folder ▸, open in split view or separate, copy, duplicate, close; folder: rename, move to folder ▸, delete). A tab whose page is not loaded is dimmed (`--opacity-unloaded`).
+- **Drag and drop** (`useTabDrag`, pointer events): drag a tab row, a tile or a pinned folder to reorder it, pin it, favourite it or file it into a folder. The upper half of a row drops before it, the lower half after it; the middle half of a pinned folder's row files into it; the tiles grid adds a tab to the end of the favourites, and a dragged tile moves among the tiles (the left half of a tile is before it, the right half after). **Lifted drag**: the dragged row lifts — a clone at `scale: 1.03` with `--shadow-lift` and hairline top rim follows the pointer while the row keeps its slot, hidden — and the other rows shift aside with a stiff 150 ms `--ease-out` feel (`--dur-drag-shift`) to open a gap where it will land (`flip.ts`: `gapOffsets` for rows, `slotShifts` for the wrapping tiles); a list it comes into grows by its height. A folder or list the drop goes into gets the `--space-accent-soft` fill instead. Empty favourites and pinned lists appear while a tab is dragged so it can be dropped on them. A today tab moves with its subtree; a drop on a nested tab lands after its top-level tab's subtree. For a tab of another site, an automatic folder is one block (before or after it); a tab of its own site joins it. A folder moves with its rows, only within pinned (`browser.moveFolder`); a drop on itself or one of its descendants is no move, like a drop on the dragged tab itself. Esc (or a release outside the lists) cancels: the rows close the gap and the clone settles back over 250 ms (`--dur-drag-settle`, `--ease-out`). Under reduced motion the clone still follows the pointer; moves are dropped while fades remain.
 
 **Popovers** (the + menu, the site menu) float over the page in the overlay view and share one
 opaque card (`ui/Popover.module.css`, composed by each popover's own CSS module: `--bg-popover`
@@ -354,11 +303,7 @@ thousand times.
   Only the card layer tilts — text never moves. Hover/selected fills are **neutral** (a light lift
   on the frame), never the accent.
 - **Drawn controls**: sliders draw what they do (§3.4); the accent picker is a wheel (§3.1).
-- **Motion**: hover/press, plus rows and cards that enter and leave. A closed tab row shrinks and
-  fades out (`--dur-base`, `ui/usePresence` keeps it mounted, inert, as `tab-exiting`); folders fold
-  with a `grid-template-rows` 1fr to 0fr transition and keep their tabs mounted but inert; the
-  Settings view and the overlay cards play their open animation backwards (`--dur-fast`) before
-  they go. All of it uses `--dur-*` / `--ease-*`, so `prefers-reduced-motion` removes it.
+- **Motion**: frequency-tiered and damped (`--ease`, `--ease-out`, `--ease-in-out`, `--ease-morph`). Tab switching fades in 100 ms with no move; press scales the visual card layer to 0.97 in 75 ms and releases over 350 ms; newly opened tab rows enter over 250 ms height + 150 ms fade; closed tab rows fade out over 180 ms then collapse height over 250 ms (`ui/usePresence` keeps them mounted, inert, as `tab-exiting` for 430 ms); folders and the space section morph `grid-template-rows` over 400 ms (`--ease-morph`) with separated content fade; space switching swaps sidebar content fast (old out 150 ms, new in after 75 ms) alongside the 400 ms frame gradient crossfade. Under `prefers-reduced-motion: reduce`, moves and scales drop while fades stay active.
 
 ### 3.2 Material
 
