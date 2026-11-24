@@ -1284,7 +1284,8 @@ test('a split is one row', async () => {
       await openTab(page, site.url('/a'))
       await openTab(page, site.url('/b'))
       await openTab(page, site.url('/c'))
-      await expect(page.getByTestId('tab')).toHaveCount(3)
+      // Loaded titles, not the host shown while loading: the halves are told apart by them.
+      await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
 
       // ⌃⌘\ pairs the active tab with a neighbour of its list: one row for both.
       await clickMenu(first, 'splitView')
