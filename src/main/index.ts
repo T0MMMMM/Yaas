@@ -1,5 +1,7 @@
+import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { promisify } from 'node:util'
 import {
   app,
   BrowserWindow,
@@ -37,6 +39,16 @@ import { SpaceSessions, type ExtensionHost } from './browser/spaceSessions'
 import { PAGE_RADIUS, TabViews } from './browser/tabViews'
 import { shownSplit } from '@core/browser/splitBounds'
 import { splitPartner } from '@core/browser/splitPartner'
+import {
+  ExternalUrlQueue,
+  handleOpenUrl,
+  handleSecondInstance,
+  isDefaultBrowser,
+  makeDefaultBrowser,
+  protocolClientTarget,
+  urlFromArgv,
+  type DefaultBrowserApi,
+} from './defaultBrowser'
 import { emit, registerCommands } from './ipc/router'
 import { buildAppMenu } from './menu'
 import {
@@ -64,7 +76,31 @@ else {
   }
 }
 
-if (!app.requestSingleInstanceLock()) app.quit()
+const gotLock = app.requestSingleInstanceLock()
+if (!gotLock) app.quit()
+
+const externalUrls = new ExternalUrlQueue()
+if (gotLock) externalUrls.enqueue(urlFromArgv(process.argv))
+
+const execFileAsync = promisify(execFile)
+
+const defaultBrowserApi: DefaultBrowserApi = {
+  platform: process.platform,
+  target: protocolClientTarget(process.execPath, process.argv, Boolean(process.defaultApp)),
+  isDefaultProtocolClient: (protocol, path, args) =>
+    path
+      ? app.isDefaultProtocolClient(protocol, path, args)
+      : app.isDefaultProtocolClient(protocol),
+  setAsDefaultProtocolClient: (protocol, path, args) =>
+    path
+      ? app.setAsDefaultProtocolClient(protocol, path, args)
+      : app.setAsDefaultProtocolClient(protocol),
+  runReg: async (args) => {
+    const { stdout } = await execFileAsync('reg.exe', args, { windowsHide: true })
+    return stdout
+  },
+  openExternal: (url) => shell.openExternal(url),
+}
 
 const db = openDatabase(join(app.getPath('userData'), DB_FILE))
 const settings = new SettingsStore(db)
@@ -277,6 +313,9 @@ const CHROME_WEB_STORE = 'https://chromewebstore.google.com/'
 const sidebarMenuHost: SidebarMenuHost = {
   store: browser,
   closeTab,
+  reloadTab: (tabId) => tabViews?.reload(tabId),
+  isMuted: (tabId) => tabViews?.isMuted(tabId) ?? null,
+  setMuted: (tabId, muted) => tabViews?.setMuted(tabId, muted),
   emitShortcut,
   openOverlay: (request) => overlayView().open(request),
 }
@@ -354,6 +393,12 @@ function watchTopBand(win: BrowserWindow, visible: boolean): void {
 const pageRadiusFor = (style: Settings['contextBarStyle']): number =>
   style === 'attached' ? 0 : PAGE_RADIUS
 
+function focusMainWindow(): void {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.focus()
+}
+
 function openMainWindow(): void {
   const win = createMainWindow({ material: materialFor(settings.get().transparency) })
   mainWindow = win
@@ -381,7 +426,14 @@ function openMainWindow(): void {
   )
   tabViews.setBorderRadius(pageRadiusFor(settings.get().contextBarStyle))
   tabViews.sync(browser.snapshot())
+  externalUrls.attach({
+    openTab: (url) => {
+      browser.openTab(browser.snapshot().activeSpaceId, url)
+    },
+    focusWindow: focusMainWindow,
+  })
   win.on('closed', () => {
+    externalUrls.detach()
     mainWindow = null
     tabViews = null
     overlay = null
@@ -391,6 +443,8 @@ function openMainWindow(): void {
 registerCommands(
   {
     'app.info': () => ({ version: app.getVersion(), platform, glassSupported: glassSupported() }),
+    'app.defaultBrowser': async () => ({ isDefault: await isDefaultBrowser(defaultBrowserApi) }),
+    'app.makeDefaultBrowser': () => makeDefaultBrowser(defaultBrowserApi),
     'settings.get': () => settings.get(),
     'settings.update': (patch) => settings.update(patch),
     'claude.detect': async () => {
@@ -558,10 +612,15 @@ accounts.subscribe((list) => {
   if (mainWindow) emit(mainWindow.webContents, 'accounts.changed', list)
 })
 
-app.on('second-instance', () => {
-  if (!mainWindow) return
-  if (mainWindow.isMinimized()) mainWindow.restore()
-  mainWindow.focus()
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  handleOpenUrl(url, externalUrls, () => {
+    if (app.isReady() && !mainWindow) openMainWindow()
+  })
+})
+
+app.on('second-instance', (_event, argv) => {
+  handleSecondInstance(argv, externalUrls, focusMainWindow)
 })
 
 app.on('will-quit', () => db.close())
@@ -571,6 +630,7 @@ app.on('window-all-closed', () => {
 })
 
 void app.whenReady().then(() => {
+  if (!gotLock) return
   // The UI and the overlay (default session) show extension icons from `crx://` (site menu).
   ElectronChromeExtensions.handleCRXProtocol(session.defaultSession)
   setupMenu()

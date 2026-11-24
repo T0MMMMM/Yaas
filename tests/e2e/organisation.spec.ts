@@ -880,6 +880,7 @@ test('the folder menu moves a folder', async () => {
       'Rename',
       'Change Icon…',
       'Move to Folder',
+      'Open All',
       'Delete Folder',
     ])
     await menu.getByRole('menuitem', { name: 'Move to Folder' }).hover()
@@ -1310,5 +1311,56 @@ test("a pinned split's × unloads both pages and keeps the split", async () => {
     // The focus left the pair for the remaining today tab.
     expect(state.activeTabIds[state.activeSpaceId]).not.toBe(second?.id)
     expect(state.activeTabIds[state.activeSpaceId]).not.toBe(second?.splitOf)
+  })
+})
+
+test('the tab menu has icons', async () => {
+  await withBrowser(async ({ app, page, site }) => {
+    const tab = await openTab(page, site.url('/a'))
+    const row = page.getByTestId('today').getByTestId('tab').first()
+    await expect(row).toHaveText('Page A')
+
+    await row.click({ button: 'right' })
+    const overlay = await overlayPage(app)
+    const menu = overlay.getByTestId('menu')
+    const items = menu.getByRole('menuitem')
+    await expect(items).toHaveText([
+      'Reload',
+      'Duplicate',
+      'Mute',
+      'Copy Link',
+      'Pin',
+      'Add to Favourites',
+      'Move to Folder',
+      'Close Tabs Below',
+      'Close',
+    ])
+    const count = await items.count()
+    for (let i = 0; i < count; i++) {
+      await expect(
+        items.nth(i).locator(':scope > span:first-child > svg, :scope > span:first-child > img'),
+      ).toHaveCount(1)
+    }
+
+    const muted = async () => {
+      const state = await page.evaluate(() => window.bigBrowser.invoke('browser.state'))
+      const id = state.runtime[tab.id]?.webContentsId ?? null
+      if (id === null) return null
+      return app.evaluate(({ webContents }, wcId) => webContents.fromId(wcId)?.isAudioMuted(), id)
+    }
+    expect(await muted()).toBe(false)
+
+    await menu.getByRole('menuitem', { name: 'Mute' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect.poll(muted).toBe(true)
+
+    // Opening the menu again offers Unmute, which unmutes the web contents.
+    await expect(async () => {
+      if (!(await menu.isVisible())) await row.click({ button: 'right' })
+      await expect(menu.getByRole('menuitem', { name: 'Unmute' })).toBeVisible({ timeout: 2_000 })
+    }).toPass()
+    await menu.getByRole('menuitem', { name: 'Unmute' }).click()
+    await expect(menu).toHaveCount(0)
+    await expect.poll(muted).toBe(false)
   })
 })

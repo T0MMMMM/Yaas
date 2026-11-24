@@ -487,15 +487,20 @@ results come back to the lead as a short summary + branch name, never the full c
   the UI (`app/Shell.tsx`), only when no input, text area or editable element has focus; in a page
   or a field it stays the text undo.
 - **Sidebar menus.** `browser.showTabMenu { tabId, at }` / `browser.showFolderMenu { folderId,
-  at }` (`at` = the right-click's `clientX/clientY`, window coordinates) build the row's items in
-  `main/browser/sidebarMenus.ts` (`tabMenu` / `folderMenu`) and draw them in the overlay at the
-  pointer (`showMenu`, see **Drawn menus**). Tab: Pin / Unpin
-  (pinned end / today top), Add to / Remove from Favourites (favourites end / today top), Move to
-  Folder ▸ (the space's folders, the current one checked, New Folder…), Copy Link, Duplicate, then
-  Remove (favourite, pinned) or Close (today). Folder: Rename, Move to Folder ▸ (Top level, then
-  every folder of the space outside its own subtree; where it is now is checked and disabled),
-  Delete Folder. Rename (and New Folder…) emit
-  `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in place.
+  at, anchor? }` (`at` = the right-click's `clientX/clientY`, window coordinates) build the row's
+  items in `main/browser/sidebarMenus.ts` (`tabMenu` / `folderMenu`) with a Phosphor icon on every
+  row and draw them in the overlay at the pointer (`showMenu`, see **Drawn menus**). Tab: Reload,
+  Duplicate, Mute/Unmute (`TabViews.isMuted` / `setMuted`; Reload and Mute are disabled while the
+  tab is unloaded), Open in Split View (or Separate on a
+  split), Copy Link | Pin/Unpin (pinned end / today top), Add to/Remove from Favourites (favourites
+  end / today top), Move to Folder ▸ (the space's folders, the current one checked, New Folder…) |
+  Close Tabs Below (`BrowserStore.closeTabsBelow`, closes today tabs drawn after it in one batch
+  and one undo entry, disabled when none), Close (today) or Remove (favourite, pinned). Folder: Rename, Change Icon…,
+  Move to Folder ▸ (Top level, then every folder of the space outside its own subtree; where it is
+  now is checked and disabled), Open All (`BrowserStore.openFolderTabs`, opens the folder's and its
+  child folders' tabs into today, disabled when empty) | Delete Folder. Rename (and New Folder…)
+  emit `browser.shortcut` `{ kind: 'rename-folder', folderId }`: the sidebar edits the name in
+  place.
 - **Space menu.** `browser.showSpaceMenu { spaceId, anchor }` (anchor = the space header's "…"
   button) builds `spaceMenu` (`sidebarMenus.ts`) and draws it below the button (`anchored-menu`):
   filter, Rename Space… (`browser.shortcut` `{ kind: 'rename-space', spaceId }`: the header edits
@@ -506,14 +511,20 @@ results come back to the lead as a short summary + branch name, never the full c
   `{ anchor, message, confirmLabel, action: { kind: 'delete-space', spaceId } }`, whose confirm
   button calls `browser.deleteSpace` from the overlay.
 - **Page menu.** A page's `context-menu` event (`TabViews.showPageMenu`) builds the entries of
-  `core/browser/pageMenu.ts` (spelling suggestions first — at most 5, each running
-  `replaceMisspelling`, or a disabled "No Suggestions" —, then link, image, edit or selection
-  entries, Back / Forward / Reload on a blank spot, then Inspect), splices the space's
-  `chrome.contextMenus` items before Inspect (converted by `main/menus/fromElectron.ts`
-  `toMenuItemDefs`: submenus, separators, checks, icons as 16 px PNG data URLs; choosing one calls
-  the item's own `click` like Electron would, so the extension's `onClicked` gets the tab), and
-  draws them with `showMenu` at `params.x/y` plus the page view's origin. No macOS Look Up /
-  Services.
+  `core/browser/pageMenu.ts` (every entry carries a Phosphor icon name): spelling suggestions (at
+  most 5, each running `replaceMisspelling`, or a disabled "No Suggestions") + Add to Dictionary;
+  links (Open Link in New Tab, Open Link in Split View, Open Link Here, Download Linked File, Copy
+  Link, Share… on macOS, plus Copy Email Address for `mailto:`; non-web links hide Open/Download); images
+  (Open Image in New Tab, Download Image, Copy Image, Copy Image Address); video/audio (Open in New
+  Tab, Download, Copy Address, Loop, Show/Hide Controls, plus Picture in Picture for video);
+  selection (Go to "…" when the text is a URL, Search Google for "…", Copy); editable (Cut, Copy,
+  Paste, Paste and Match Style, Select All); blank spot (Back, Forward, Reload, Copy Page URL, Save
+  Page As…, Print…, View Page Source); then splices the space's `chrome.contextMenus` items before
+  Inspect Element (converted by `main/menus/fromElectron.ts` `toMenuItemDefs`: submenus, separators,
+  checks, icons as 16 px PNG data URLs with `PuzzlePiece` fallback; choosing one calls the item's
+  own `click` like Electron would, so the extension's `onClicked` gets the tab), and draws them with
+  `showMenu` at `params.x/y` plus the page view's origin. Page actions guard `isDestroyed()`. No
+  macOS Look Up / Services.
 - **Drawn menus.** Every menu is drawn by the overlay; no `Menu.popup` is left in `src/main`
   except the macOS share menu and the app menu bar (an extension action's own right-click menu,
   opened by electron-chrome-extensions, is the library's). A choice whose target changed meanwhile
@@ -603,6 +614,18 @@ results come back to the lead as a short summary + branch name, never the full c
   `end` stores the ratio once, Escape (or the overlay closing) restores it. Arrow keys on the
   divider store at once. A mouse press or a key in a half on screen activates its tab (`activatesHalf`); the pair stays
   shown. Focus alone never does: a hidden view keeps its focus events.
+- **Default browser.** `main/defaultBrowser.ts` parses external `http`/`https` URLs from launch
+  arguments (`urlFromArgv`, ignoring flags and file paths), Windows/Linux `second-instance` argv
+  (`handleSecondInstance`), and macOS `open-url` (`handleOpenUrl`). An `ExternalUrlQueue` holds
+  URLs that arrive before the window exists (or while all windows are closed on macOS) and opens
+  each once as a new today tab in the active space, focusing the window; non-web URLs are ignored.
+  Packaging (`electron-builder.yml` `protocols`) declares `http` and `https`. On macOS/Linux,
+  `app.defaultBrowser` / `app.makeDefaultBrowser` use Electron's `isDefaultProtocolClient` /
+  `setAsDefaultProtocolClient` (passing `process.execPath` and resolved `argv[1]` in dev mode). On
+  Windows, status is read from HKCU `UrlAssociations\https\UserChoice` `ProgId` (`reg.exe query`,
+  no shell) against `BigBrowserURL`, and `app.makeDefaultBrowser` registers the HKCU ProgId,
+  `Software\BigBrowser\Capabilities` (`URLAssociations` for `http`/`https`), and
+  `Software\RegisteredApplications\Big Browser` before opening `ms-settings:defaultapps`.
 - **Window controls.** `window.setControlsVisible({ visible })` shows or hides the macOS traffic
   lights (the main window; a no-op on Windows and Linux): hidden at launch, the UI shows them while
   the window's top margin is open. While the margin is open (macOS and Windows), main polls the
@@ -615,7 +638,8 @@ results come back to the lead as a short summary + branch name, never the full c
 - **Lazy loading.** A view is created the first time its tab is active, so restored and
   unloaded tabs don't load until visited; closing or unloading a tab destroys its view
   (`webContents.close()`).
-- **Commands:** `browser.openTab` / `closeTab` / `removeTab` / `moveTab` / `activateTab` /
+- **Commands:** `app.defaultBrowser` / `app.makeDefaultBrowser`; `browser.openTab` / `closeTab` / `removeTab` / `moveTab` / `activateTab` /
+  `splitTabs` / `splitActive` / `separate` / `closeSplit` / `setSplitRatio` / `splitDrag` /
   `navigate` / `goBack` / `goForward` / `reload` / `createSpace` / `activateSpace` /
   `renameSpace` / `setSpaceIcon` / `setSpaceColor` / `setSpaceSectionCollapsed` / `deleteSpace`
   (store, then `SpaceSessions.wipe`: cookies, storage, cache; the last space throws `last_space`) /

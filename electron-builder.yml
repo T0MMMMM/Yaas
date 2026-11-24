@@ -3,6 +3,13 @@ appId: dev.bigbrowser.app
 productName: Big Browser
 copyright: Copyright © 2026 Big Browser contributors
 
+protocols:
+  - name: Big Browser HTTP
+    role: Viewer
+    schemes:
+      - http
+      - https
+
 directories:
   output: release/${version}
   buildResources: build

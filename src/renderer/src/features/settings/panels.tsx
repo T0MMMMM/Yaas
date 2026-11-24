@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { SHORTCUTS } from '../../app/shortcuts'
 import { useSettings } from '../../stores/settings'
 import { useUi } from '../../stores/ui'
@@ -12,8 +13,56 @@ import styles from './SettingsView.module.css'
 const ARCHIVE_DAYS = [1, 3, 7, 14, 30]
 
 export function General() {
+  const [isDefault, setIsDefault] = useState<boolean | null>(null)
+  const platform = useSettings((s) => s.info?.platform)
+
+  useEffect(() => {
+    let active = true
+    const refresh = () => {
+      void window.bigBrowser
+        .invoke('app.defaultBrowser')
+        .then((res) => {
+          if (active) setIsDefault(res.isDefault)
+        })
+        .catch(() => undefined)
+    }
+    refresh()
+    window.addEventListener('focus', refresh)
+    return () => {
+      active = false
+      window.removeEventListener('focus', refresh)
+    }
+  }, [])
+
   return (
     <SettingGroup>
+      <SettingRow
+        label="Default browser"
+        description={
+          isDefault
+            ? 'Big Browser is your default browser.'
+            : platform === 'windows'
+              ? 'Open links from other apps in Big Browser. Opens Windows Default apps.'
+              : 'Open links from other apps in Big Browser.'
+        }
+      >
+        {isDefault ? (
+          <span className={styles.muted}>Default</span>
+        ) : (
+          <button
+            className={styles.button}
+            disabled={isDefault === null}
+            onClick={() => {
+              void window.bigBrowser
+                .invoke('app.makeDefaultBrowser')
+                .then((res) => setIsDefault(res.isDefault))
+                .catch(() => undefined)
+            }}
+          >
+            Make default
+          </button>
+        )}
+      </SettingRow>
       <SettingRow label="Open at login" description="Start Big Browser when you log in." soon>
         <Switch label="Open at login" checked={false} disabled />
       </SettingRow>
