@@ -68,7 +68,8 @@ frame by its fill and rounded corners alone. The window buttons wait in the top 
 - Hovering a session shows a **⋯** button on the right (session actions) in place of its status dot.
 - Rows (environments and sessions) are 34 px high; the sidebar has a 6 px side padding so search,
   rows and folders use almost its full width.
-- **Resizable**: drag its right edge (200–440 px, default 248, saved in settings); double-click the
+- **Resizable**: drag its right edge (48–72 px icon-only or 120–440 px normal, default 228
+  `SIDEBAR_DEFAULT`, saved in settings; existing users keep their saved width); double-click the
   edge to reset.
 - **Environments** (= project folders) as **folders** that open and close (folder / open-folder
   icon; a closed folder shows its session count), sorted by last activity, each listing its
@@ -240,19 +241,28 @@ first and matches open tabs across **all spaces** (picking another space's tab s
 list scrolls inside the window; no tab is created until Enter.
 
 **Address bar buttons** — lives **inside the page card**, on the page's own colour (`theme-color`
-tint kept, height `--addressbar-h` 38 px): transparent URL field at rest, `--fill-subtle` (`ink 0.05`)
-fill on hover/edit, host bright (500) + path faint (400). Left: Back, Forward, Reload (28 px, radius
-`--radius-toolbar` 6 px, concentric with the 10 px page card). Right: Copy link (`browser.copyLink`;
-a check mark for 1.2 s) and the site menu (below; it holds the extensions) — hover-revealed (or
-visible on focus / while open / while copied). Both groups are three buttons wide so the URL stays
-centred.
+tint kept; opaque `#RRGGBB`, `#RGB`, `rgb()`/`rgba()` and CSS named colours are normalised while
+translucent or unsupported values skip tinting; foreground text picks black or white by higher
+WCAG contrast, guaranteed ≥ 4.5:1 for 13 px text; height `--addressbar-h` 38 px): transparent URL
+field at rest, `--fill-subtle` (`ink 0.05`) fill on hover/edit, host bright (500) + path faint
+(400). Left: Back, Forward, Reload (28 px, radius `--radius-toolbar` 6 px, concentric with the
+10 px page card). Right: Copy link (`browser.copyLink`; a check mark for 1.2 s) and the site menu
+(below; it holds the extensions) — hover-revealed (or visible on focus / while open / while
+copied). Both groups are three buttons wide so the URL stays centred (and shrink to content in
+split view).
 
 **Page card and split trough** — the floating page card sits inside an `--frame-gap` (8 px) bezel
 with `--radius-lg` (10 px, `= PAGE_RADIUS` in main), **no border and no shadow** (contrast with the
-tinted frame alone). In split view, the two cards are separated by an `--split-gap` (8 px,
-`= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through; the
-divider (`SplitDivider`) is invisible at rest and reveals a centred 3×28 px pill (`--split-handle-w`
-× `--split-handle-h`) on hover, keyboard focus or drag. Double-clicking the divider resets 50/50.
+tinted frame alone). Native `WebContentsView`s always receive `PAGE_RADIUS` (10 px) in both
+attached and card modes so all four corners of the page card stay rounded (in attached mode the
+card backing behind the view shares `--bg-surface`, seamlessly joining the address bar). In split
+view, each half is its own 10 px card separated from top to bottom by the `--split-gap` (8 px,
+`= SPLIT_GAP` in main) frame trough that lets the tinted frame gradient and grain show through:
+the focused half carries `AddressBar` at its top and the unfocused half carries a quiet 38 px
+click-to-focus header (`SplitInactiveBar`, tinted with its own `theme-color`) so both cards stay
+aligned and switching halves never reflows page height. The divider (`SplitDivider`) is invisible
+at rest and reveals a centred 3×28 px pill (`--split-handle-w` × `--split-handle-h`) on hover,
+keyboard focus or drag. Double-clicking the divider resets 50/50.
 
 **Sidebar title row** — the drag row at the top of the sidebar holds its own buttons: the icons-only
 switch on the left (icons only ↔ the width it had, `sidebarExpandedWidth`) and Settings on the
@@ -303,17 +313,25 @@ Components only ever reference tokens — never raw colors or pixel values.
 
 ### 3.1 Color
 
-The user picks **one accent** (onboarding); each space has its own colour (`space.color`) that drives
-the window frame. The frame is a vertical gradient over a warm neutral (`theme/windowTint.ts`,
-`theme/FrameBackdrop.tsx`): light blends over `#FBFAF9` (`a = 0.27`, or `0.09` for neutral spaces),
-dark blends over `#29292A` (`a = 0.18`, or `0.06` for neutral spaces), with the bottom stop lifted
-`+0.25` in lightness. Switching spaces crossfades stacked gradient + grain layers in 400 ms `ease`
-(`--dur-space-switch`) while the page card stays still. Secondary/muted/faint chrome text uses
-alpha ink (`rgb(0 0 0 / α)` light, `rgb(255 255 255 / α)` dark) so it harmonises with any space tint.
+The user picks **one accent** (onboarding; default `DEFAULT_ACCENT = '#7C5CFF'`); each space has
+its own colour (`space.color`) that drives the window frame and space-tinted tokens (`applySpaceAccent`
+sets `--space-accent`, `--space-accent-soft`, `--bg-dock-selected`, and `--selection-bg` on
+`document.documentElement` so derived tokens resolve to the active space everywhere). The frame is
+a vertical gradient over a warm neutral (`theme/windowTint.ts`, `theme/FrameBackdrop.tsx`):
+chromatic space colours are normalised in HSL (`S = 0.36`, `L = 0.527`, bottom stop lifted `+0.25`
+in lightness) so every hue carries calm, uniform visual weight, then blended over `#FBFAF9` in
+light (`a = 0.27`, or `0.09` for neutral spaces) and `#29292A` in dark (`a = 0.18`, or `0.06` for
+neutral spaces). Neutral detection uses sRGB chroma `(max − min) / 255 < 0.06` (rather than HSL
+saturation) so near-white and near-black colours (`#F8F8FA`, `#0A0A0C`) stay neutral instead of
+getting an inflated chromatic tint. Switching spaces crossfades stacked gradient + grain layers in
+400 ms `ease` (`--dur-space-switch`, preserving the settled bottom layer when capping rapid
+switches) while colour-scheme changes flip in place with the rest of the tokens. Secondary, muted,
+faint and placeholder text use WCAG AA alpha ink (`0.65 / 0.58 / 0.56 / 0.56` light `rgb(0 0 0 / α)`,
+`0.70 / 0.62 / 0.60 / 0.60` dark `rgb(255 255 255 / α)`) so it harmonises with any space tint.
 
 | Token | Role |
 |---|---|
-| `--accent` / `--space-accent` | Chosen app accent / active space colour (overridden on `Shell`) |
+| `--accent` / `--space-accent` | Chosen app accent / active space colour (set on `:root` via `applySpaceAccent`) |
 | `--accent-soft` / `--space-accent-soft` | `color-mix(in oklch, var(--accent) 16%, transparent)` / space colour at 12 % (`--bg-dock-selected`) |
 | `--on-accent` / `--on-danger` | Text/icon on accent (computed from luminance) / always white on `--danger` |
 | `--frame-base` | Warm neutral base behind the frame gradient (`#fbfaf9` light / `#29292a` dark) |
@@ -401,7 +419,7 @@ a transparent native range input sits on top for keyboard, pointer and screen re
 | Layout | `--sidebar-w` 228 · `--sidebar-inset` 9 · `--titlebar-h` 44 · `--addressbar-h` 38 · `--frame-gap` 8 (bezel around the page card) · `--split-gap` 8 (frame trough between split cards `= SPLIT_GAP` in main) · `--split-handle-w` 3 / `--split-handle-h` 28 (invisible divider pill revealed on hover/focus/drag) · `--row-h` 34 · `--row-gap` 3 · `--space-header-h` 30 · `--folder-indent` 14 · `--footer-h` 36 · `--footer-btn-size` 28 · `--tile-h` 41 · `--tile-gap` 6 · `--tile-ring-w` 3 · `--tile-min-w` 64 · `--connector-w` 28 · `--tooltip-max-w` 280 · `--title-fade` 24 / `--title-fade-hover` 44 · `--folder-bar-w` 2 · `--folder-hue-s` 70% / `--folder-hue-l` 48% · `--window-controls-h` 32 (`= WINDOW_CONTROLS_H`) · `--window-control-w` 44 · `--finder-w` 652, `--finder-top` 20vh, `--finder-field-h` 44, `--dock-row-h` 36 · `--menu-row-h` 28 · `--menu-row-h-tall` 42 · `--menu-row-pad` 10 · `--menu-inset` 5 · `--border-menu-w` 0.5px · `--popover-pad` 12 |
 | Controls | `--control-size` 30 · `--control-size-sm` 28 (address bar buttons and field) · `--control-size-xs` 24 (in-row buttons) · `--icon-size` 16 · `--space-dot` 6 · `--favicon-size` 16 · `--tile-icon-size` 20 · `--status-icon-size` 28 · `--quick-action-h` 32 · `--ext-tile-w` 52 · `--pill-h` 28 |
 | Motion curves | `--ease`: `ease` (fades, presses) · `--ease-out`: `cubic-bezier(0.2, 0.4, 0.1, 0.98)` (enters) · `--ease-in-out`: `cubic-bezier(0.4, 0.05, 0.2, 1)` (state moves, exits) · `--ease-morph`: `cubic-bezier(0.35, 0.05, 0, 0.95)` (folder/section morphs) · legacy aliases `--ease-in` / `--ease-bounce` kept for un-migrated consumers |
-| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
+| Motion durations (by frequency tier) | Press/release/hover: `--dur-press` 75 ms, `--dur-release` 350 ms, `--dur-hover` 200 ms · Constant (`⌘T`, `⌘K`, `⌘L`, tab switch): `--dur-constant` 100 ms (fade only) · Frequent (menus, popovers, tooltips, controls): `--dur-frequent-fade` 150 ms, `--dur-frequent-move` 250 ms, `--dur-frequent-exit` 180 ms, `--delay-tooltip` 500 ms · Occasional (settings, confirm, downloads): `--dur-occasional-fade` 400 ms, `--dur-occasional-move` 400 ms, `--dur-occasional-exit` 300 ms · Rows & morph: `--dur-row-fade` 150 ms, `--dur-row-enter` 250 ms, `--dur-row-exit` 180 ms, `--dur-row-collapse` 250 ms, `--dur-morph` 400 ms · Drag: `--dur-drag-shift` 150 ms, `--dur-drag-settle` 250 ms · Space switch: `--dur-space-switch` 400 ms, `--dur-swap-out` 150 ms, `--dur-swap-delay` 75 ms · Scales: `--scale-press` 0.97, `--scale-enter` 0.97 · Legacy durations (`--dur-fast`, `--dur-base`, `--dur-popover-in/out`, `--dur-command`, `--dur-spin`, `--dur-intro*`) kept for un-migrated consumers. Under `prefers-reduced-motion: reduce`, move/scale tokens zero out while fade durations stay active. |
 | Opacity | `--opacity-unloaded` 0.5 (sidebar tabs whose page is not loaded yet; full on hover and on the active tab) |
 
 ## 4. Transparency, per platform
@@ -419,7 +437,8 @@ How see-through the frame is, and the liquid glass look, are pure CSS (§3.2).
 **Window buttons in the top margin** (macOS and Windows; Linux keeps its native title bar). The
 window's top margin runs along the whole window, above the sidebar and the page, `--frame-gap`
 high, and the window buttons wait in it, hidden. When the pointer rests on it for 120 ms
-(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-fast`), pushing everything down, and
+(`REVEAL_DELAY_MS`) it grows to `--window-controls-h` (`--dur-frequent-fade`, 150 ms; instant under
+reduced motion), pushing everything down, and
 the buttons come; it closes 250 ms (`HIDE_DELAY_MS`) after the pointer leaves. Passing over the
 margin opens nothing (`app/WindowControls`, `app/controlsReveal`).
 - **Windows**: no native caption buttons. Minimize, maximize / restore and close are drawn at the

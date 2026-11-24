@@ -129,7 +129,9 @@
   --dur-frequent-move: 250ms; /* frequent enter move */
   --dur-frequent-exit: 180ms; /* frequent exit fade (no move) */
   --dur-occasional-fade: 400ms; /* occasional enter fade (settings, confirm, downloads) */
+  --dur-occasional-move: 400ms; /* occasional enter move */
   --dur-occasional-exit: 300ms; /* occasional exit fade */
+  --delay-tooltip: 500ms; /* tooltip hover rest delay before reveal */
   --dur-row-fade: 150ms; /* tab open fade */
   --dur-row-enter: 250ms; /* tab open height/move */
   --dur-row-exit: 180ms; /* tab close fade */
@@ -402,6 +404,7 @@
     --dur-base: 0ms;
     --dur-spring: 0ms;
     --dur-frequent-move: 0ms;
+    --dur-occasional-move: 0ms;
     --dur-row-enter: 0ms;
     --dur-row-collapse: 0ms;
     --dur-morph: 0ms;
