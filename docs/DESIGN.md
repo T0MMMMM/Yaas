@@ -139,8 +139,9 @@ are `TabRow`, `FolderRow` and `FavoriteTiles` in `features/sidebar`.
   focus only). Opening a tab plays a two-phase enter (250 ms height + 150 ms fade, only for newly
   opened tabs in the active space); closing fades out over 180 ms then collapses height over
   250 ms (`--ease-in-out`). Switching spaces plays a fast content swap (old out 150 ms, new in
-  after 75 ms) aligned with the 400 ms frame gradient crossfade. There is no Search button at the
-  top of the sidebar (⌘K opens the finder).
+  after 75 ms) aligned with the 400 ms frame gradient crossfade; the old content is an inert copy
+  of the rows as they were drawn (`SpaceSwapStage`), not a second renderer. There is no Search
+  button at the top of the sidebar (⌘K opens the finder).
 - **Today**: tabs opened from another tab are indented under it, `--folder-indent` (14 px) per
   level (max 3). **Automatic folders**: 3 or more top-level tabs of one site (`www.` ignored) are
   drawn as a folder named after the host, where the first of them was; open/closed per host for
