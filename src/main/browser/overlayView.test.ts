@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserWindow } from 'electron'
-import type { Tooltip } from '@shared/ipc/contract'
+import { TOOLTIP_FADE_MS, type Tooltip } from '@shared/ipc/contract'
 
 /** The one fake view the OverlayView under test creates. */
 const fake = vi.hoisted(() => ({
@@ -40,7 +40,7 @@ vi.mock('electron', () => {
   return { WebContentsView, ipcMain: {} }
 })
 
-import { OverlayView, TOOLTIP_FADE_MS, TOOLTIP_STRIP_W, tooltipBounds } from './overlayView'
+import { OverlayView, TOOLTIP_STRIP_W, tooltipBounds } from './overlayView'
 
 const WINDOW = { width: 1000, height: 700 }
 
@@ -118,7 +118,10 @@ describe('OverlayView.tooltip', () => {
     overlay.tooltip(null)
     expect(sent(view, 'overlay.tooltip')).toEqual([tip, null])
     expect(lastVisible(view)).toBe(true)
-    vi.advanceTimersByTime(TOOLTIP_FADE_MS)
+    // Still shown until the overlay's card has played its whole fade.
+    vi.advanceTimersByTime(TOOLTIP_FADE_MS - 1)
+    expect(lastVisible(view)).toBe(true)
+    vi.advanceTimersByTime(1)
     expect(lastVisible(view)).toBe(false)
   })
 

@@ -285,6 +285,12 @@ export type OverlayRequest = z.infer<typeof overlayRequestSchema>
 /** Longest tooltip title or detail; the sidebar clips longer ones before sending (clipTooltip). */
 export const TOOLTIP_TEXT_MAX = 500
 
+/**
+ * How long a hidden tooltip takes to fade out (`--dur-frequent-exit`): the overlay keeps its card
+ * mounted and main keeps its strip shown that long, so neither cuts the other's fade.
+ */
+export const TOOLTIP_FADE_MS = 180
+
 /** Longest favicon URL a tooltip carries (a data: URL can be long; longer ones are dropped). */
 export const TOOLTIP_ICON_MAX = 4096
 

@@ -682,7 +682,7 @@ results come back to the lead as a short summary + branch name, never the full c
   `detail` are at most `TOOLTIP_TEXT_MAX` (500) characters: the sidebar clips longer ones before
   sending (`clipTooltip`), and the card clamps them to 3 and 2 lines.
   `overlay.tooltip(null)` from the UI sends `null` (the card fades) and hides the strip
-  `TOOLTIP_FADE_MS` (150) later unless a tooltip or popover came meanwhile; from the overlay itself
+  `TOOLTIP_FADE_MS` (180, shared with the overlay's fade) later unless a tooltip or popover came meanwhile; from the overlay itself
   (sent on a `pointermove`: the pointer is on the strip) it hides at once, so the page under it gets
   the next click. A tooltip is ignored while a popover is open, and `overlay.open` replaces any
   tooltip (the overlay drops it on `overlay.opened`): a menu always wins. A window resize drops the

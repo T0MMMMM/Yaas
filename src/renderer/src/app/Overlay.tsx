@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SIDEBAR_DEFAULT, type OverlayRequest, type Tooltip } from '@shared/ipc/contract'
+import {
+  SIDEBAR_DEFAULT,
+  TOOLTIP_FADE_MS,
+  type OverlayRequest,
+  type Tooltip,
+} from '@shared/ipc/contract'
 import type { MenuSpecItem } from '@shared/menuSpec'
 import { DownloadsMenu } from '../features/downloads/DownloadsMenu'
 import { SiteMenu } from '../features/browser/SiteMenu'
@@ -52,8 +57,6 @@ const NEW_MENU: MenuSpecItem[] = [
 const CONSTANT_EXIT_MS = 100 // --dur-constant (⌘T, ⌘K)
 const FREQUENT_EXIT_MS = 180 // --dur-frequent-exit (menus, popovers, anchored cards)
 const OCCASIONAL_EXIT_MS = 300 // --dur-occasional-exit (downloads, confirm)
-/** How long a hidden tooltip stays mounted to fade out (`--dur-frequent-exit`). */
-const TOOLTIP_FADE_MS = 180
 
 function exitMsFor(kind: OverlayRequest['kind'] | undefined): number {
   switch (kind) {

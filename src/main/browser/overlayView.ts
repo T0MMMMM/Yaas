@@ -6,12 +6,11 @@
 // It also draws the sidebar's tooltips: then it is only a strip beside the sidebar, never focused.
 import { WebContentsView, type BrowserWindow, type Rectangle, type WebContents } from 'electron'
 import { emit } from '../ipc/router'
+import { TOOLTIP_FADE_MS } from '@shared/ipc/contract'
 import type { OverlayRequest, PageBounds, Tooltip } from '@shared/ipc/contract'
 
 /** Width of the strip the overlay shrinks to for a tooltip, from the anchor's right edge. */
 export const TOOLTIP_STRIP_W = 320
-/** How long a hidden tooltip keeps the strip shown, so its card can fade out. */
-export const TOOLTIP_FADE_MS = 150
 
 /**
  * Where the overlay sits while it draws a tooltip: a full-height strip from the anchor's right edge,
