@@ -3,6 +3,7 @@ import type { TabView } from '../workspace/workspace'
 import { Favicon } from './Favicon'
 import { useFaviconColor } from './faviconColor'
 import { showTabMenu } from './menus'
+import { tilt } from './tilt'
 import { TabDragContext, useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './FavoriteTiles.module.css'
@@ -26,10 +27,14 @@ function Tile({
   const active = activeId === tab.id || shownHalf !== tab
   const title = second ? `${tab.title} | ${second.title}` : tab.title
   const ringColor = useFaviconColor(shownHalf.faviconUrl)
+  const itemStyle = {
+    ...tilt(tab.id),
+    ...(ringColor ? { '--tile-ring': ringColor } : {}),
+  } as CSSProperties
   return (
     <li
       className={styles.item}
-      style={ringColor ? ({ '--tile-ring': ringColor } as CSSProperties) : undefined}
+      style={itemStyle}
       data-testid="favorite"
       data-split={second ? true : undefined}
       data-drop={`tab:${tab.id}`}

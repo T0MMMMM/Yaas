@@ -5,6 +5,7 @@ import { Favicon } from './Favicon'
 import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
+import { tilt } from './tilt'
 import { useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import rowStyles from './TabRow.module.css'
@@ -70,7 +71,7 @@ export function SplitRow({
   return (
     <li
       className={rowStyles.item}
-      style={{ '--depth': depth } as CSSProperties}
+      style={{ ...tilt(first.id), '--depth': depth } as CSSProperties}
       data-testid={exiting ? 'split-exiting' : 'split-row'}
       data-depth={depth}
       data-entering={entering || undefined}

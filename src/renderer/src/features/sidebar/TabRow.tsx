@@ -5,6 +5,7 @@ import { Favicon } from './Favicon'
 import { useCompact } from './CompactContext'
 import { FolderTrailContext } from './FolderTrailContext'
 import { showTabMenu } from './menus'
+import { tilt } from './tilt'
 import { TabDragContext, useDragHandle } from './useTabDrag'
 import { TOOLTIP_ROW, useTooltipEnter } from './useTooltip'
 import styles from './TabRow.module.css'
@@ -37,7 +38,7 @@ export function TabRow({
   return (
     <li
       className={styles.item}
-      style={{ '--depth': depth } as CSSProperties}
+      style={{ ...tilt(tab.id), '--depth': depth } as CSSProperties}
       data-testid={exiting ? 'tab-exiting' : 'tab'}
       data-depth={depth}
       data-entering={entering || undefined}

@@ -121,11 +121,12 @@
 
   .item:hover .row::before {
     background: var(--bg-row-hover);
+    transform: rotate(var(--tilt-hover));
   }
 }
 
 .row:active::before {
-  transform: scale(var(--scale-press));
+  transform: rotate(var(--tilt-hover)) scale(var(--scale-press));
   transition:
     background-color var(--dur-press) var(--ease),
     box-shadow var(--dur-constant) var(--ease),
@@ -133,7 +134,7 @@
 }
 
 /* Active tab card: elevated translucent surface + hairline top rim + soft shadow, regular weight,
-   constant-tier 100 ms fade with no move. */
+   constant-tier 100 ms fade with per-item askew tilt when enabled. */
 .row[data-active='true'] {
   color: var(--text);
   transition:
@@ -148,6 +149,7 @@
   box-shadow:
     inset 0 1px 0 var(--border-row-active),
     var(--shadow-row-active);
+  transform: rotate(var(--tilt-selected));
   transition:
     background-color var(--dur-constant) var(--ease),
     box-shadow var(--dur-constant) var(--ease),
@@ -155,7 +157,7 @@
 }
 
 .row[data-active='true']:active::before {
-  transform: scale(var(--scale-press));
+  transform: rotate(var(--tilt-selected)) scale(var(--scale-press));
   transition:
     background-color var(--dur-press) var(--ease),
     box-shadow var(--dur-constant) var(--ease),

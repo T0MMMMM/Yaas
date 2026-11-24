@@ -4,6 +4,7 @@ import type { SpaceSummary } from '../workspace/workspace'
 import { useUi } from '../../stores/ui'
 import { anchorOf } from '../../ui/anchor'
 import { useCompact } from './CompactContext'
+import { tilt } from './tilt'
 import styles from './SpaceHeader.module.css'
 
 /** Same bounds as the contract's space names. */
@@ -101,6 +102,7 @@ export function SpaceHeader({ space }: { space: SpaceSummary }) {
   return (
     <div
       className={styles.header}
+      style={tilt(space.id)}
       data-testid="space-header"
       data-menu-open={menuOpen || undefined}
       onContextMenu={(e) => {

@@ -51,6 +51,7 @@
 
   .header:hover .row::before {
     background: var(--bg-row-hover);
+    transform: rotate(var(--tilt-hover));
   }
 }
 
@@ -60,10 +61,11 @@
 
 .header[data-menu-open] .row::before {
   background: var(--bg-row-hover);
+  transform: rotate(var(--tilt-hover));
 }
 
 .row:active::before {
-  transform: scale(var(--scale-press));
+  transform: rotate(var(--tilt-hover)) scale(var(--scale-press));
   transition:
     background-color var(--dur-press) var(--ease),
     transform var(--dur-press) var(--ease);

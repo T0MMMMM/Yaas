@@ -6,6 +6,7 @@ import { FolderGlyph } from './glyphs'
 import { folderHue, folderIcon } from './hash'
 import { showFolderMenu } from './menus'
 import { Rows } from './SidebarRows'
+import { tilt } from './tilt'
 import { TabDragContext, useDragHandle } from './useTabDrag'
 import styles from './FolderRow.module.css'
 
@@ -77,6 +78,7 @@ export function FolderRow({
   const outerTrail = useContext(FolderTrailContext)
 
   const auto = node.kind === 'auto-folder'
+  const key = auto ? `auto:${node.host}` : node.folder.id
   const name = auto ? node.host : node.folder.name
   const collapsed = auto ? Boolean(collapsedHosts[node.host]) : node.folder.collapsed
   // A pinned folder's chosen hue or emoji; an automatic folder takes the hue of its host.
@@ -118,6 +120,7 @@ export function FolderRow({
     >
       <div
         className={styles.header}
+        style={tilt(key)}
         // A tab dropped on a pinned folder files into it; an automatic folder's header does not.
         data-drop={auto ? undefined : `folder:${node.folder.id}`}
         data-drop-target={(!auto && zone === `folder:${node.folder.id}`) || undefined}

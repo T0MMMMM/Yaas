@@ -47,11 +47,12 @@
 @media (hover: hover) {
   .tile:hover::before {
     background: var(--bg-tile-hover);
+    transform: rotate(var(--tilt-hover));
   }
 }
 
 .tile:active::before {
-  transform: scale(var(--scale-press));
+  transform: rotate(var(--tilt-hover)) scale(var(--scale-press));
   transition:
     background-color var(--dur-press) var(--ease),
     box-shadow var(--dur-constant) var(--ease),
@@ -66,6 +67,7 @@
     inset 0 0 0 var(--tile-ring-w) var(--tile-ring, var(--space-accent)),
     inset 0 1px 0 var(--border-row-active),
     var(--shadow-row-active);
+  transform: rotate(var(--tilt-selected));
   transition:
     background-color var(--dur-constant) var(--ease),
     box-shadow var(--dur-constant) var(--ease),
@@ -73,7 +75,7 @@
 }
 
 .tile[data-active='true']:active::before {
-  transform: scale(var(--scale-press));
+  transform: rotate(var(--tilt-selected)) scale(var(--scale-press));
   transition:
     background-color var(--dur-press) var(--ease),
     box-shadow var(--dur-constant) var(--ease),
