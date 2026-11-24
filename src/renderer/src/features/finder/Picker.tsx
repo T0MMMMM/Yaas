@@ -96,7 +96,7 @@ export function Picker({
     >
       <div className={styles.fieldRow}>
         <span className={styles.searchIcon} aria-hidden="true">
-          <MagnifyingGlass size={18} weight="regular" />
+          <MagnifyingGlass size={16} weight="regular" />
         </span>
         <input
           className={styles.field}

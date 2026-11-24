@@ -33,6 +33,7 @@ export function TabFinder({
           icon: <Favicon tab={tab} />,
           label: tab.title,
           hint: where.filter(Boolean).join(' · '),
+          enterLabel: 'Switch to Tab',
         },
       ]
     })
