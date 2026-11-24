@@ -8,14 +8,16 @@ import { todayCloseOrder, type SidebarNode } from '../workspace/workspace'
 import { anchorOf } from '../../ui/anchor'
 import { useMagnetic } from '../../ui/useMagnetic'
 import { CompactContext } from './CompactContext'
-import { spaceEmoji } from './emoji'
 import { FavoriteTiles } from './FavoriteTiles'
-import { exitsWhenGone } from './rows'
+import { enteringAfter, exitsWhenGone, newlyOpenedTabIds, ROW_ENTER_MS } from './rows'
 import { Rows } from './SidebarRows'
 import { SpaceHeader } from './SpaceHeader'
+import { SpaceSwapStage } from './SpaceSwapStage'
 import { TabDragContext, useTabDrag } from './useTabDrag'
 import { TooltipContext, useTooltip } from './useTooltip'
 import styles from './Sidebar.module.css'
+
+const EMPTY_IDS: ReadonlySet<string> = new Set()
 
 /** Opens the command field (⌘T): the tab is created only when the user submits it. */
 function newTab(): Promise<void> {
@@ -66,11 +68,54 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
   )
 
   const sections = workspace?.sections
+  const space = workspace?.space ?? null
+  const spaceId = space?.id ?? null
   const activeId = workspace?.activeTab?.id ?? null
-  const sectionCollapsed = workspace?.space.sectionCollapsed ?? false
-  const openTabIds = workspace?.openTabIds
+  const sectionCollapsed = space?.sectionCollapsed ?? false
+  const openTabIds = workspace?.openTabIds ?? EMPTY_IDS
+
+  // Track genuinely newly opened tab ids in the current space so only they play row-enter. Each
+  // batch of new ids (`batch`) ends its enter on its own timer; a page load or a title change (a
+  // new `openTabIds` with nothing added) keeps the same set, so no row's enter restarts.
+  const [openTracker, setOpenTracker] = useState<{
+    spaceId: string | null
+    openIds: ReadonlySet<string> | null
+    entering: ReadonlySet<string>
+    batch: ReadonlySet<string>
+  }>({ spaceId: null, openIds: null, entering: EMPTY_IDS, batch: EMPTY_IDS })
+
+  if (spaceId !== openTracker.spaceId || openTabIds !== openTracker.openIds) {
+    const added = newlyOpenedTabIds(openTracker.spaceId, spaceId, openTracker.openIds, openTabIds)
+    setOpenTracker({
+      spaceId,
+      openIds: openTabIds,
+      entering:
+        spaceId === openTracker.spaceId
+          ? enteringAfter(openTracker.entering, added, openTabIds)
+          : EMPTY_IDS,
+      batch: added.size > 0 ? added : openTracker.batch,
+    })
+  }
+
+  useEffect(() => {
+    const batch = openTracker.batch
+    if (batch.size === 0) return
+    // No cleanup: a later batch must not cancel this one's timer (a stale one finds nothing).
+    window.setTimeout(() => {
+      setOpenTracker((current) => {
+        const entering = enteringAfter(
+          current.entering,
+          EMPTY_IDS,
+          current.openIds ?? EMPTY_IDS,
+          batch,
+        )
+        return entering === current.entering ? current : { ...current, entering }
+      })
+    }, ROW_ENTER_MS + 30)
+  }, [openTracker.batch])
+
   // Only a closed tab's row animates out; a moved one (or a space switch) is never drawn twice.
-  const exits = useMemo(() => exitsWhenGone(openTabIds ?? new Set()), [openTabIds])
+  const exits = useMemo(() => exitsWhenGone(openTabIds), [openTabIds])
   const scroll = useRef<HTMLDivElement>(null)
   const drag = useTabDrag(sections, activeId, scroll, styles.dragClone)
   const dragging = drag.dragging.size > 0
@@ -119,76 +164,96 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
             </div>
 
             <div className={styles.scroll} ref={scroll}>
-              {sections && (
-                <FavoriteTiles
-                  tabs={sections.favorites}
-                  seconds={sections.favoriteSeconds}
-                  activeId={activeId}
-                />
-              )}
-
-              {/* The space section: its header, then the pinned tabs and folders, which it folds
-                  (always mounted so the fold animates; inert while folded). */}
-              {workspace && <SpaceHeader space={workspace.space} />}
-              <div
-                className={styles.fold}
-                data-collapsed={sectionCollapsed}
-                inert={sectionCollapsed}
-                data-testid="space-section"
-              >
-                <div className={styles.foldInner}>
-                  {/* While a tab is dragged, an empty pinned list is drawn to drop it on. */}
-                  {sections && (sections.pinned.length > 0 || dragging) && (
-                    <ul
-                      className={styles.list}
-                      aria-label="Pinned"
-                      data-testid="pinned"
-                      data-drop="list:pinned"
-                      data-drop-target={dropOn('list:pinned')}
-                    >
-                      <Rows nodes={sections.pinned} activeId={activeId} exits={exits} />
-                      {sections.pinned.length === 0 && (
-                        <li className={styles.dropHint}>Drop here to pin</li>
-                      )}
-                    </ul>
+              <div className={styles.scrollStage}>
+                <SpaceSwapStage
+                  spaceId={spaceId}
+                  className={styles.spaceContent}
+                  layerClassName={styles.swapLayer}
+                >
+                  {sections && (
+                    <FavoriteTiles
+                      tabs={sections.favorites}
+                      seconds={sections.favoriteSeconds}
+                      activeId={activeId}
+                    />
                   )}
-                </div>
-              </div>
 
-              <div className={styles.separator} data-testid="today-header">
-                <span className={styles.rule} />
-                {sections && sections.today.length > 0 && (
-                  <button
-                    className={styles.clear}
-                    title="Close today's tabs (⌘⇧T reopens them one by one)"
-                    onClick={() => void clearToday(sections.today, activeId)}
+                  {/* The space section: its header, then the pinned tabs and folders, which it folds
+                      (always mounted so the morph animates; inert while folded). */}
+                  {space && <SpaceHeader space={space} />}
+                  <div
+                    className={styles.fold}
+                    data-collapsed={sectionCollapsed}
+                    inert={sectionCollapsed}
+                    data-testid="space-section"
                   >
-                    Clear
+                    <div className={styles.foldInner}>
+                      {/* While a tab is dragged, an empty pinned list is drawn to drop it on. */}
+                      {sections && (sections.pinned.length > 0 || dragging) && (
+                        <ul
+                          className={styles.list}
+                          aria-label="Pinned"
+                          data-testid="pinned"
+                          data-drop="list:pinned"
+                          data-drop-target={dropOn('list:pinned')}
+                        >
+                          <Rows
+                            nodes={sections.pinned}
+                            activeId={activeId}
+                            enteringIds={openTracker.entering}
+                            exits={exits}
+                          />
+                          {sections.pinned.length === 0 && (
+                            <li className={styles.dropHint}>Drop here to pin</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className={styles.separator} data-testid="today-header">
+                    <span className={styles.rule} />
+                    {sections && sections.today.length > 0 && (
+                      <button
+                        className={styles.clear}
+                        title="Close today's tabs (⌘⇧T reopens them one by one)"
+                        onClick={() => void clearToday(sections.today, activeId)}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+
+                  <button
+                    className={styles.newTab}
+                    onClick={() => void newTab()}
+                    data-testid="new-tab"
+                    aria-label="New tab"
+                    title={compact ? 'New tab (⌘T)' : undefined}
+                  >
+                    <Plus size={16} weight="regular" />
+                    <span>New tab</span>
+                    <kbd>⌘T</kbd>
                   </button>
-                )}
+
+                  <ul
+                    className={styles.list}
+                    aria-label="Today"
+                    data-testid="today"
+                    data-drop="list:today"
+                    data-drop-target={dropOn('list:today')}
+                  >
+                    {sections && (
+                      <Rows
+                        nodes={sections.today}
+                        activeId={activeId}
+                        enteringIds={openTracker.entering}
+                        exits={exits}
+                      />
+                    )}
+                  </ul>
+                </SpaceSwapStage>
               </div>
-
-              <button
-                className={styles.newTab}
-                onClick={() => void newTab()}
-                data-testid="new-tab"
-                aria-label="New tab"
-                title={compact ? 'New tab (⌘T)' : undefined}
-              >
-                <Plus size={13} weight="bold" />
-                <span>New tab</span>
-                <kbd>⌘T</kbd>
-              </button>
-
-              <ul
-                className={styles.list}
-                aria-label="Today"
-                data-testid="today"
-                data-drop="list:today"
-                data-drop-target={dropOn('list:today')}
-              >
-                {sections && <Rows nodes={sections.today} activeId={activeId} exits={exits} />}
-              </ul>
             </div>
 
             <div className={styles.bottom}>
@@ -204,7 +269,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                 }}
                 {...magnet}
               >
-                <DownloadSimple size={18} weight="regular" />
+                <DownloadSimple size={16} weight="regular" />
               </button>
 
               <div className={styles.spaces} role="tablist" aria-label="Spaces">
@@ -228,8 +293,10 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                       <span className={styles.letter}>
                         {s.label.trim().charAt(0).toUpperCase() || '·'}
                       </span>
+                    ) : s.icon ? (
+                      <span className={styles.emoji}>{s.icon}</span>
                     ) : (
-                      <span className={styles.emoji}>{spaceEmoji(s.icon, s.label)}</span>
+                      <span className={styles.dot} />
                     )}
                   </button>
                 ))}
@@ -248,7 +315,7 @@ export function Sidebar({ compact = false }: { compact?: boolean }) {
                 }}
                 {...magnet}
               >
-                <Plus size={18} weight="regular" />
+                <Plus size={16} weight="regular" />
               </button>
             </div>
           </nav>

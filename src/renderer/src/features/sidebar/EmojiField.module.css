@@ -13,7 +13,9 @@
   outline: none;
   background: transparent;
   color: var(--text);
+  caret-color: var(--caret);
   font: inherit;
+  transition: border-color var(--dur-hover) var(--ease);
 }
 
 .input:focus-visible {
@@ -21,7 +23,7 @@
 }
 
 .input::placeholder {
-  color: var(--text-faint);
+  color: var(--text-placeholder);
 }
 
 .grid {
@@ -37,9 +39,10 @@
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  user-select: none;
   transition:
-    background var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    background-color var(--dur-hover) var(--ease),
+    transform var(--dur-release) var(--ease-out);
 }
 
 .emoji {
@@ -48,20 +51,33 @@
   font-size: var(--text-lg);
 }
 
-.emoji:hover,
+@media (hover: hover) {
+  .emoji:hover,
+  .none:hover {
+    background: var(--bg-menu-hover);
+  }
+
+  .emoji:hover {
+    transform: scale(var(--scale-emoji-hover));
+  }
+}
+
 .emoji:focus-visible,
-.none:hover,
 .none:focus-visible {
   outline: none;
   background: var(--bg-menu-hover);
 }
 
-.emoji:hover {
-  transform: scale(1.12);
+.emoji:active,
+.none:active {
+  transform: scale(var(--scale-press));
+  transition:
+    background-color var(--dur-press) var(--ease),
+    transform var(--dur-press) var(--ease);
 }
 
 .emoji[aria-pressed='true'] {
-  background: var(--accent-soft);
+  background: var(--space-accent-soft);
 }
 
 .none {

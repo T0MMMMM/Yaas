@@ -1,6 +1,7 @@
-import { useContext } from 'react'
+import { useContext, type CSSProperties } from 'react'
 import type { TabView } from '../workspace/workspace'
 import { Favicon } from './Favicon'
+import { useFaviconColor } from './faviconColor'
 import { showTabMenu } from './menus'
 import { tilt } from './tilt'
 import { TabDragContext, useDragHandle } from './useTabDrag'
@@ -25,10 +26,15 @@ function Tile({
   const shownHalf = second && activeId === second.id ? second : tab
   const active = activeId === tab.id || shownHalf !== tab
   const title = second ? `${tab.title} | ${second.title}` : tab.title
+  const ringColor = useFaviconColor(active ? shownHalf.faviconUrl : null)
+  const itemStyle = {
+    ...tilt(tab.id),
+    ...(ringColor ? { '--tile-ring': ringColor } : {}),
+  } as CSSProperties
   return (
     <li
       className={styles.item}
-      style={tilt(tab.id)}
+      style={itemStyle}
       data-testid="favorite"
       data-split={second ? true : undefined}
       data-drop={`tab:${tab.id}`}

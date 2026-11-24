@@ -1,5 +1,6 @@
-/* A split's row: the tab row's card, layout and × (TabRow.module.css), with both favicons and a
-   clickable title per half. */
+/* Split row: inherits the tab row's card, metrics, fade mask and × (TabRow.module.css), with both
+   favicons and clickable titles per half. Active half stays regular 400 weight (never bold) and
+   stands out via full ink contrast over the dimmer sibling half. */
 
 .row {
   cursor: pointer;
@@ -9,7 +10,7 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-hair);
   padding: 0;
   border: none;
   background: transparent;
@@ -32,28 +33,36 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   white-space: nowrap;
   text-overflow: clip;
   cursor: pointer;
+  transition: color var(--dur-hover) var(--ease);
 }
 
-.half:hover {
-  text-decoration: underline;
-}
-
-/* The half shown in the active page. */
+/* While the split is shown, the active half keeps full ink and the sibling recedes softly. */
 .half[data-active='true'] {
-  font-weight: 600;
+  color: var(--text);
+  font-weight: var(--weight-regular);
+}
+
+.half[data-inactive-half='true'] {
+  color: var(--text-secondary);
+}
+
+@media (hover: hover) {
+  .half:hover {
+    color: var(--text);
+  }
 }
 
 .bar {
   flex: none;
-  color: var(--text-muted);
+  color: var(--text-faint);
 }
 
-/* Icon-only sidebar: the two favicons stacked. */
+/* Icon-only sidebar: the two favicons stacked vertically. */
 :global([data-compact='true']) .favicons {
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-hair);
 }

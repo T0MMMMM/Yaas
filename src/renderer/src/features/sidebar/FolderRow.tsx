@@ -60,10 +60,12 @@ function NameField({ folderId, name }: { folderId: string; name: string }) {
 export function FolderRow({
   node,
   activeId,
+  enteringIds,
   exits,
 }: {
   node: FolderNode
   activeId: string | null
+  enteringIds?: ReadonlySet<string>
   /** Whether a child row that left plays its exit (exitsWhenGone). */
   exits: (node: SidebarNode) => boolean
 }) {
@@ -154,12 +156,17 @@ export function FolderRow({
           </button>
         )}
       </div>
-      {/* Always mounted so the fold animates; inert (and hidden from assistive tech) when closed. */}
+      {/* Always mounted so the morph animates; inert (and hidden from assistive tech) when closed. */}
       {node.children.length > 0 && (
         <div className={styles.fold} data-collapsed={collapsed} inert={collapsed}>
           <FolderTrailContext.Provider value={trail}>
             <ul className={styles.children} data-indent={indents} aria-label={name}>
-              <Rows nodes={node.children} activeId={activeId} exits={exits} />
+              <Rows
+                nodes={node.children}
+                activeId={activeId}
+                enteringIds={enteringIds}
+                exits={exits}
+              />
             </ul>
           </FolderTrailContext.Provider>
         </div>

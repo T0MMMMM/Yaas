@@ -1,11 +1,12 @@
-/* A folder: a header row with the tab row's card motion, its tabs and child folders listed one
-   indent step below (the tab rows' step), at most MAX_FOLDER_INDENT steps deep in all. */
+/* Folder row (redesign direction §3, §5): same 34 px / 8 px / 3 px metrics as tab rows,
+   13 px / 500 title, 14 px child indent, and a 400 ms --ease-morph expand/collapse with
+   separated child content fade. */
 
 .folder {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--row-gap);
 }
 
 .header {
@@ -18,12 +19,15 @@
   color: var(--text-muted);
 }
 
-.row:hover {
-  color: var(--text);
+@media (hover: hover) {
+  .row:hover {
+    color: var(--text);
+  }
 }
 
 .title {
   composes: title from './TabRow.module.css';
+  font-weight: var(--weight-medium);
 }
 
 .emoji {
@@ -34,11 +38,13 @@
   line-height: 1;
 }
 
-/* Tabs in a closed folder: shown where the × of a tab row would be. */
+/* Tabs in a closed folder: tabular count aligned on the right. */
 .count {
   position: absolute;
-  right: var(--space-3);
+  right: var(--space-2);
   font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
   color: var(--text-faint);
 }
 
@@ -50,7 +56,9 @@
   outline: none;
   background: transparent;
   color: var(--text);
+  caret-color: var(--caret);
   font: inherit;
+  font-weight: var(--weight-medium);
 }
 
 .children {
@@ -59,17 +67,17 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--row-gap);
 }
 
 .children[data-indent='true'] {
-  padding-left: var(--space-3);
-  transition: padding-left var(--dur-base) var(--ease-out);
+  padding-left: var(--folder-indent);
+  transition: padding-left var(--dur-frequent-move) var(--ease-out);
 }
 
 /* A tab or folder dragged onto the folder's row files into it (useTabDrag). */
 .header[data-drop-target] .row::before {
-  background: var(--accent-soft);
+  background: var(--space-accent-soft);
 }
 
 /* A dragged folder lifts with its rows (useTabDrag); its slot stays. */
@@ -91,14 +99,13 @@
   padding-left: 0;
 }
 
-/* The folded tabs: a grid row that animates 1fr to 0fr (height without measuring). Closed, they
-   stay mounted but hidden once the fold has played (visibility is delayed, then immediate). */
+/* Morph fold: container resizes over 400 ms --ease-morph; children fade separately. */
 .fold {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 1fr;
   transition:
-    grid-template-rows var(--dur-base) var(--ease),
+    grid-template-rows var(--dur-morph) var(--ease-morph),
     visibility 0s;
 }
 
@@ -106,8 +113,8 @@
   grid-template-rows: 0fr;
   visibility: hidden;
   transition:
-    grid-template-rows var(--dur-base) var(--ease),
-    visibility 0s linear var(--dur-base);
+    grid-template-rows var(--dur-morph) var(--ease-morph),
+    visibility 0s linear var(--dur-morph);
 }
 
 .fold > .children {
@@ -115,4 +122,11 @@
   min-height: 0;
   /* Clips the fold only vertically, so the tabs' shadows keep spilling sideways. */
   overflow-y: clip;
+  opacity: 1;
+  transition: opacity var(--dur-frequent-fade) var(--ease) var(--dur-swap-delay);
+}
+
+.fold[data-collapsed='true'] > .children {
+  opacity: 0;
+  transition: opacity var(--dur-frequent-exit) var(--ease);
 }

@@ -43,14 +43,30 @@ const CLONE_STRIPPED = [
   'data-drop-target',
   'data-dragged',
   'data-drag-row',
+  'data-entering',
+  'data-exiting',
 ]
 
-/** A CSS time token of the container, in ms (0 under prefers-reduced-motion). */
-function durationOf(el: HTMLElement, token: string): number {
+/** A deep copy of `el` that is no row, no drop target and no test handle (CLONE_STRIPPED). */
+export function strippedClone(el: HTMLElement): HTMLElement {
+  const clone = el.cloneNode(true) as HTMLElement
+  for (const node of [clone, ...clone.querySelectorAll('*')]) {
+    for (const name of CLONE_STRIPPED) node.removeAttribute(name)
+  }
+  return clone
+}
+
+/** A CSS time token of the element, in ms (0 under prefers-reduced-motion). */
+export function durationOf(el: HTMLElement, token: string): number {
   const value = getComputedStyle(el).getPropertyValue(token).trim()
   const ms = Number.parseFloat(value)
   if (Number.isNaN(ms)) return 0
   return value.endsWith('ms') ? ms : ms * 1000
+}
+
+/** A CSS easing token of the element (`linear` when the token is missing). */
+export function easingOf(el: HTMLElement, token: string): string {
+  return getComputedStyle(el).getPropertyValue(token).trim() || 'linear'
 }
 
 const DRAGGED = '\u0000dragged'
@@ -75,10 +91,7 @@ export class DragLift {
     cloneClass: string | undefined,
   ) {
     this.start = root.getBoundingClientRect()
-    const clone = root.cloneNode(true) as HTMLElement
-    for (const el of [clone, ...clone.querySelectorAll('*')]) {
-      for (const name of CLONE_STRIPPED) el.removeAttribute(name)
-    }
+    const clone = strippedClone(root)
     clone.setAttribute('data-testid', 'drag-clone')
     clone.setAttribute('aria-hidden', 'true')
     clone.inert = true
@@ -147,8 +160,8 @@ export class DragLift {
         },
       ],
       {
-        duration: durationOf(this.container, '--dur-base'),
-        easing: getComputedStyle(this.container).getPropertyValue('--ease').trim() || 'ease',
+        duration: durationOf(this.container, '--dur-drag-settle'),
+        easing: easingOf(this.container, '--ease-out'),
         fill: 'forwards',
       },
     )

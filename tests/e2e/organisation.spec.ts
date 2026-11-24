@@ -495,7 +495,7 @@ test("a tab's close button only shows on hover", async () => {
 test('long titles fade instead of ellipsing', async () => {
   await withBrowser(async ({ page, site }) => {
     await openTab(page, site.url('/long'))
-    const title = page.getByTestId('today').getByTestId('tab').first().locator('span').last()
+    const title = page.getByTestId('today').getByTestId('tab').first().getByTestId('tab-title')
     await expect(title).toHaveText(/^A very long page title/)
     await expect(title).toHaveCSS('text-overflow', 'clip')
     const mask = await title.evaluate((el) => getComputedStyle(el).maskImage)
@@ -557,6 +557,8 @@ test('favourite tiles fill the width and wrap', async () => {
     }
     await moveToFavorites(ids.slice(0, 3))
     await expect(tiles).toHaveCount(3)
+    const tileHeight = await tiles.first().evaluate((el) => (el as HTMLElement).offsetHeight)
+    expect(tileHeight).toBe(41)
     const three = await tops()
     expect(new Set(three.map((t) => t.top)).size).toBe(1)
     const widths = three.map((t) => t.width)
@@ -673,6 +675,81 @@ test('switching space draws no exiting rows', async () => {
     await expect(today.getByTestId('tab')).toHaveText(['Page C'])
     expect(await exitingDuring(page, 'browser.activateSpace', { spaceId: home })).toBe(0)
     await expect(today.getByTestId('tab')).toHaveText(['Page A', 'Page B'])
+  })
+})
+
+test('switching space fades the old rows out as a copy, with no duplicate tab rows', async () => {
+  await withBrowser(async ({ page, site }) => {
+    await openTab(page, site.url('/a'))
+    const home = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.state').then((s) => s.activeSpaceId),
+    )
+    const work = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.createSpace', { name: 'Work', color: '#3366ff' }),
+    )
+    await page.evaluate(
+      ({ spaceId, input }) => window.bigBrowser.invoke('browser.openTab', { spaceId, input }),
+      { spaceId: work.id, input: site.url('/c') },
+    )
+    await page.evaluate(
+      (spaceId) => window.bigBrowser.invoke('browser.activateSpace', { spaceId }),
+      home,
+    )
+    const today = page.getByTestId('today')
+    await expect(today.getByTestId('tab')).toHaveText(['Page A'])
+    await expect(page.getByTestId('space-swap')).toHaveCount(0)
+
+    // Every frame of the swap: the tab rows with a test id, and what the old space's copy shows.
+    const seen = await page.evaluate(async (spaceId) => {
+      const sidebar = document.querySelector('[data-testid=sidebar]')
+      if (!sidebar) throw new Error('no sidebar')
+      let maxTabs = 0
+      let copyText = ''
+      let copyHandles = 0
+      const look = () => {
+        maxTabs = Math.max(maxTabs, sidebar.querySelectorAll('[data-testid=tab]').length)
+        const copy = sidebar.querySelector('[data-testid=space-swap]')
+        if (!copy) return
+        copyText ||= copy.textContent ?? ''
+        copyHandles = Math.max(copyHandles, copy.querySelectorAll('[data-testid], [id]').length)
+      }
+      const observer = new MutationObserver(look)
+      observer.observe(sidebar, { childList: true, subtree: true, attributes: true })
+      await window.bigBrowser.invoke('browser.activateSpace', { spaceId })
+      const end = performance.now() + 600
+      while (performance.now() < end) {
+        look()
+        await new Promise((resolve) => requestAnimationFrame(resolve))
+      }
+      observer.disconnect()
+      return { maxTabs, copyText, copyHandles }
+    }, work.id)
+
+    expect(seen.maxTabs).toBe(1)
+    expect(seen.copyText).toContain('Page A')
+    expect(seen.copyHandles).toBe(0)
+    await expect(today.getByTestId('tab')).toHaveText(['Page C'])
+    await expect(page.getByTestId('space-swap')).toHaveCount(0)
+    await expect(page.getByTestId('tab')).toHaveCount(1)
+  })
+})
+
+test("a new row's enter ends on time while the workspace keeps updating", async () => {
+  await withBrowser(async ({ page, site }) => {
+    const spaceId = await page.evaluate(() =>
+      window.bigBrowser.invoke('browser.state').then((s) => s.activeSpaceId),
+    )
+    await openTab(page, site.url('/a'))
+    // Workspace updates with no tab added (like a page loading) must not keep the row entering.
+    const stillEntering = await page.evaluate(async (spaceId) => {
+      const end = performance.now() + 900
+      for (let i = 0; performance.now() < end; i++) {
+        await window.bigBrowser.invoke('browser.renameSpace', { spaceId, name: `Home ${i % 2}` })
+        await new Promise((resolve) => setTimeout(resolve, 40))
+      }
+      return document.querySelectorAll('[data-testid=sidebar] [data-entering]').length
+    }, spaceId)
+    expect(stillEntering).toBe(0)
   })
 })
 
@@ -1207,7 +1284,8 @@ test('a split is one row', async () => {
       await openTab(page, site.url('/a'))
       await openTab(page, site.url('/b'))
       await openTab(page, site.url('/c'))
-      await expect(page.getByTestId('tab')).toHaveCount(3)
+      // Loaded titles, not the host shown while loading: the halves are told apart by them.
+      await expect(page.getByTestId('tab')).toHaveText(['Page A', 'Page B', 'Page C'])
 
       // ⌃⌘\ pairs the active tab with a neighbour of its list: one row for both.
       await clickMenu(first, 'splitView')

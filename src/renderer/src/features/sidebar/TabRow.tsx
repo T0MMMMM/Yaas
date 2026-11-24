@@ -18,11 +18,14 @@ export function TabRow({
   tab,
   depth,
   active,
+  entering = false,
   exiting = false,
 }: {
   tab: TabView
   depth: number
   active: boolean
+  /** Newly opened in the current space: plays the two-phase enter (height + fade). */
+  entering?: boolean
   /** The tab is closed: the row plays its exit animation, inert and not counted as a tab. */
   exiting?: boolean
 }) {
@@ -38,6 +41,7 @@ export function TabRow({
       style={{ ...tilt(tab.id), '--depth': depth } as CSSProperties}
       data-testid={exiting ? 'tab-exiting' : 'tab'}
       data-depth={depth}
+      data-entering={entering || undefined}
       data-exiting={exiting || undefined}
       inert={exiting}
       aria-hidden={exiting || undefined}
@@ -73,7 +77,9 @@ export function TabRow({
         onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
       >
         <Favicon tab={tab} className={styles.favicon} />
-        <span className={styles.title}>{tab.title}</span>
+        <span className={styles.title} data-testid="tab-title">
+          {tab.title}
+        </span>
       </button>
       <button
         className={styles.close}
@@ -82,7 +88,7 @@ export function TabRow({
         title="Close tab (⌘W)"
         onClick={() => void window.bigBrowser.invoke('browser.closeTab', { tabId: tab.id })}
       >
-        <X size={13} weight="bold" />
+        <X size={12} weight="bold" />
       </button>
     </li>
   )

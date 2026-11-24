@@ -61,6 +61,7 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
+  --leading-row: 1.25; /* one-line sidebar rows and the space name */
 
   /* layout */
   --sidebar-w: 228px; /* Ardia density default width */
@@ -160,6 +161,10 @@
   --scale-enter: 0.97;
   --scale-hover-swatch: 1.14; /* colour picker preset swatch on hover */
   --scale-hover-thumb: 1.08; /* slider thumb on hover / keyboard focus */
+  --scale-emoji-hover: 1.1; /* an emoji in a picker grows under the pointer */
+  --scale-swatch-hover: 1.12; /* a colour swatch in a picker grows under the pointer */
+  --scale-space-idle: 0.94; /* footer space switcher: inactive spaces sit smaller */
+  --scale-space-selected: 1.12; /* footer space switcher: the active space stands out */
 
   /* motion — existing durations kept for un-migrated consumers */
   --dur-popover-out: 100ms;
@@ -179,6 +184,8 @@
   --dur-spin: 900ms; /* one turn of the loading spinner */
 
   --opacity-unloaded: 0.5; /* sidebar tabs whose page is not loaded yet */
+  --opacity-space-idle: 0.4; /* footer space switcher: inactive spaces */
+  --opacity-space-hover: 0.85; /* footer space switcher: an inactive space under the pointer */
 
   /* the "askew card" motion: selected and hovered items tilt slightly */
   --tilt-selected: -0.8deg;
@@ -436,5 +443,9 @@
     --scale-enter: 1;
     --scale-hover-swatch: 1;
     --scale-hover-thumb: 1;
+    --scale-emoji-hover: 1;
+    --scale-swatch-hover: 1;
+    --scale-space-idle: 1;
+    --scale-space-selected: 1;
   }
 }
