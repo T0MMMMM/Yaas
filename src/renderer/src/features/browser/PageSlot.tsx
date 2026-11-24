@@ -1,5 +1,6 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import { useUi } from '../../stores/ui'
+import { normalizeHexColor } from '../../theme/color'
 import { useWorkspace } from '../workspace/useWorkspace'
 import styles from './PageSlot.module.css'
 import { SplitDivider } from './SplitDivider'
@@ -13,9 +14,14 @@ import { SplitDivider } from './SplitDivider'
 export function PageSlot() {
   const ref = useRef<HTMLDivElement>(null)
   const workspace = useWorkspace()
-  const hasTab = Boolean(workspace?.activeTab)
+  const activeTab = workspace?.activeTab ?? null
+  const hasTab = Boolean(activeTab)
   const split = workspace?.activeSplit ?? null
   const settingsOpen = useUi((s) => s.view === 'settings')
+  const singleTopTint =
+    !split && activeTab?.themeColor ? normalizeHexColor(activeTab.themeColor) : null
+  const firstTopTint = split?.first.themeColor ? normalizeHexColor(split.first.themeColor) : null
+  const secondTopTint = split?.second.themeColor ? normalizeHexColor(split.second.themeColor) : null
 
   useEffect(() => {
     const el = ref.current
@@ -44,7 +50,13 @@ export function PageSlot() {
   }, [settingsOpen])
 
   return (
-    <div ref={ref} className={styles.slot} data-testid="page-slot">
+    <div
+      ref={ref}
+      className={styles.slot}
+      data-testid="page-slot"
+      data-tinted={singleTopTint ? true : undefined}
+      style={singleTopTint ? ({ '--page-top-tint': singleTopTint } as CSSProperties) : undefined}
+    >
       {!hasTab && (
         <section className={styles.empty} data-testid="empty-state">
           <p className={styles.emptyTitle}>No tab open</p>
@@ -57,12 +69,22 @@ export function PageSlot() {
         <>
           <div
             className={`${styles.splitPane} ${styles.splitFirst}`}
-            style={{ '--split-ratio': split.ratio } as CSSProperties}
+            style={
+              {
+                '--split-ratio': split.ratio,
+                ...(firstTopTint ? { '--page-top-tint': firstTopTint } : {}),
+              } as CSSProperties
+            }
             aria-hidden="true"
           />
           <div
             className={`${styles.splitPane} ${styles.splitSecond}`}
-            style={{ '--split-ratio': split.ratio } as CSSProperties}
+            style={
+              {
+                '--split-ratio': split.ratio,
+                ...(secondTopTint ? { '--page-top-tint': secondTopTint } : {}),
+              } as CSSProperties
+            }
             aria-hidden="true"
           />
           <SplitDivider tabId={split.first.id} ratio={split.ratio} />

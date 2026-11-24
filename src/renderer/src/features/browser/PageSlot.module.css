@@ -6,6 +6,18 @@
   position: relative; /* the split panes and divider are placed in it */
 }
 
+:root[data-contextbar='attached'] .slot[data-tinted]::before,
+:root[data-contextbar='attached'] .splitPane::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--radius-lg);
+  background: var(--page-top-tint, var(--bg-surface));
+  pointer-events: none;
+}
+
 /* Backing surfaces behind the two native split views, leaving the 8 px frame trough open. */
 .splitPane {
   position: absolute;
@@ -13,6 +25,7 @@
   bottom: 0;
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
+  overflow: hidden;
   pointer-events: none;
   backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
 }
