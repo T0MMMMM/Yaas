@@ -106,6 +106,10 @@
   --menu-inset: 5px; /* outer padding of menus and separator margin */
   --border-menu-w: 0.5px; /* crisp hairline border width on overlay cards */
   --popover-pad: 12px; /* inner padding of popovers and command dock */
+  --downloads-w: 300px; /* downloads popover width */
+  --downloads-row-h: 40px; /* downloads row height */
+  --progress-h: 3px; /* downloads progress track height */
+  --settings-nav-w: 214px; /* Settings left navigation sidebar width */
   --status-icon-size: 28px; /* site-menu row status circle */
   --quick-action-h: 32px; /* site-menu quick actions and extension tiles */
   --ext-tile-w: 52px; /* site-menu extension tile width */
@@ -129,7 +133,8 @@
   --dur-frequent-move: 250ms; /* frequent enter move */
   --dur-frequent-exit: 180ms; /* frequent exit fade (no move) */
   --dur-occasional-fade: 400ms; /* occasional enter fade (settings, confirm, downloads) */
-  --dur-occasional-exit: 300ms; /* occasional exit fade */
+  --dur-occasional-move: 450ms; /* occasional enter move (finishes just past fade climax) */
+  --dur-occasional-exit: 300ms; /* occasional exit fade & retrace */
   --dur-row-fade: 150ms; /* tab open fade */
   --dur-row-enter: 250ms; /* tab open height/move */
   --dur-row-exit: 180ms; /* tab close fade */
@@ -196,6 +201,8 @@
   --fill-neutral-hover: rgb(0 0 0 / 0.08);
   --fill-pressed: rgb(0 0 0 / 0.12);
   --bg-menu-hover: rgb(0 0 0 / 0.08);
+  --bg-backdrop: rgb(0 0 0 / 0.35);
+  --bg-settings-group: rgb(0 0 0 / 0.028);
 
   /* sidebar row & favourite tile tokens (redesign direction §3) */
   --bg-row-hover: rgb(0 0 0 / 0.05);
@@ -275,6 +282,8 @@
   --fill-neutral-hover: rgb(255 255 255 / 0.08);
   --fill-pressed: rgb(255 255 255 / 0.14);
   --bg-menu-hover: rgb(255 255 255 / 0.08);
+  --bg-backdrop: rgb(0 0 0 / 0.5);
+  --bg-settings-group: rgb(255 255 255 / 0.045);
 
   /* sidebar row & favourite tile tokens (redesign direction §3) */
   --bg-row-hover: rgb(255 255 255 / 0.05);
@@ -402,6 +411,7 @@
     --dur-base: 0ms;
     --dur-spring: 0ms;
     --dur-frequent-move: 0ms;
+    --dur-occasional-move: 0ms;
     --dur-row-enter: 0ms;
     --dur-row-collapse: 0ms;
     --dur-morph: 0ms;
