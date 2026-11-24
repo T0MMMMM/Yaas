@@ -1,21 +1,24 @@
+/* Illustrated folder and session glyphs on redesign tokens & morph motion. */
+
 .folder {
+  --folder-color: hsl(var(--hue) var(--folder-hue-s) var(--folder-hue-l));
   flex: none;
-  width: 18px;
-  height: 15px;
+  width: var(--icon-size);
+  height: var(--icon-size);
   overflow: visible;
 }
 
 .back {
-  fill: hsl(var(--hue) var(--folder-hue-s) var(--folder-hue-l));
+  fill: var(--folder-color);
 }
 
 .paper {
-  fill: #fff;
+  fill: var(--on-accent);
   opacity: 0;
-  transform: translateY(2px);
+  transform: translateY(var(--space-hair));
   transition:
-    opacity var(--dur-fast) var(--ease),
-    transform var(--dur-base) var(--ease-bounce);
+    opacity var(--dur-frequent-fade) var(--ease),
+    transform var(--dur-morph) var(--ease-morph);
 }
 
 .folder[data-open='true'] .paper {
@@ -23,13 +26,12 @@
   transform: translateY(-1px);
 }
 
-/* The flap swings open from its bottom edge: shorter and leaning, the paper showing above it.
-   transform-box makes the origin the path's own box, so nothing shifts in the layout. */
+/* The flap swings open from its bottom edge in sync with the 400 ms folder morph. */
 .front {
-  fill: hsl(var(--hue) 85% 64%);
+  fill: color-mix(in srgb, var(--folder-color) 72%, var(--on-accent));
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  transition: transform var(--dur-base) var(--ease-bounce);
+  transition: transform var(--dur-morph) var(--ease-morph);
 }
 
 .folder[data-open='true'] .front {
@@ -37,10 +39,10 @@
 }
 
 .shine {
-  stroke: rgb(255 255 255 / 0.45);
+  stroke: var(--border-row-active);
   stroke-width: 0.8;
   stroke-linecap: round;
-  transition: opacity var(--dur-fast) var(--ease);
+  transition: opacity var(--dur-frequent-fade) var(--ease);
 }
 
 .folder[data-open='true'] .shine {
@@ -48,17 +50,17 @@
 }
 
 :root[data-scheme='dark'] .back {
-  fill: hsl(var(--hue) 50% 38%);
+  fill: color-mix(in srgb, var(--folder-color) 65%, var(--frame-base));
 }
 
 :root[data-scheme='dark'] .front {
-  fill: hsl(var(--hue) 60% 55%);
+  fill: color-mix(in srgb, var(--folder-color) 82%, var(--on-accent));
 }
 
 .session {
   flex: none;
-  width: 15px;
-  height: 15px;
+  width: var(--icon-size);
+  height: var(--icon-size);
 }
 
 .bubble {

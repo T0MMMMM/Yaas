@@ -43,6 +43,8 @@ const CLONE_STRIPPED = [
   'data-drop-target',
   'data-dragged',
   'data-drag-row',
+  'data-entering',
+  'data-exiting',
 ]
 
 /** A CSS time token of the container, in ms (0 under prefers-reduced-motion). */
@@ -147,8 +149,9 @@ export class DragLift {
         },
       ],
       {
-        duration: durationOf(this.container, '--dur-base'),
-        easing: getComputedStyle(this.container).getPropertyValue('--ease').trim() || 'ease',
+        duration: durationOf(this.container, '--dur-drag-settle'),
+        easing:
+          getComputedStyle(this.container).getPropertyValue('--ease-out').trim() || 'ease-out',
         fill: 'forwards',
       },
     )
