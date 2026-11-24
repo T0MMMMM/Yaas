@@ -77,7 +77,9 @@ export function TabRow({
         onClick={() => void window.bigBrowser.invoke('browser.activateTab', { tabId: tab.id })}
       >
         <Favicon tab={tab} className={styles.favicon} />
-        <span className={styles.title}>{tab.title}</span>
+        <span className={styles.title} data-testid="tab-title">
+          {tab.title}
+        </span>
       </button>
       <button
         className={styles.close}

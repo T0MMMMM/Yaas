@@ -293,7 +293,7 @@ test('the sidebar uses the system font and Ardia row metrics', async () => {
     const rowHeight = await tab.evaluate((el) => (el as HTMLElement).offsetHeight)
     expect(rowHeight).toBe(34)
     // Active tab keeps regular 400 weight (never bold).
-    await expect(tab.locator('span').last()).toHaveCSS('font-weight', '400')
+    await expect(tab.getByTestId('tab-title')).toHaveCSS('font-weight', '400')
     const headerHeight = await page
       .getByTestId('space-header')
       .evaluate((el) => (el as HTMLElement).offsetHeight)

@@ -495,7 +495,7 @@ test("a tab's close button only shows on hover", async () => {
 test('long titles fade instead of ellipsing', async () => {
   await withBrowser(async ({ page, site }) => {
     await openTab(page, site.url('/long'))
-    const title = page.getByTestId('today').getByTestId('tab').first().locator('span').last()
+    const title = page.getByTestId('today').getByTestId('tab').first().getByTestId('tab-title')
     await expect(title).toHaveText(/^A very long page title/)
     await expect(title).toHaveCSS('text-overflow', 'clip')
     const mask = await title.evaluate((el) => getComputedStyle(el).maskImage)
