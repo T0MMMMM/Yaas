@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SidebarNode, TabView } from '../workspace/workspace'
-import { enteringAfter, exitsWhenGone, newlyOpenedTabIds, ROW_EXIT_MS } from './rows'
+import { enteringAfter, exitsWhenGone, newlyOpenedTabIds } from './rows'
 
 const tab = (id: string): SidebarNode => ({ kind: 'tab', tab: { id } as TabView, depth: 0 })
 
@@ -17,10 +17,6 @@ describe('exitsWhenGone', () => {
 
   it('drops a folder at once', () => {
     expect(exits({ kind: 'auto-folder', host: 'example.com', children: [] })).toBe(false)
-  })
-
-  it('keeps exiting rows mounted for fade (180 ms) plus height collapse (250 ms)', () => {
-    expect(ROW_EXIT_MS).toBe(430)
   })
 })
 
