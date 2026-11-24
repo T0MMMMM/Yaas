@@ -22,11 +22,11 @@ function Row({ download, showLabel }: { download: Download; showLabel: string })
     <li className={styles.row} data-testid="download" data-state={state}>
       <span className={styles.icon} aria-hidden="true">
         {state === 'completed' ? (
-          <CheckCircle size={15} weight="fill" className={styles.ok} />
+          <CheckCircle size={16} weight="fill" className={styles.ok} />
         ) : state === 'interrupted' ? (
-          <WarningCircle size={15} weight="fill" className={styles.warn} />
+          <WarningCircle size={16} weight="fill" className={styles.warn} />
         ) : (
-          <FileArrowDown size={15} weight="regular" />
+          <FileArrowDown size={16} weight="regular" />
         )}
       </span>
       <div className={styles.body}>
