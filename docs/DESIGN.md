@@ -246,7 +246,7 @@ the window) from the top, in the overlay. Constant tier motion: `100 ms ease` fa
 selection. No internal dividers: a search row (`--finder-field-h` `44 px`, `15 px` `--text-lg`
 input) over a list of `36 px` (`--dock-row-h`) rows with `10 px` (`--radius-dock-row`) concentric
 corners whose selected row is tinted with the active space colour at 12 % (`--bg-dock-selected`;
-`Overlay.tsx` mirrors `--space-accent` onto the overlay document's `:root`). ↑/↓ move, Enter runs,
+`Overlay.tsx` calls `applySpaceAccent` on the overlay document's `:root` too). ↑/↓ move, Enter runs,
 Escape or a click outside closes. The finder (`Mod+K`) ranks the tabs of every space — every word
 must be in the title or the host and path; a title that starts with the query first, then title
 matches, then URL matches — and activates the one picked, switching space; an empty query lists the

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  DEFAULT_ACCENT,
   SIDEBAR_DEFAULT,
   TOOLTIP_FADE_MS,
   type OverlayRequest,
@@ -17,6 +18,7 @@ import { useWorkspace } from '../features/workspace/useWorkspace'
 import { useBrowser } from '../stores/browser'
 import { useDownloads } from '../stores/downloads'
 import { useSettings } from '../stores/settings'
+import { applySpaceAccent } from '../theme/applyTheme'
 import { AnchoredCard } from '../ui/AnchoredCard'
 import { ColorPicker } from '../ui/ColorPicker'
 import { ConfirmCard } from '../ui/ConfirmCard'
@@ -94,15 +96,11 @@ export function Overlay() {
   const accent = useSettings((s) => s.settings?.accent)
   const sidebarWidth = useSettings((s) => s.settings?.sidebarWidth)
   const contentLeft = snapWidth(sidebarWidth ?? SIDEBAR_DEFAULT)
-  const spaceColor = workspace?.space.color ?? accent
+  const spaceColor = workspace?.space.color ?? accent ?? DEFAULT_ACCENT
 
-  // The overlay runs in its own document (separate from Shell): mirror the active space colour
-  // onto :root so `--space-accent`, `--space-accent-soft`, `--bg-dock-selected` and `--selection-bg`
-  // resolve to the active space rather than the app accent.
-  useEffect(() => {
-    if (!spaceColor) return
-    document.documentElement.style.setProperty('--space-accent', spaceColor)
-  }, [spaceColor])
+  // The overlay runs in its own document (separate from Shell): set the active space colour on its
+  // :root too, so the space-tinted tokens (selected dock row, selection) follow the space.
+  useEffect(() => applySpaceAccent(spaceColor), [spaceColor])
 
   useEffect(() => initBrowser(), [initBrowser])
   useEffect(() => initDownloads(), [initDownloads])
