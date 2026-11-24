@@ -71,8 +71,9 @@ export function Shell() {
   // Propagate the active space accent onto :root so derived tokens (--space-accent-soft,
   // --bg-dock-selected, --selection-bg) resolve to the space colour instead of the app accent.
   useEffect(() => {
-    applySpaceAccent(spaceColor)
-  }, [spaceColor])
+    if (activeSpace) applySpaceAccent(activeSpace.color)
+    else applySpaceAccent(spaceColor)
+  }, [activeSpace, spaceColor])
 
   return (
     <div
@@ -80,7 +81,11 @@ export function Shell() {
       data-resizing={resize.resizing}
       style={{ '--sidebar-w': `${resize.width}px` } as CSSProperties}
     >
-      <FrameBackdrop spaceId={activeSpace?.id ?? null} color={spaceColor} scheme={scheme} />
+      <FrameBackdrop
+        spaceId={activeSpace?.id ?? null}
+        color={activeSpace?.color ?? null}
+        scheme={scheme}
+      />
 
       {/* The window buttons wait in the top margin (Linux keeps its native title bar). */}
       {(platform === 'mac' || platform === 'windows') && <WindowControls platform={platform} />}

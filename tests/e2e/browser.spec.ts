@@ -327,6 +327,42 @@ test('switching spaces recolours the frame gradient', async () => {
   })
 })
 
+test('switching spaces stacks a crossfade backdrop layer and settles back to one', async () => {
+  await withBrowser(async ({ page }) => {
+    const layers = page.getByTestId('frame-backdrop-layer')
+    await expect(layers).toHaveCount(1)
+
+    const peakLayers = await page.evaluate(async () => {
+      const backdrop = document.querySelector('[data-testid="frame-backdrop"]')
+      if (!backdrop) throw new Error('frame-backdrop not found')
+      let peak = backdrop.querySelectorAll('[data-testid="frame-backdrop-layer"]').length
+      const observer = new MutationObserver(() => {
+        peak = Math.max(
+          peak,
+          backdrop.querySelectorAll('[data-testid="frame-backdrop-layer"]').length,
+        )
+      })
+      observer.observe(backdrop, { childList: true })
+      const space = await window.bigBrowser.invoke('browser.createSpace', {
+        name: 'Work',
+        color: '#2BB673',
+      })
+      await window.bigBrowser.invoke('browser.activateSpace', { spaceId: space.id })
+      await new Promise((resolve) => setTimeout(resolve, 700))
+      observer.disconnect()
+      return peak
+    })
+
+    expect(peakLayers).toBeGreaterThanOrEqual(2)
+    await expect(layers).toHaveCount(1)
+    // Derived root tokens follow the active space color (not the default app accent).
+    const dockSelected = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--bg-dock-selected'),
+    )
+    expect(dockSelected).toContain('#2BB673')
+  })
+})
+
 test('the + menu opens over the page in liquid glass', async () => {
   await withBrowser(async ({ app, page }) => {
     await page.evaluate(() => window.bigBrowser.invoke('settings.update', { transparency: 1 }))
